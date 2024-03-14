@@ -9,7 +9,21 @@
 #![forbid(rustdoc::broken_intra_doc_links)]
 
 //! The Shift Cipher using the Latin Alphabet.
-use rand::Rng;
+
+// TODOs:
+// - Tests were lazily written and not comprehensive
+// - Data types were inefficiently chosen I think
+// - Use of randomness might have problems (e.g., didn't pass the rng as input
+// and in the tests, may not be reproducible if underlying algorithm is changed in rand
+// - Doesn't have any attacks implemented yet
+// - Doesn't have an examples crate for a demo
+// - Insufficient documentation (Do as I say, not as I do I guess?)
+// - Probably many other things
+// - Doesn't handle inputs nicely, could e.g. handle white spaces in strings either here
+// or in example
+// What should be a unit test and what should be doc test?
+
+use rand::{CryptoRng, Rng};
 use std::ops::{Add, Sub};
 
 const LATIN_ENCODING: [(char, i8); 26] = [
@@ -45,7 +59,7 @@ const MODULUS: usize = LATIN_ENCODING.len();
 
 // The ring Z/mZ where m = modulus, i.e. 26 for Latin Alphabet.
 // TODO: Reconsider data types, work with bytes instead?
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub struct RingElement(i8);
 
 // Should I have a getter?
@@ -86,14 +100,14 @@ impl Sub for RingElement {
     }
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Message(Vec<RingElement>);
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct CipherText(Vec<RingElement>);
 
 // TODO: Keys should always contain context
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Eq, PartialEq)]
 pub struct Key(RingElement);
 
 // TODO: Handle whitespaces in inputs
@@ -142,8 +156,18 @@ impl CipherText {
 }
 
 impl Key {
-    pub fn gen() -> Self {
-        let mut rng = rand::thread_rng();
+    // Notes:
+    // 1. Keys must be chosen according to a uniform distribution on the
+    // underlying key space, i.e., the ring Z/26Z for the Latin Alphabet cipher.
+    // This is easy here because we used i8 as the underlying type for Key
+    // and this choosing uniformly from a range is already implemented in rand.
+    // But note that in general you must be careful,
+    // e.g., if you pick a u8 from the uniform distribution
+    // and then reduce mod 26, you will pick each of {24, 25} with probability
+    // 4/128 and all other elements with probability 5/128
+    // 2. `CryptoRng` is a marker trait to indicate generators suitable for crypto,
+    // but user beware.
+    pub fn gen<R: Rng + CryptoRng>(rng: &mut R) -> Self {
         let key_material: i8 = rng.gen_range(0..MODULUS as i8);
         Self(RingElement(key_material))
     }
@@ -153,12 +177,19 @@ impl Key {
 mod tests {
     use super::*;
     use rand::SeedableRng;
+    use rand_chacha::ChaCha12Rng;
 
+    // Notes:
+    // 1. This sets us up to make tests with randomness that are reproducible.
+    // 2. We use `ChaCha12Rng` directly here, in order to not rely on `StdRng`, since
+    // the documentation of the latter warns that `StdRng` is not guaranteed to be
+    // reproducible.
     pub const TEST_SEED: [u8; 32] = *b"MY DISTRIBUTION IS NOT UNIFORM!!";
-    pub fn rng() -> impl Rng {
-        rand::rngs::StdRng::from_seed(TEST_SEED)
+    pub fn reprod_rng() -> impl Rng {
+        ChaCha12Rng::from_seed(TEST_SEED)
     }
 
+    // Data for our running example/test.
     // Encoded "wewillmeetatmidnight" message from Example 1.1, Stinson 3rd Edition, Example 2.1 Stinson 4th Edition
     thread_local! (static MSG0: Message = 
         Message(vec![RingElement(22), RingElement(4), 
@@ -223,11 +254,10 @@ mod tests {
     // Tests with randomly generated keys
     #[test]
     fn enc_dec_1() {
-        let key1 = Key::gen();
-        let key2 = Key::gen();
+        let mut rng = rand::thread_rng();
 
-        println!("{:?}", key1.0);
-        println!("{:?}", key2.0);
+        let key1 = Key::gen(&mut rng);
+        let key2 = Key::gen(&mut rng);
 
         let msg1 = Message::new("thisisatest".to_string());
         let msg2 = Message::new("thisisanothertest".to_string());
@@ -249,7 +279,7 @@ mod tests {
     // Tests with reproducible randomness
     #[test]
     fn enc_dec_2() {
-        let mut rng = rng();
+        let mut rng = reprod_rng();
 
         let key1 = Key(RingElement(rng.gen_range(0..MODULUS as i8)));
         println!("{:?}", key1.0);
