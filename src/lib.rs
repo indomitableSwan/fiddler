@@ -9,8 +9,9 @@
 #![forbid(rustdoc::broken_intra_doc_links)]
 
 //! Currently we implement the Shift Cipher using the Latin Alphabet.
-//! This cipher uses an encoding of the Latin Alphabet in the ring Z/26Z, i.e.,
-//! plaintext messages and ciphertexts are internally represented using elements from Z/26Z.
+//! This cipher uses an encoding of the Latin Alphabet in the ring &#x2124;/26&#x2124;, i.e.,
+//! plaintext messages and ciphertexts are internally represented using elements from &#x2124;/26&#x2124;.
+// (&#x2124; is Unicode for blackboard bold Z)
 
 // TODOs:
 // - Tests were lazily written and not comprehensive
