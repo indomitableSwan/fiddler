@@ -15,6 +15,7 @@
 
 // TODOs:
 // - Tests were lazily written and not comprehensive
+// - Probably not following API guidelines
 // - Data types were inefficiently chosen I think
 // - I am not clear on visibility/scope
 // - Use of randomness might have problems
@@ -63,7 +64,7 @@ const ALPH_ENCODING: [(char, i8); 26] = [
 const MODULUS: usize = ALPH_ENCODING.len();
 
 /// The ring Z/mZ where m = 26 for Latin Alphabet.
-// TODO: Reconsider data types, work with bytes instead?
+// TODO: Reconsider data types, work with bytes instead? Or bits via bitvec?
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 struct RingElement(i8);
 
