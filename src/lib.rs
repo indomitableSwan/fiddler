@@ -22,6 +22,7 @@
 // (&#x2124; is Unicode for blackboard bold Z)
 
 // TODOs:
+// - There are no examples in the documentation.
 // - Tests were lazily written and not comprehensive
 // - Probably not following API guidelines
 // - Data types were inefficiently chosen I think

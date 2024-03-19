@@ -1,9 +1,14 @@
-# This is a makefile that can be run using `cargo make`. See https://sagiegurari.github.io/cargo-make/ for documentation. There is a lot more functionality than what is used here, including testing multiple platforms, running benchmarks, security checks, etc.
+# This is a makefile that can be run using `cargo make`. 
+# See https://sagiegurari.github.io/cargo-make/ for documentation. 
+# There is a lot more functionality than what is used here, including 
+# testing multiple platforms, running benchmarks, security checks, etc.
 
 
 # Clippy is a collection of lints that can be helpful to catch common mistakes.
 # See: https://doc.rust-lang.org/clippy/index.html.
-# Here we can add the option "--", "-Dwarnings" to the args. This elevates warnings to errors, which is useful because we, as developers, are apt to ignore warnings.
+# Here we can add the option "--", "-Dwarnings" to the args. 
+# This elevates warnings to errors, which is useful because we, as developers,
+# are apt to ignore warnings.
 [tasks.clippy]
 command = "cargo"
 args = ["clippy", "--all-targets", "--workspace"]
@@ -11,8 +16,9 @@ args = ["clippy", "--all-targets", "--workspace"]
 [tasks.build]
 dependencies = ["clean"]
 
-# The option "--document-private-items" might be useful to add to args for this tutorial-style library project.
-# The option "--examples" allows you to produce documentation for examples.
+# Potentially useful options to add include:
+# - "--document-private-items", since this is a tutorial-style library.
+# - "--examples", which allows you to produce documentation for examples.
 [tasks.doc]
 # Uncomment following line to elevate warnings to errors here as well
 # env = { "RUSTDOCFLAGS" = "-Dwarnings" }
