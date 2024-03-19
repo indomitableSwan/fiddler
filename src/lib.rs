@@ -1,12 +1,20 @@
 //! This repository is a playground for learning Rust.
 //! It is not meant to be used for anything in practice.
 //!
-//#![warn(missing_docs)]
+#![warn(missing_docs)]
 #![warn(missing_debug_implementations)]
 #![warn(unused_qualifications, unused_results)]
 #![warn(future_incompatible)]
 #![warn(unused)]
-#![forbid(rustdoc::broken_intra_doc_links)]
+#![warn(rustdoc::broken_intra_doc_links)]
+#![warn(rustdoc::private_intra_doc_links)]
+#![warn(rustdoc::private_doc_tests)]
+#![warn(rustdoc::invalid_rust_codeblocks)]
+#![warn(rustdoc::invalid_codeblock_attributes)]
+#![warn(rustdoc::invalid_html_tags)]
+#![warn(rustdoc::bare_urls)]
+#![warn(rustdoc::unescaped_backticks)]
+#![warn(rustdoc::redundant_explicit_links)]
 
 //! Currently we implement the Shift Cipher using the Latin Alphabet.
 //! This cipher uses an encoding of the Latin Alphabet in the ring &#x2124;/26&#x2124;, i.e.,
@@ -70,7 +78,7 @@ struct RingElement(i8);
 
 impl RingElement {
     /// Convert from a `char` to a `RingElement`.
-    pub fn from_char(ltr: char) -> Self {
+    fn from_char(ltr: char) -> Self {
         RingElement(
             ALPH_ENCODING
                 .iter()
@@ -81,13 +89,13 @@ impl RingElement {
     }
 
     /// Convert from a [`RingElement`] to a `char`.
-    pub fn as_char(&self) -> char {
+    fn as_char(&self) -> char {
         ALPH_ENCODING.iter().find(|&&x| x.1 == self.0).unwrap().0
     }
 
     /// The canonical form of a [`RingElement`], i.e., reduced by the modulus.
     // Note: So far... this isn't used anywhere.
-    pub fn canonical(&self) -> Self {
+    fn canonical(&self) -> Self {
         Self((self.0).rem_euclid(MODULUS as i8))
     }
 
@@ -101,7 +109,7 @@ impl RingElement {
     // 4/128 and all other elements with probability 5/128
     // 2. `CryptoRng` is a marker trait to indicate generators suitable for crypto,
     // but user beware.
-    pub fn gen<R: Rng + CryptoRng>(rng: &mut R) -> Self {
+    fn gen<R: Rng + CryptoRng>(rng: &mut R) -> Self {
         let elmt: i8 = rng.gen_range(0..MODULUS as i8);
         Self(elmt)
     }
