@@ -16,4 +16,7 @@ Documentation is built automatically by `cargo make`. After building, open `fidd
 Alternatively, run 
 `
 cargo doc --no-deps --open
-`.
+` or
+`cargo doc --open`, depending on whether or not you want to build docs for dependencies as well as `fiddler`.
+
+Since this is a learning crate, it may also be helpful to document private items. To do so, pass the option `--document-private-items` to `cargo doc`.

@@ -17,8 +17,9 @@
 #![warn(rustdoc::redundant_explicit_links)]
 
 //! Currently we implement the Shift Cipher using the Latin Alphabet.
-//! This cipher uses an encoding of the Latin Alphabet in the ring &#x2124;/26&#x2124;, i.e.,
-//! plaintext messages and ciphertexts are internally represented using elements from &#x2124;/26&#x2124;.
+//! This cipher uses an encoding of the Latin Alphabet in the ring of integers modulo 26, which we denote by &#x2124;/26&#x2124;. That is, the ring &#x2124;/26&#x2124; is both the _plaintext space_ and the _ciphertext space_. As the name implies, ciphertexts are shifts (computed using modular arithmetic) of the corresponding plaintexts, so the _key space_ is &#x2124;/26&#x2124; as well.
+//! 
+//! We allow for messages (and, correspondingly, ciphertexts) of arbitrary length, because in practice we can encrypt (and decrypt) using ordered sequences of ring elements (i.e., plaintexts and ciphertexts, respectively).
 // (&#x2124; is Unicode for blackboard bold Z)
 
 // TODOs:
@@ -39,6 +40,7 @@
 use rand::{CryptoRng, Rng};
 use std::ops::{Add, Sub};
 
+/// The default alphabet encoding for the Latin Shift Cipher.
 const ALPH_ENCODING: [(char, i8); 26] = [
     ('a', 0),
     ('b', 1),
@@ -68,11 +70,13 @@ const ALPH_ENCODING: [(char, i8); 26] = [
     ('z', 25),
 ];
 
-// The modulus used to construct the ring Z/mZ, (i.e., m = MODULUS)
+/// The modulus used to construct the ring of integers used in the given Shift Cipher
+/// as the plaintext space, ciphertext space, and key space, i.e., the ring of integers modulo _m_, denoted by &#x2124;/_m_&#x2124;, where the modulus _m_ is drawn directly from [`ALPH_ENCODING`].
+// The modulus m for the ring Z/mZ. 
 // Included in order to make generalizing to other alphabets easier later.
 const MODULUS: usize = ALPH_ENCODING.len();
 
-/// The ring Z/mZ where m = 26 for Latin Alphabet.
+/// An implementation of the ring &#x2124;/_m_&#x2124;, where _m_ is set to [`MODULUS`]. 
 // TODO: Reconsider data types, work with bytes instead? Or bits via bitvec?
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 struct RingElement(i8);
@@ -89,18 +93,18 @@ impl RingElement {
         )
     }
 
-    /// Convert from a [`RingElement`] to a `char`.
+    /// Convert from a `RingElement` to a `char`.
     fn as_char(&self) -> char {
         ALPH_ENCODING.iter().find(|&&x| x.1 == self.0).unwrap().0
     }
 
-    /// The canonical form of a [`RingElement`], i.e., reduced by the modulus.
+    /// The canonical form of a `RingElement`, i.e., reduced by [`MODULUS`].
     // Note: So far... this isn't used anywhere.
     fn canonical(&self) -> Self {
         Self((self.0).rem_euclid(MODULUS as i8))
     }
 
-    /// Pick a ring element uniformly at random.
+    /// Generate a ring element uniformly at random.
     // Notes:
     // 1. This is easy here because we used i8 as the underlying type for RingElement
     // and choosing uniformly from a range is already implemented for i8 in rand.
@@ -119,6 +123,7 @@ impl RingElement {
 impl Add for RingElement {
     type Output = Self;
 
+    /// Computes the sum of `self` and `other`.
     fn add(self, other: Self) -> Self {
         Self((self.0 + other.0).rem_euclid(MODULUS as i8))
     }
@@ -127,16 +132,17 @@ impl Add for RingElement {
 impl Sub for RingElement {
     type Output = Self;
 
+    /// Computes the difference of `self` and `other`.
     fn sub(self, other: Self) -> Self {
         Self((self.0 - other.0).rem_euclid(MODULUS as i8))
     }
 }
 
-/// A plaintext message.
+/// A plaintext of arbitrary length.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Message(Vec<RingElement>);
 
-/// A ciphertext.
+/// A ciphertext of arbitrary length.
 #[derive(Clone, Debug, PartialEq)]
 pub struct CipherText(Vec<RingElement>);
 
@@ -146,7 +152,7 @@ pub struct CipherText(Vec<RingElement>);
 pub struct Key(RingElement);
 
 impl Message {
-    /// Create a new [`Message`] from a [`String`].
+    /// Create a new message from a string.
     pub fn new(str: String) -> Message {
         let mut msg = Vec::new();
         for c in str.chars() {
@@ -155,7 +161,7 @@ impl Message {
         Message(msg)
     }
 
-    /// Convert a [`Message`] to a [`String`].
+    /// Convert a message to a string.
     pub fn as_string(&self) -> String {
         let mut txt = String::new();
         for i in self.0.iter() {
@@ -164,7 +170,7 @@ impl Message {
         txt
     }
 
-    /// Encrypt a [`Message`] with a [`Key`].
+    /// Encrypt a message.
     pub fn encrypt(&self, key: &Key) -> CipherText {
         let mut ciph_txt: Vec<RingElement> = Vec::new();
         for i in self.0.iter() {
@@ -175,7 +181,7 @@ impl Message {
 }
 
 impl CipherText {
-    /// Decrypt a [`CipherText`] with a [`Key`].
+    /// Decrypt a ciphertext with a given key.
     pub fn decrypt(&self, key: &Key) -> Message {
         let mut msg: Vec<RingElement> = Vec::new();
         for i in self.0.iter() {
@@ -184,7 +190,7 @@ impl CipherText {
         Message(msg)
     }
 
-    /// Convert a [`CipherText`] to a [`String`] (of uppercase letters).
+    /// Convert a ciphertext to a string of uppercase letters.
     pub fn as_string(&self) -> String {
         let mut txt: String = String::new();
         for i in self.0.iter() {
@@ -195,7 +201,7 @@ impl CipherText {
 }
 
 impl Key {
-    /// Generate a [`Key`] uniformly at random from the Key Space.
+    /// Generate a cryptographic key uniformly at random from the key space.
     // Note: Keys must always be chosen according to a uniform distribution on the
     // underlying key space, i.e., the ring Z/26Z for the Latin Alphabet cipher.
     pub fn gen<R: Rng + CryptoRng>(rng: &mut R) -> Self {
