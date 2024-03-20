@@ -18,7 +18,7 @@
 
 //! Currently we implement the Shift Cipher using the Latin Alphabet.
 //! This cipher uses an encoding of the Latin Alphabet in the ring of integers modulo 26, which we denote by &#x2124;/26&#x2124;. That is, the ring &#x2124;/26&#x2124; is both the _plaintext space_ and the _ciphertext space_. As the name implies, ciphertexts are shifts (computed using modular arithmetic) of the corresponding plaintexts, so the _key space_ is &#x2124;/26&#x2124; as well.
-//! 
+//!
 //! We allow for messages (and, correspondingly, ciphertexts) of arbitrary length, because in practice we can encrypt (and decrypt) using ordered sequences of ring elements (i.e., plaintexts and ciphertexts, respectively).
 // (&#x2124; is Unicode for blackboard bold Z)
 
@@ -36,6 +36,7 @@
 // or in example
 // What should be a unit test and what should be doc test?
 // (De)Serialization?
+// It would be nice to figure out how to incorporate something like LaTeX in the docs, e.g., maybe katex via the `katex_doc` crate.
 
 use rand::{CryptoRng, Rng};
 use std::ops::{Add, Sub};
@@ -72,11 +73,11 @@ const ALPH_ENCODING: [(char, i8); 26] = [
 
 /// The modulus used to construct the ring of integers used in the given Shift Cipher
 /// as the plaintext space, ciphertext space, and key space, i.e., the ring of integers modulo _m_, denoted by &#x2124;/_m_&#x2124;, where the modulus _m_ is drawn directly from [`ALPH_ENCODING`].
-// The modulus m for the ring Z/mZ. 
+// The modulus m for the ring Z/mZ.
 // Included in order to make generalizing to other alphabets easier later.
 const MODULUS: usize = ALPH_ENCODING.len();
 
-/// An implementation of the ring &#x2124;/_m_&#x2124;, where _m_ is set to [`MODULUS`]. 
+/// An implementation of the ring &#x2124;/_m_&#x2124;, where _m_ is set to [`MODULUS`].
 // TODO: Reconsider data types, work with bytes instead? Or bits via bitvec?
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 struct RingElement(i8);
@@ -153,6 +154,14 @@ pub struct Key(RingElement);
 
 impl Message {
     /// Create a new message from a string.
+    /// # Examples
+    /// ```
+    /// // Creating this example shows how awkward our API is.
+    /// // We can't use spaces, punctuation, or capital letters:
+    /// # use fiddler::{CipherText, Key, Message};
+    /// # use rand::thread_rng;
+    /// let msg = Message::new("thisisanawkwardapichoice".to_string());
+    /// ```
     pub fn new(str: String) -> Message {
         let mut msg = Vec::new();
         for c in str.chars() {
@@ -162,6 +171,19 @@ impl Message {
     }
 
     /// Convert a message to a string.
+    /// # Examples
+    ///
+    /// ```
+    /// # use fiddler::{CipherText, Key, Message};
+    /// # use rand::thread_rng;
+    /// // We can print messages as strings.
+    /// // Humans are very quick at understanding mashed up plaintexts
+    /// // without punctuation and spacing.
+    /// // Computers have to check dictionaries.
+    /// let msg = Message::new("thisisanawkwardapichoice".to_string());
+    /// println!("Our message is {}", msg.as_string());
+    /// ```
+
     pub fn as_string(&self) -> String {
         let mut txt = String::new();
         for i in self.0.iter() {
@@ -171,6 +193,17 @@ impl Message {
     }
 
     /// Encrypt a message.
+    ///
+    /// # Examples
+    /// ```
+    /// # use fiddler::{CipherText, Key, Message};
+    /// # use rand::thread_rng;
+    /// # let mut rng = thread_rng();
+    /// # let key = Key::gen(&mut rng);
+    /// # let msg = Message::new("thisisanawkwardapichoice".to_string());
+    /// let ciphertxt = Message::encrypt(&msg, &key);
+    /// ```
+    ///
     pub fn encrypt(&self, key: &Key) -> CipherText {
         let mut ciph_txt: Vec<RingElement> = Vec::new();
         for i in self.0.iter() {
@@ -182,6 +215,18 @@ impl Message {
 
 impl CipherText {
     /// Decrypt a ciphertext with a given key.
+    ///
+    /// # Examples
+    /// ```
+    /// # use fiddler::{CipherText, Key, Message};
+    /// # use rand::thread_rng;
+    /// # let mut rng = thread_rng();
+    /// # let key = Key::gen(&mut rng);
+    /// # let msg = Message::new("thisisanawkwardapichoice".to_string());
+    /// # let ciphertxt = Message::encrypt(&msg, &key);
+    /// let decrypted = CipherText::decrypt(&ciphertxt, &key);
+    /// ```
+    ///
     pub fn decrypt(&self, key: &Key) -> Message {
         let mut msg: Vec<RingElement> = Vec::new();
         for i in self.0.iter() {
@@ -191,6 +236,19 @@ impl CipherText {
     }
 
     /// Convert a ciphertext to a string of uppercase letters.
+    ///
+    /// # Examples
+    /// ```
+    /// # use fiddler::{CipherText, Key, Message};
+    /// # use rand::thread_rng;
+    /// # let mut rng = thread_rng();
+    /// # let key = Key::gen(&mut rng);
+    /// # let msg = Message::new("thisisanawkwardapichoice".to_string());
+    /// # let ciphertxt = Message::encrypt(&msg, &key);
+    /// # let decrypted = CipherText::decrypt(&ciphertxt, &key);
+    /// println!("The corresponding ciphertext is {}", ciphertxt.as_string());
+    /// ```
+    ///
     pub fn as_string(&self) -> String {
         let mut txt: String = String::new();
         for i in self.0.iter() {
@@ -202,6 +260,28 @@ impl CipherText {
 
 impl Key {
     /// Generate a cryptographic key uniformly at random from the key space.
+    ///
+    /// Note that the mathematical description of the Latin Shift Cipher, as well as this implementation,
+    /// does not disallow a key of 0, so sometimes the encryption algorithm is just the identity function.
+    ///
+    /// # Examples
+    /// ```
+    /// # use fiddler::{CipherText, Key, Message};
+    /// // Don't forget to include the `rand` crate!
+    /// use rand::thread_rng;
+    /// //
+    /// // Initialize a cryptographic rng.
+    /// let mut rng = thread_rng();
+    /// //
+    /// // Generate a key
+    /// let key = Key::gen(&mut rng);
+    /// //
+    /// // We can print a key, or print it to a log if we wanted to.
+    /// // We shouldn't. Key handling is another, more complicated
+    /// // and error-prone topic.
+    /// println!("Here is our key value: {:?}", key);
+    /// ```
+    ///
     // Note: Keys must always be chosen according to a uniform distribution on the
     // underlying key space, i.e., the ring Z/26Z for the Latin Alphabet cipher.
     pub fn gen<R: Rng + CryptoRng>(rng: &mut R) -> Self {
