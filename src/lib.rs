@@ -209,6 +209,20 @@ impl CipherText {
     /// # let msg = Message::new("thisisanawkwardapichoice".to_string());
     /// # let ciphertxt = Message::encrypt(&msg, &key);
     /// let decrypted = CipherText::decrypt(&ciphertxt, &key);
+    ///
+    /// println!(
+    ///    "If we decrypt using the correct key, we get our original message back: {}", decrypted.as_string());
+    ///
+    /// // If we decrypt with the wrong key, we won't get our original message back
+    /// println!("If we decrypt using an incorrect key, we do not get our original message back: {}", CipherText::decrypt(&ciphertxt, &Key::gen(&mut rng)).as_string());
+    ///
+    /// // With some non-negligible frequency, you won't get nonsense on decryption with the wrong key, but the possible message space is restricted beyond just the length of the message itself. This is because shift ciphers preserve other message patterns, too. Note that if the message is very short and you only have one sample, one ciphertext may not be enough to definitively break the system with a brute force attack. But likely there is other context available to validate possible plaintexts.
+    /// let small_msg = Message::new("dad".to_string());
+    /// let small_ciphertext = Message::encrypt(&small_msg, &key);
+    /// let small_decryption = CipherText::decrypt(&small_ciphertext, &Key::gen(&mut rng));
+    ///
+    /// println!("The API makes it hard to make this example work the way I want, but sometimes decrypting with the incorrect key will still decrypt to something sensible. This is because shift ciphers preserve patterns in the original message in the ciphertext as well. Here is a small example, where we can more easily see this:
+    /// \n plaintext is {}, ciphertext is {}, and decryption under a random key gives {}", small_msg.as_string(), small_ciphertext.as_string(), small_decryption.as_string())
     /// ```
     ///
     pub fn decrypt(&self, key: &Key) -> Message {
@@ -247,6 +261,8 @@ impl Key {
     ///
     /// Note that the mathematical description of the Latin Shift Cipher, as well as this implementation,
     /// does not disallow a key of 0, so sometimes the encryption algorithm is just the identity function.
+    ///
+    /// This is, after all, a cryptosystem designed for use by humans and not computers. Humans are not as good at computers at picking a value mod 26 uniformly at random, but we tend not to pick a key of 0 and send our private messages to their recipients in plaintext. Oh wait ...  we do this all the time, in the form of emails.
     ///
     /// # Examples
     /// ```
