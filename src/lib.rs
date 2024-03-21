@@ -22,22 +22,6 @@
 //! We allow for messages (and, correspondingly, ciphertexts) of arbitrary length, because in practice we can encrypt (and decrypt) using ordered sequences of ring elements (i.e., plaintexts and ciphertexts, respectively).
 // (&#x2124; is Unicode for blackboard bold Z)
 
-// TODOs:
-// - There are no examples in the documentation.
-// - Tests were lazily written and not comprehensive
-// - Probably not following API guidelines
-// - Data types were inefficiently chosen I think
-// - I am not clear on visibility/scope
-// - Use of randomness might have problems
-// - Doesn't have any attacks implemented yet
-// - Doesn't have an examples crate for a demo
-// - Probably many other things
-// - Doesn't handle inputs nicely, could e.g. handle white spaces in strings either here
-// or in example
-// What should be a unit test and what should be doc test?
-// (De)Serialization?
-// It would be nice to figure out how to incorporate something like LaTeX in the docs, e.g., maybe katex via the `katex_doc` crate.
-
 use rand::{CryptoRng, Rng};
 use std::ops::{Add, Sub};
 
