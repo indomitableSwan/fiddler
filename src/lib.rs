@@ -62,7 +62,6 @@ const ALPH_ENCODING: [(char, i8); 26] = [
 const MODULUS: usize = ALPH_ENCODING.len();
 
 /// An implementation of the ring &#x2124;/_m_&#x2124;, where _m_ is set to [`MODULUS`].
-// TODO: Reconsider data types, work with bytes instead? Or bits via bitvec?
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 struct RingElement(i8);
 
@@ -83,22 +82,23 @@ impl RingElement {
         ALPH_ENCODING.iter().find(|&&x| x.1 == self.0).unwrap().0
     }
 
-    /// The canonical form of a `RingElement`, i.e., reduced by [`MODULUS`].
+    /// The canonical form of a ring element, i.e., reduced by [`MODULUS`].
     // Note: So far... this isn't used anywhere.
     fn canonical(&self) -> Self {
         Self((self.0).rem_euclid(MODULUS as i8))
     }
 
     /// Generate a ring element uniformly at random.
-    // Notes:
-    // 1. This is easy here because we used i8 as the underlying type for RingElement
-    // and choosing uniformly from a range is already implemented for i8 in rand.
-    // But note that in general you must be careful,
-    // e.g., if you pick a u8 from the uniform distribution
-    // and then reduce mod 26, you will pick each of {24, 25} with probability
-    // 4/128 and all other elements with probability 5/128
-    // 2. `CryptoRng` is a marker trait to indicate generators suitable for crypto,
-    // but user beware.
+    ///
+    /// Implementation notes:
+    /// 1. This is easy here because we used `i8` as the underlying type for `RingElement`
+    /// and choosing uniformly from a range is already implemented for `i8` in `rand`.
+    /// But note that in general you must be careful,
+    /// e.g., if you pick a `u8` from the uniform distribution
+    /// and then reduce mod 26, you will pick each of {24, 25} with probability
+    /// 4/128 and all other elements with probability 5/128
+    /// 2. `CryptoRng` is a marker trait to indicate generators suitable for crypto,
+    /// but user beware.
     fn gen<R: Rng + CryptoRng>(rng: &mut R) -> Self {
         let elmt: i8 = rng.gen_range(0..MODULUS as i8);
         Self(elmt)
@@ -211,18 +211,33 @@ impl CipherText {
     /// let decrypted = CipherText::decrypt(&ciphertxt, &key);
     ///
     /// println!(
-    ///    "If we decrypt using the correct key, we get our original message back: {}", decrypted.as_string());
+    ///    "If we decrypt using the correct key, we get our original
+    /// message back: {}", decrypted.as_string());
     ///
-    /// // If we decrypt with the wrong key, we won't get our original message back
-    /// println!("If we decrypt using an incorrect key, we do not get our original message back: {}", CipherText::decrypt(&ciphertxt, &Key::gen(&mut rng)).as_string());
+    /// println!("If we decrypt using an incorrect key, we do not get
+    ///  our original message back: {}",
+    /// CipherText::decrypt(&ciphertxt, &Key::gen(&mut rng)).as_string());
     ///
-    /// // With some non-negligible frequency, you won't get nonsense on decryption with the wrong key, but the possible message space is restricted beyond just the length of the message itself. This is because shift ciphers preserve other message patterns, too. Note that if the message is very short and you only have one sample, one ciphertext may not be enough to definitively break the system with a brute force attack. But likely there is other context available to validate possible plaintexts.
+    /// // With some non-negligible frequency, you won't get nonsense on
+    /// // decryption with the wrong key, but the possible message space
+    /// // is restricted beyond just the length of the message itself.
+    /// // This is because shift ciphers preserve other message patterns,
+    /// // too. Note that if the message is very short and you only have
+    /// // one sample, one ciphertext may not be enough to definitively
+    /// // break the system with a brute force attack. But likely there
+    /// // is other context available to validate possible plaintexts.
     /// let small_msg = Message::new("dad".to_string());
     /// let small_ciphertext = Message::encrypt(&small_msg, &key);
-    /// let small_decryption = CipherText::decrypt(&small_ciphertext, &Key::gen(&mut rng));
+    /// let small_decryption = CipherText::decrypt(&small_ciphertext,
+    ///  &Key::gen(&mut rng));
     ///
-    /// println!("The API makes it hard to make this example work the way I want, but sometimes decrypting with the incorrect key will still decrypt to something sensible. This is because shift ciphers preserve patterns in the original message in the ciphertext as well. Here is a small example, where we can more easily see this:
-    /// \n plaintext is {}, ciphertext is {}, and decryption under a random key gives {}", small_msg.as_string(), small_ciphertext.as_string(), small_decryption.as_string())
+    /// println!("The API makes it hard to make this example work the way
+    /// I want consistently, but here is a small example, where we can more
+    /// easily see the preservation of patterns:
+    /// \n plaintext is {}, ciphertext is {},
+    ///  and decryption under a random key gives {}",
+    /// small_msg.as_string(), small_ciphertext.as_string(),
+    /// small_decryption.as_string())
     /// ```
     ///
     pub fn decrypt(&self, key: &Key) -> Message {
@@ -244,7 +259,8 @@ impl CipherText {
     /// # let msg = Message::new("thisisanawkwardapichoice".to_string());
     /// # let ciphertxt = Message::encrypt(&msg, &key);
     /// # let decrypted = CipherText::decrypt(&ciphertxt, &key);
-    /// println!("The corresponding ciphertext is {}", ciphertxt.as_string());
+    /// println!("The corresponding ciphertext is {}",
+    ///  ciphertxt.as_string());
     /// ```
     ///
     pub fn as_string(&self) -> String {
@@ -262,7 +278,10 @@ impl Key {
     /// Note that the mathematical description of the Latin Shift Cipher, as well as this implementation,
     /// does not disallow a key of 0, so sometimes the encryption algorithm is just the identity function.
     ///
-    /// This is, after all, a cryptosystem designed for use by humans and not computers. Humans are not as good at computers at picking a value mod 26 uniformly at random, but we tend not to pick a key of 0 and send our private messages to their recipients in plaintext. Oh wait ...  we do this all the time, in the form of emails.
+    /// This is, after all, a cryptosystem designed for use by humans and not computers. Humans are not
+    ///  as good at computers at picking a value mod 26 uniformly at random, but we tend not to pick a key of 0
+    /// and send our private messages to their recipients in plaintext. Oh wait ...  
+    /// we do this all the time, in the form of emails.
     ///
     /// # Examples
     /// ```
