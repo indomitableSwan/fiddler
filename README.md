@@ -9,6 +9,8 @@ To build, run
 
 If you have never used  the `cargo-make` task runner before, see [here](https://github.com/sagiegurari/cargo-make?tab=readme-ov-file#installation) for installation instructions.
 
+Note that we do not track _Cargo.lock_ in this repository, so builds are not considered reproducible.
+
 # documentation
 
 Documentation is built automatically by `cargo make`. After building, open `fiddler/target/doc/fiddler/index.html` in any browser. 
@@ -20,3 +22,7 @@ cargo doc --no-deps --open
 `cargo doc --open`, depending on whether or not you want to build docs for dependencies as well as `fiddler`.
 
 Since this is a learning crate, it may also be helpful to document private items. To do so, pass the option `--document-private-items` to `cargo doc`.
+
+# example
+
+We have a working demo of the Latin Shift Cipher; this is a very simple command line application that makes use of our public API.

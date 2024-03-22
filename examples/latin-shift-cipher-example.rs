@@ -1,46 +1,155 @@
 use fiddler::{CipherText, Key, Message};
 use rand::thread_rng;
+use std::io;
 
 fn main() {
-    // Set up an rng
+    println!(
+        "\nWelcome to the Latin Shift Cipher Demo! Please enter one of the following options:"
+    );
+    println!("1: Generate a key");
+    println!("2: Enter a message to encrypt");
+    println!("3: Decrypt a message with a key");
+
+    process_menu_option();
+}
+
+// Creates a key and prints the key to standard output.
+fn make_key() {
+    // Set up an rng.
     let mut rng = thread_rng();
 
     // Generate a key
     let key = Key::gen(&mut rng);
 
-    // We can print a key, or print it to a log if we wanted to. We shouldn't. Key handling is another, more complicated and error-prone topic.
-    //
-    // Note that the mathematical description of the Latin Shift Cipher, as well as this implementation, does not disallow a key of 0, so sometimes the encryption algorithm is just the identity function.
-    //
-    // This is a cryptosystem designed for use by humans and not computers. Humans are not as good at computers at picking a value mod 26 uniformly at random, but they also won't picka  key of 0 and send their private message to their recipient in plaintext. Oh wait, they do this all the time, in the form of emails.
-    println!("We can print our key value, but generally speaking we shouldn't. \n Here is our key value: {:?}", key);
+    println!("\nWe generated your key successfully!");
+    println!(
+        "\nWe shouldn't print your key (or say, save it in logs), but we can! Here it is: {}",
+        key.into_i8()
+    );
+    println!("\nAre you happy with your key? Enter Y for yes and N for no.");
 
-    let msg = Message::new("idefinitelydonotwritemymessagesthiswaysoinitialapichoiceswerenotstellarbutitiswhatisinstinson".to_string());
+    let mut input = String::new();
 
-    // Encrypt msg and print Ciphertext as String
+    io::stdin()
+        .read_line(&mut input)
+        .expect("Failed to read line");
+
+    let input: char = input.trim().parse().expect("Please type Y or N!");
+    println!("You chose {input}.");
+
+    match input {
+        'N' => {make_key();}, // Note that we will reinitialize our rng, which is a bit silly.
+        'Y' => println!("\nGreat! We don't have a file system implemented (much less a secure one), so please remember your key in perpetuity!"),
+        // all other numbers
+        _ => panic!(),
+    }
+    main()
+}
+
+fn encrypt() {
+    println!("\nDo you have a key that was generated uniformly at random that you remember and would like to use? If yes, please enter your key. Otherwise, please pick a fresh key uniformly at random from the ring of integers modulo 26 yourself. \n\nYou won't be as good at this as a computer, but if you understand the cryptosystem you are using (something we cryptographers routinely assume about other people, while pretending that we aren't assuming this), you will probably not pick a key of 0, which is equivalent to sending your messages \"in the clear\", i.e., unencrypted. Good luck! \n\nGo ahead and enter your key now:");
+
+    let key = process_key();
+
+    let msg = process_msg();
+
     let ciphertxt = Message::encrypt(&msg, &key);
 
-    // We can print our message and corresponding ciphertext as Strings
-    println!("Our message is {}", msg.as_string());
-    println!("The corresponding ciphertext is {}", ciphertxt.as_string());
+    println!("\nCiphertexts are always printed in ALL CAPS to avoid confusion with plaintexts.");
+    println!("\nYour ciphertext is {}", ciphertxt.as_string());
+    println!("\nLook for patterns in your ciphertext. Could you definitively figure out the key and original plaintext message if you didn't already know it?");
+}
 
-    // We can decrypt our ciphertext and print the resulting message. Humans are very quick at understanding mashed up plaintexts without  punctuation and spacing. Computers have to check dictionaries.
-    println!(
-        "If we decrypt using the correct key, we get our original message back: {}",
-        CipherText::decrypt(&ciphertxt, &key).as_string()
-    );
+fn decrypt() {
+    let ciphertext = process_ciphertext();
 
-    // If we decrypt with the wrong key, we won't get our original message back
-    println!(
-        "If we decrypt using an incorrect key, we do not get our original message back: {}",
-        CipherText::decrypt(&ciphertxt, &Key::gen(&mut rng)).as_string()
-    );
+    println!("\nGreat, let's work on decrypting your ciphertext. Do you know what key was used to encrypt this message?. If so, enter it now. If not, feel free to guess!");
 
-    // With some non-negligible frequency, you won't get nonsense on decryption with the wrong key, but the possible message space is restricted beyond just the length of the message itself. This is because shift ciphers preserve other message patterns, too. Note that if the message is very short and you only have one sample, one ciphertext may not be enough to definitively break the system with a brute force attack. But likely there is other context available to validate possible plaintexts.
-    let small_msg = Message::new("dad".to_string());
-    let small_ciphertext = Message::encrypt(&small_msg, &key);
-    let small_decryption = CipherText::decrypt(&small_ciphertext, &Key::gen(&mut rng));
+    let key = process_key();
 
-    println!("The API makes it hard to make this example work the way I want, but sometimes decrypting with the incorrect key will still decrypt to something sensible. This is because shift ciphers preserve patterns in the original message in the ciphertext as well. Here is a small example, where we can more easily see this: 
-    \n plaintext is {}, ciphertext is {}, and decryption under a random key gives {}", small_msg.as_string(), small_ciphertext.as_string(), small_decryption.as_string())
+    let msg = CipherText::decrypt(&ciphertext, &key);
+    println!("\nYour plaintext is {}", msg.as_string());
+
+    main()
+}
+
+// Matches on the option input by the user to either generate a key, encrypt a message, or decrypt a message.
+fn process_menu_option() {
+    let mut input = String::new();
+
+    io::stdin()
+        .read_line(&mut input)
+        .expect("Failed to read line"); // Crashing the program instead of handling errors is suboptimal.
+
+    // Use shadowing to convert String to u8.
+    // `trim`` eliminates white space and newlines/carriage returns at beginning and end.
+    // `parse` converts a string to another type.
+    let input: u8 = input.trim().parse().expect("Please type 1, 2, or 3!");
+    println!("\nYou chose option {input}.");
+
+    match input {
+        1 => {
+            make_key();
+        }
+        2 => {
+            encrypt();
+        }
+        3 => {
+            decrypt();
+        }
+        // all other numbers
+        _ => panic!(),
+    }
+}
+
+// Reads a value from standard input and converts to a `Key`.
+fn process_key() -> Key {
+    let mut input = String::new();
+
+    io::stdin()
+        .read_line(&mut input)
+        .expect("Failed to read line");
+
+    let key: i8 = input
+        .trim()
+        .parse()
+        .expect("Please type a number between 0 and 25 (inclusive)");
+    println!("Thank you. You entered {key}.");
+
+    match key {
+        x if 0 <= x && x <= 25 => {
+            let key = Key::from(key);
+            return key;
+        }
+        _ => process_key(),
+    }
+}
+
+// Reads a value from standard input and converts to a `Message`.
+fn process_msg() -> Message {
+    println!("\nNow enter the message you want to encrypt. We only accept lowercase letters from the Latin Alphabet, in one of the most awkward API decisions ever:");
+    let mut input = String::new();
+
+    io::stdin()
+        .read_line(&mut input)
+        .expect("Failed to read line");
+
+    let msg: Message = Message::new(input.trim().parse().expect(
+        "Please only use lowercase letters from the Latin Alphabet to construct your message",
+    ));
+    println!("\nYou wrote the message: {}", msg.as_string());
+    msg
+}
+
+fn process_ciphertext() -> CipherText {
+    println!("\nEnter your ciphertext. Ciphertexts are always ALL CAPS, with no whitespaces, and use characters only from the Latin Alphabet:");
+
+    let mut input = String::new();
+
+    io::stdin()
+        .read_line(&mut input)
+        .expect("Failed to read line");
+
+    let temp: String = input.trim().parse().expect("Please remember ciphertexts must be ALL CAPS and contain only characters from the Latin Alphabet");
+    CipherText::from(temp)
 }

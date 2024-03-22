@@ -25,6 +25,7 @@
 use rand::{CryptoRng, Rng};
 use std::ops::{Add, Sub};
 
+
 /// The default alphabet encoding for the Latin Shift Cipher.
 const ALPH_ENCODING: [(char, i8); 26] = [
     ('a', 0),
@@ -272,7 +273,42 @@ impl CipherText {
     }
 }
 
+impl From<String> for CipherText{
+    fn from(item: String) -> Self {
+        let mut ciphertxt = Vec::new();
+
+        let temp = item.to_lowercase();
+
+        for c in temp.chars() {
+            ciphertxt.push(RingElement::from_char(c));
+        }
+        CipherText(ciphertxt)
+}
+}
+
 impl Key {
+    /// Returns the value of `Key` as an `i8`.
+    /// # Examples
+    /// ```
+    /// # use fiddler::{CipherText, Key, Message};
+    /// # // Don't forget to include the `rand` crate!
+    /// # use rand::thread_rng;
+    /// # //
+    /// # // Initialize a cryptographic rng.
+    /// # let mut rng = thread_rng();
+    /// # //
+    /// # // Generate a key
+    /// # let key = Key::gen(&mut rng);
+    /// # //
+    /// // We can print a key, or print it to a log if we wanted to.
+    /// // We shouldn't. Key handling is another, more complicated
+    /// // and error-prone topic. Here we print the value of the key
+    /// // as an `i8`:
+    /// println!("Here is our key value: {}", key.as_i8());
+    /// ```
+    pub fn into_i8(&self) -> i8 {
+        self.0 .0
+    }
     /// Generate a cryptographic key uniformly at random from the key space.
     ///
     /// Note that the mathematical description of the Latin Shift Cipher, as well as this implementation,
@@ -306,6 +342,12 @@ impl Key {
     pub fn gen<R: Rng + CryptoRng>(rng: &mut R) -> Self {
         Self(RingElement::gen(rng))
     }
+}
+
+impl From<i8> for Key{
+    fn from(item: i8) -> Self {
+        Key(RingElement(item))
+}
 }
 
 #[cfg(test)]
