@@ -25,7 +25,6 @@
 use rand::{CryptoRng, Rng};
 use std::ops::{Add, Sub};
 
-
 /// The default alphabet encoding for the Latin Shift Cipher.
 const ALPH_ENCODING: [(char, i8); 26] = [
     ('a', 0),
@@ -273,7 +272,7 @@ impl CipherText {
     }
 }
 
-impl From<String> for CipherText{
+impl From<String> for CipherText {
     fn from(item: String) -> Self {
         let mut ciphertxt = Vec::new();
 
@@ -283,7 +282,7 @@ impl From<String> for CipherText{
             ciphertxt.push(RingElement::from_char(c));
         }
         CipherText(ciphertxt)
-}
+    }
 }
 
 impl Key {
@@ -304,7 +303,7 @@ impl Key {
     /// // We shouldn't. Key handling is another, more complicated
     /// // and error-prone topic. Here we print the value of the key
     /// // as an `i8`:
-    /// println!("Here is our key value: {}", key.as_i8());
+    /// println!("Here is our key value: {}", key.into_i8());
     /// ```
     pub fn into_i8(&self) -> i8 {
         self.0 .0
@@ -344,10 +343,10 @@ impl Key {
     }
 }
 
-impl From<i8> for Key{
+impl From<i8> for Key {
     fn from(item: i8) -> Self {
         Key(RingElement(item))
-}
+    }
 }
 
 #[cfg(test)]

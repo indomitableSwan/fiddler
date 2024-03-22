@@ -117,9 +117,9 @@ fn process_key() -> Key {
     println!("Thank you. You entered {key}.");
 
     match key {
-        x if 0 <= x && x <= 25 => {
+        x if (0..=25).contains(&x) => {
             let key = Key::from(key);
-            return key;
+            key
         }
         _ => process_key(),
     }
