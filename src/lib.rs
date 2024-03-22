@@ -24,6 +24,7 @@
 
 use rand::{CryptoRng, Rng};
 use std::ops::{Add, Sub};
+use std::str::FromStr;
 
 /// The default alphabet encoding for the Latin Shift Cipher.
 const ALPH_ENCODING: [(char, i8); 26] = [
@@ -272,16 +273,40 @@ impl CipherText {
     }
 }
 
-impl From<String> for CipherText {
-    fn from(item: String) -> Self {
+/// An error type required to implement `FromStr for Message`.
+/// TODO: Probably doing something wrong.
+#[derive(Debug, PartialEq, Eq)]
+pub struct ParseMessageError;
+
+impl FromStr for Message {
+    type Err = ParseCipherTextError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let mut msg = Vec::new();
+        for c in s.chars() {
+            msg.push(RingElement::from_char(c));
+        }
+        Ok(Message(msg))
+    }
+}
+
+/// An error type required to implement `FromStr for CipherText`.
+/// TODO: Probably doing something wrong.
+#[derive(Debug, PartialEq, Eq)]
+pub struct ParseCipherTextError;
+
+impl FromStr for CipherText {
+    type Err = ParseCipherTextError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
         let mut ciphertxt = Vec::new();
 
-        let temp = item.to_lowercase();
+        let temp = s.to_lowercase();
 
         for c in temp.chars() {
             ciphertxt.push(RingElement::from_char(c));
         }
-        CipherText(ciphertxt)
+        Ok(CipherText(ciphertxt))
     }
 }
 

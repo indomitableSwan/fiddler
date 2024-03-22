@@ -3,47 +3,97 @@ use rand::thread_rng;
 use std::io;
 
 fn main() {
-    println!(
-        "\nWelcome to the Latin Shift Cipher Demo! Please enter one of the following options:"
-    );
-    println!("1: Generate a key");
-    println!("2: Enter a message to encrypt");
-    println!("3: Decrypt a message with a key");
+    println!("\nWelcome to the Latin Shift Cipher Demo!");
 
-    process_menu_option();
+    menu();
 }
 
-// Creates a key and prints the key to standard output.
+// Prints menu of user options and matches on user input to do one of:
+// Generate a key, encrypt a message, decrypt a message.
+fn menu() {
+    loop {
+        println!("\nPlease enter one of the following options:");
+        println!("1: Generate a key");
+        println!("2: Encrypt a message");
+        println!("3: Decrypt a ciphertext");
+        println!("4: Quit");
+
+        let mut input = String::new();
+
+        io::stdin()
+            .read_line(&mut input)
+            .expect("Failed to read line"); // Crashing the program instead of handling errors is suboptimal.
+
+        // Use shadowing to convert String to u8.
+        // `trim`` eliminates white space and newlines/carriage returns at beginning and end.
+        // `parse` converts a string to another type.
+        let input: u8 = match input.trim().parse() {
+            Ok(num) => num,
+            Err(_) => continue,
+        };
+
+        println!("\nYou entered {input}.");
+
+        match input {
+            1 => {
+                make_key();
+            }
+            2 => {
+                encrypt();
+            }
+            3 => {
+                decrypt();
+            }
+            4 => break,
+            // all other u8s
+            _ => continue,
+        }
+    }
+}
+
+// Creates keys and prints the key to standard output.
 fn make_key() {
     // Set up an rng.
     let mut rng = thread_rng();
 
-    // Generate a key
-    let key = Key::gen(&mut rng);
+    'outer: loop {
+        // Generate a key
+        let key = Key::gen(&mut rng);
 
-    println!("\nWe generated your key successfully!");
-    println!(
-        "\nWe shouldn't print your key (or say, save it in logs), but we can! Here it is: {}",
-        key.into_i8()
-    );
-    println!("\nAre you happy with your key? Enter Y for yes and N for no.");
+        println!("\nWe generated your key successfully!");
+        println!(
+            "\nWe shouldn't print your key (or say, save it in logs), but we can! Here it is: {}",
+            key.into_i8()
+        );
+        println!("\nAre you happy with your key? Enter Y for yes and N for no.");
 
-    let mut input = String::new();
+        loop {
+            let mut input = String::new();
 
-    io::stdin()
-        .read_line(&mut input)
-        .expect("Failed to read line");
+            io::stdin()
+                .read_line(&mut input)
+                .expect("Failed to read line");
 
-    let input: char = input.trim().parse().expect("Please type Y or N!");
-    println!("You chose {input}.");
+            let input: char = match input.trim().parse() {
+                Ok(c) => c,
+                Err(_) => continue,
+            };
 
-    match input {
-        'N' => {make_key();}, // Note that we will reinitialize our rng, which is a bit silly.
-        'Y' => println!("\nGreat! We don't have a file system implemented (much less a secure one), so please remember your key in perpetuity!"),
-        // all other numbers
-        _ => panic!(),
+            match input {
+                'N' => break,
+                'Y' => {
+                    println!("\nGreat! We don't have a file system implemented (much less a secure one), so please remember your key in perpetuity!");
+                    break 'outer;
+                }
+                // all other chars
+                _ => {
+                    println!("\nYou entered {input}.");
+                    println!("Enter Y for yes and N for no.");
+                    continue;
+                }
+            }
+        }
     }
-    main()
 }
 
 fn encrypt() {
@@ -51,11 +101,13 @@ fn encrypt() {
 
     let key = process_key();
 
+    println!("\nNow enter the message you want to encrypt:");
+
     let msg = process_msg();
+    println!("Your message is {}", msg.as_string());
 
     let ciphertxt = Message::encrypt(&msg, &key);
 
-    println!("\nCiphertexts are always printed in ALL CAPS to avoid confusion with plaintexts.");
     println!("\nYour ciphertext is {}", ciphertxt.as_string());
     println!("\nLook for patterns in your ciphertext. Could you definitively figure out the key and original plaintext message if you didn't already know it?");
 }
@@ -63,93 +115,92 @@ fn encrypt() {
 fn decrypt() {
     let ciphertext = process_ciphertext();
 
-    println!("\nGreat, let's work on decrypting your ciphertext. Do you know what key was used to encrypt this message?. If so, enter it now. If not, feel free to guess!");
+    println!("\nGreat, let's work on decrypting your ciphertext.");
+    println!("Do you know what key was used to encrypt this message?. If so, enter it now. If not, feel free to guess!");
 
     let key = process_key();
 
     let msg = CipherText::decrypt(&ciphertext, &key);
-    println!("\nYour plaintext is {}", msg.as_string());
-
-    main()
-}
-
-// Matches on the option input by the user to either generate a key, encrypt a message, or decrypt a message.
-fn process_menu_option() {
-    let mut input = String::new();
-
-    io::stdin()
-        .read_line(&mut input)
-        .expect("Failed to read line"); // Crashing the program instead of handling errors is suboptimal.
-
-    // Use shadowing to convert String to u8.
-    // `trim`` eliminates white space and newlines/carriage returns at beginning and end.
-    // `parse` converts a string to another type.
-    let input: u8 = input.trim().parse().expect("Please type 1, 2, or 3!");
-    println!("\nYou chose option {input}.");
-
-    match input {
-        1 => {
-            make_key();
-        }
-        2 => {
-            encrypt();
-        }
-        3 => {
-            decrypt();
-        }
-        // all other numbers
-        _ => panic!(),
-    }
+    println!("\nYour plaintext is {}\n", msg.as_string());
 }
 
 // Reads a value from standard input and converts to a `Key`.
+// Loops until user enters a valid key value.
+// TODO: check loops and match statements, these are weird rn
 fn process_key() -> Key {
-    let mut input = String::new();
+    loop {
+        let mut input = String::new();
 
-    io::stdin()
-        .read_line(&mut input)
-        .expect("Failed to read line");
+        io::stdin()
+            .read_line(&mut input)
+            .expect("Failed to read line");
 
-    let key: i8 = input
-        .trim()
-        .parse()
-        .expect("Please type a number between 0 and 25 (inclusive)");
-    println!("Thank you. You entered {key}.");
+        let key: i8 = match input.trim().parse() {
+            Ok(num) => num,
+            Err(_) => {
+                println!(
+                    "Keys are a number between 0 and 25 inclusive. Please enter your key value:"
+                );
+                continue;
+            }
+        };
 
-    match key {
-        x if (0..=25).contains(&x) => {
-            let key = Key::from(key);
-            key
+        match key {
+            x if (0..=25).contains(&x) => {
+                break Key::from(key);
+            }
+            _ => {
+                println!(
+                    "Keys are a number between 0 and 25 inclusive. Please enter your key value:"
+                );
+                continue;
+            }
         }
-        _ => process_key(),
     }
 }
 
 // Reads a value from standard input and converts to a `Message`.
+// TODO: This code can still panic because lib.rs doesn't do any error handling.
+// TODO: this loop and match statment plus a return line is probably nto idiomatic
 fn process_msg() -> Message {
-    println!("\nNow enter the message you want to encrypt. We only accept lowercase letters from the Latin Alphabet, in one of the most awkward API decisions ever:");
-    let mut input = String::new();
+    loop {
+        let mut input = String::new();
 
-    io::stdin()
-        .read_line(&mut input)
-        .expect("Failed to read line");
+        io::stdin()
+            .read_line(&mut input)
+            .expect("Failed to read line");
 
-    let msg: Message = Message::new(input.trim().parse().expect(
-        "Please only use lowercase letters from the Latin Alphabet to construct your message",
-    ));
-    println!("\nYou wrote the message: {}", msg.as_string());
-    msg
+        let msg: Message = match input.trim().parse() {
+            Ok(txt) => txt,
+            Err(_) => {
+                println!("\nWe only accept lowercase letters from the Latin Alphabet, in one of the most awkward API decisions ever:");
+                continue;
+            }
+        };
+        return msg;
+    }
 }
 
+// TODO: This code can still panic because the underlying lib functions can (and do) panic
+// TODO: Doesn't seem idiomatic
 fn process_ciphertext() -> CipherText {
-    println!("\nEnter your ciphertext. Ciphertexts are always ALL CAPS, with no whitespaces, and use characters only from the Latin Alphabet:");
+    println!("\nEnter your ciphertext. Ciphertexts use characters only from the Latin Alphabet:");
+    loop {
+        let mut input = String::new();
 
-    let mut input = String::new();
+        io::stdin()
+            .read_line(&mut input)
+            .expect("Failed to read line");
 
-    io::stdin()
-        .read_line(&mut input)
-        .expect("Failed to read line");
+        let ciphertxt: CipherText = match input.trim().parse() {
+            Ok(txt) => txt,
+            Err(_) => {
+                println!("Ciphertext must only contain characters from the Latin Alphabet");
+                continue;
+            }
+        };
 
-    let temp: String = input.trim().parse().expect("Please remember ciphertexts must be ALL CAPS and contain only characters from the Latin Alphabet");
-    CipherText::from(temp)
+        println!("\nYou wrote the ciphertext: {}", ciphertxt.as_string());
+        return ciphertxt;
+    }
 }

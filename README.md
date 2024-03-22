@@ -23,6 +23,6 @@ cargo doc --no-deps --open
 
 Since this is a learning crate, it may also be helpful to document private items. To do so, pass the option `--document-private-items` to `cargo doc`.
 
-# example
+# examples
 
-We have a working demo of the Latin Shift Cipher; this is a very simple command line application that makes use of our public API.
+We have a working demo of the Latin Shift Cipher; this is a very simple command line application that makes use of our public API. To play with the demo, run `cargo run --example latin-shift-cipher-example`.
