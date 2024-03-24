@@ -58,7 +58,7 @@ fn make_key() {
 
     'outer: loop {
         // Generate a key
-        let key = Key::gen(&mut rng);
+        let key = Key::new(&mut rng);
 
         println!("\nWe generated your key successfully!");
         println!(
@@ -104,24 +104,23 @@ fn encrypt() {
     println!("\nNow enter the message you want to encrypt:");
 
     let msg = process_msg();
-    println!("Your message is {}", msg.as_string());
 
-    let ciphertxt = Message::encrypt(&msg, &key);
-
-    println!("\nYour ciphertext is {}", ciphertxt.as_string());
+    println!("\nYour ciphertext is {}", msg.encrypt(&key).to_string());
     println!("\nLook for patterns in your ciphertext. Could you definitively figure out the key and original plaintext message if you didn't already know it?");
 }
 
 fn decrypt() {
-    let ciphertext = process_ciphertext();
+    let ciphertxt = process_ciphertext();
 
     println!("\nGreat, let's work on decrypting your ciphertext.");
     println!("Do you know what key was used to encrypt this message?. If so, enter it now. If not, feel free to guess!");
 
     let key = process_key();
 
-    let msg = CipherText::decrypt(&ciphertext, &key);
-    println!("\nYour plaintext is {}\n", msg.as_string());
+    println!(
+        "\nYour plaintext is {}\n",
+        ciphertxt.decrypt(&key).to_string()
+    );
 }
 
 // Reads a value from standard input and converts to a `Key`.
@@ -139,7 +138,7 @@ fn process_key() -> Key {
             Ok(num) => num,
             Err(_) => {
                 println!(
-                    "Keys are a number between 0 and 25 inclusive. Please enter your key value:"
+                    "A key is a number between 0 and 25 inclusive. Please enter your key value:"
                 );
                 continue;
             }
@@ -200,7 +199,7 @@ fn process_ciphertext() -> CipherText {
             }
         };
 
-        println!("\nYou wrote the ciphertext: {}", ciphertxt.as_string());
+        println!("\nYou wrote the ciphertext: {}", ciphertxt.to_string());
         return ciphertxt;
     }
 }

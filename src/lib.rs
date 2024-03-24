@@ -23,8 +23,11 @@
 // (&#x2124; is Unicode for blackboard bold Z)
 
 use rand::{CryptoRng, Rng};
-use std::ops::{Add, Sub};
-use std::str::FromStr;
+use std::{
+    fmt,
+    ops::{Add, Sub},
+    str::FromStr,
+};
 
 /// The default alphabet encoding for the Latin Shift Cipher.
 const ALPH_ENCODING: [(char, i8); 26] = [
@@ -63,7 +66,7 @@ const ALPH_ENCODING: [(char, i8); 26] = [
 const MODULUS: usize = ALPH_ENCODING.len();
 
 /// An implementation of the ring &#x2124;/_m_&#x2124;, where _m_ is set to [`MODULUS`].
-#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+#[derive(Copy, Clone, Debug, Default, Eq, Hash, PartialEq, PartialOrd, Ord)]
 struct RingElement(i8);
 
 impl RingElement {
@@ -79,8 +82,8 @@ impl RingElement {
     }
 
     /// Convert from a `RingElement` to a `char`.
-    fn as_char(&self) -> char {
-        ALPH_ENCODING.iter().find(|&&x| x.1 == self.0).unwrap().0
+    fn to_char(&self) -> &char {
+        &ALPH_ENCODING.iter().find(|&&x| x.1 == self.0).unwrap().0
     }
 
     /// The canonical form of a ring element, i.e., reduced by [`MODULUS`].
@@ -100,7 +103,7 @@ impl RingElement {
     /// 4/128 and all other elements with probability 5/128
     /// 2. `CryptoRng` is a marker trait to indicate generators suitable for crypto,
     /// but user beware.
-    fn gen<R: Rng + CryptoRng>(rng: &mut R) -> Self {
+    fn new<R: Rng + CryptoRng>(rng: &mut R) -> Self {
         let elmt: i8 = rng.gen_range(0..MODULUS as i8);
         Self(elmt)
     }
@@ -124,16 +127,25 @@ impl Sub for RingElement {
     }
 }
 
+impl fmt::Display for RingElement {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
 /// A plaintext of arbitrary length.
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Default, Eq, Hash, PartialEq)]
 pub struct Message(Vec<RingElement>);
 
 /// A ciphertext of arbitrary length.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, Default, Eq, Hash, PartialEq)]
 pub struct CipherText(Vec<RingElement>);
 
 /// A cryptographic key.
 // Crypto TODO: Keys should always contain context.
+// We *could* implement `Copy` and `Clone` here.
+// We do not because we want to discourage making copies of secrets.
+// However there is a lot more to best practices for handling keys than this.
 #[derive(Debug, Eq, PartialEq)]
 pub struct Key(RingElement);
 
@@ -145,14 +157,10 @@ impl Message {
     /// // We can't use spaces, punctuation, or capital letters:
     /// # use fiddler::{CipherText, Key, Message};
     /// # use rand::thread_rng;
-    /// let msg = Message::new("thisisanawkwardapichoice".to_string());
+    /// let msg = Message::new("thisisanawkwardapichoice");
     /// ```
-    pub fn new(str: String) -> Message {
-        let mut msg = Vec::new();
-        for c in str.chars() {
-            msg.push(RingElement::from_char(c));
-        }
-        Message(msg)
+    pub fn new(str: &str) -> Message {
+        Message::from_str(str).expect("Message parsing error")
     }
 
     /// Convert a message to a string.
@@ -165,14 +173,14 @@ impl Message {
     /// // Humans are very quick at understanding mashed up plaintexts
     /// // without punctuation and spacing.
     /// // Computers have to check dictionaries.
-    /// let msg = Message::new("thisisanawkwardapichoice".to_string());
-    /// println!("Our message is {}", msg.as_string());
+    /// let msg = Message::new("thisisanawkwardapichoice");
+    /// println!("Our message is {}", msg.to_string());
     /// ```
 
-    pub fn as_string(&self) -> String {
+    pub fn to_string(&self) -> String {
         let mut txt = String::new();
         for i in self.0.iter() {
-            txt.push(RingElement::as_char(i));
+            txt.push(*RingElement::to_char(i));
         }
         txt
     }
@@ -184,8 +192,8 @@ impl Message {
     /// # use fiddler::{CipherText, Key, Message};
     /// # use rand::thread_rng;
     /// # let mut rng = thread_rng();
-    /// # let key = Key::gen(&mut rng);
-    /// # let msg = Message::new("thisisanawkwardapichoice".to_string());
+    /// # let key = Key::new(&mut rng);
+    /// # let msg = Message::new("thisisanawkwardapichoice");
     /// let ciphertxt = Message::encrypt(&msg, &key);
     /// ```
     ///
@@ -206,18 +214,18 @@ impl CipherText {
     /// # use fiddler::{CipherText, Key, Message};
     /// # use rand::thread_rng;
     /// # let mut rng = thread_rng();
-    /// # let key = Key::gen(&mut rng);
-    /// # let msg = Message::new("thisisanawkwardapichoice".to_string());
+    /// # let key = Key::new(&mut rng);
+    /// # let msg = Message::new("thisisanawkwardapichoice");
     /// # let ciphertxt = Message::encrypt(&msg, &key);
     /// let decrypted = CipherText::decrypt(&ciphertxt, &key);
     ///
     /// println!(
     ///    "If we decrypt using the correct key, we get our original
-    /// message back: {}", decrypted.as_string());
+    /// message back: {}", decrypted.to_string());
     ///
     /// println!("If we decrypt using an incorrect key, we do not get
     ///  our original message back: {}",
-    /// CipherText::decrypt(&ciphertxt, &Key::gen(&mut rng)).as_string());
+    /// CipherText::decrypt(&ciphertxt, &Key::new(&mut rng)).to_string());
     ///
     /// // With some non-negligible frequency, you won't get nonsense on
     /// // decryption with the wrong key, but the possible message space
@@ -227,18 +235,18 @@ impl CipherText {
     /// // one sample, one ciphertext may not be enough to definitively
     /// // break the system with a brute force attack. But likely there
     /// // is other context available to validate possible plaintexts.
-    /// let small_msg = Message::new("dad".to_string());
+    /// let small_msg = Message::new("dad");
     /// let small_ciphertext = Message::encrypt(&small_msg, &key);
     /// let small_decryption = CipherText::decrypt(&small_ciphertext,
-    ///  &Key::gen(&mut rng));
+    ///  &Key::new(&mut rng));
     ///
     /// println!("The API makes it hard to make this example work the way
     /// I want consistently, but here is a small example, where we can more
     /// easily see the preservation of patterns:
     /// \n plaintext is {}, ciphertext is {},
     ///  and decryption under a random key gives {}",
-    /// small_msg.as_string(), small_ciphertext.as_string(),
-    /// small_decryption.as_string())
+    /// small_msg.to_string(), small_ciphertext.to_string(),
+    /// small_decryption.to_string())
     /// ```
     ///
     pub fn decrypt(&self, key: &Key) -> Message {
@@ -256,18 +264,19 @@ impl CipherText {
     /// # use fiddler::{CipherText, Key, Message};
     /// # use rand::thread_rng;
     /// # let mut rng = thread_rng();
-    /// # let key = Key::gen(&mut rng);
-    /// # let msg = Message::new("thisisanawkwardapichoice".to_string());
+    /// # let key = Key::new(&mut rng);
+    /// # let msg = Message::new("thisisanawkwardapichoice");
     /// # let ciphertxt = Message::encrypt(&msg, &key);
     /// # let decrypted = CipherText::decrypt(&ciphertxt, &key);
     /// println!("The corresponding ciphertext is {}",
-    ///  ciphertxt.as_string());
+    ///  ciphertxt.to_string());
     /// ```
     ///
-    pub fn as_string(&self) -> String {
+    // Naming this `to_string` to signify that the operation is expensive
+    pub fn to_string(&self) -> String {
         let mut txt: String = String::new();
         for i in self.0.iter() {
-            txt.push(RingElement::as_char(i));
+            txt.push(*RingElement::to_char(i));
         }
         txt.to_uppercase()
     }
@@ -322,7 +331,7 @@ impl Key {
     /// # let mut rng = thread_rng();
     /// # //
     /// # // Generate a key
-    /// # let key = Key::gen(&mut rng);
+    /// # let key = Key::new(&mut rng);
     /// # //
     /// // We can print a key, or print it to a log if we wanted to.
     /// // We shouldn't. Key handling is another, more complicated
@@ -353,7 +362,7 @@ impl Key {
     /// let mut rng = thread_rng();
     /// //
     /// // Generate a key
-    /// let key = Key::gen(&mut rng);
+    /// let key = Key::new(&mut rng);
     /// //
     /// // We can print a key, or print it to a log if we wanted to.
     /// // We shouldn't. Key handling is another, more complicated
@@ -363,8 +372,8 @@ impl Key {
     ///
     // Note: Keys must always be chosen according to a uniform distribution on the
     // underlying key space, i.e., the ring Z/26Z for the Latin Alphabet cipher.
-    pub fn gen<R: Rng + CryptoRng>(rng: &mut R) -> Self {
-        Self(RingElement::gen(rng))
+    pub fn new<R: Rng + CryptoRng>(rng: &mut R) -> Self {
+        Self(RingElement::new(rng))
     }
 }
 
@@ -414,6 +423,16 @@ mod tests {
     thread_local!(static CIPH0_STR: String = "HPHTWWXPPELEXTOYTRSE".to_string());
 
     #[test]
+    fn ring_elmt_tests() {
+        // Test Display impl
+        let x = RingElement(3);
+        assert_eq!(
+            format!("The ring element value is {x}"),
+            "The ring element value is 3"
+        );
+    }
+
+    #[test]
     fn encoding_0() {
         assert_eq!(RingElement::from_char('g').0, 6); // Sanity check on encoding
         assert_eq!(RingElement::from_char('w').0, 22); // Sanity check on encoding
@@ -448,7 +467,7 @@ mod tests {
     // Example 1.1, Stinson 3rd Edition, Example 2.1 Stinson 4th Edition
     fn msg_encoding_0() {
         assert_eq!(
-            Message::new("wewillmeetatmidnight".to_string()),
+            Message::new("wewillmeetatmidnight"),
             MSG0.with(|msg| msg.clone())
         ) // Message maps to ring correctly
     }
@@ -458,10 +477,10 @@ mod tests {
     fn enc_dec_0() {
         let key0 = Key(RingElement(11));
 
-        let ciph0 = Message::encrypt(&Message::new("wewillmeetatmidnight".to_string()), &key0);
+        let ciph0 = Message::encrypt(&Message::new("wewillmeetatmidnight"), &key0);
 
         assert_eq!(ciph0, CIPH0.with(|ciph| ciph.clone())); // Ciphertext maps to ring correctly
-        assert_eq!(ciph0.as_string(), CIPH0_STR.with(|ciph| ciph.clone())); // Ciphertext maps to string correctly
+        assert_eq!(ciph0.to_string(), CIPH0_STR.with(|ciph| ciph.clone())); // Ciphertext maps to string correctly
         assert_eq!(
             CipherText::decrypt(&ciph0, &key0),
             MSG0.with(|msg| msg.clone()) // Ciphertext decrypts correctly
@@ -473,11 +492,11 @@ mod tests {
     fn enc_dec_1() {
         let mut rng = rand::thread_rng();
 
-        let key1 = Key::gen(&mut rng);
-        let key2 = Key::gen(&mut rng);
+        let key1 = Key::new(&mut rng);
+        let key2 = Key::new(&mut rng);
 
-        let msg1 = Message::new("thisisatest".to_string());
-        let msg2 = Message::new("thisisanothertest".to_string());
+        let msg1 = Message::new("thisisatest");
+        let msg2 = Message::new("thisisanothertest");
 
         // This is a bad test because the key space is so small
         // ie this will fail with probability 1/26
@@ -510,7 +529,7 @@ mod tests {
         let key1 = Key(RingElement(rng.gen_range(0..MODULUS as i8)));
         let key2 = Key(RingElement(rng.gen_range(0..MODULUS as i8)));
 
-        let msg1 = Message::new("thisisyetanothertestmessage".to_string());
+        let msg1 = Message::new("thisisyetanothertestmessage");
 
         // This test is OK as long you check that it passes once
         assert_ne!(key1, key2);
