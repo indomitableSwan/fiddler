@@ -69,28 +69,33 @@ const MODULUS: usize = ALPH_ENCODING.len();
 #[derive(Copy, Clone, Debug, Default, Eq, Hash, PartialEq, PartialOrd, Ord)]
 struct RingElement(i8);
 
+/// A custom error type that is thrown when a conversion between the Latin Alphabet and
+/// the ring of integers modulo `MODULO`.
+#[derive(Copy, Clone, Debug, Default, Eq, Hash, PartialEq)]
+pub struct RingElementEncodingError;
+
 impl RingElement {
     /// Convert from a `char` to a `RingElement`.
-    fn from_char(ltr: char) -> Self {
-        RingElement(
-            ALPH_ENCODING
-                .iter()
-                .find(|&&x| x.0 == ltr)
-                .expect("Character not from Latin Alphabet")
-                .1,
-        )
+    fn from_char(ltr: char) -> Result<Self, RingElementEncodingError> {
+        ALPH_ENCODING
+            .iter()
+            .find(|&&x| x.0 == ltr)
+            .map(|(_, y)| RingElement(*y))
+            .ok_or(RingElementEncodingError)
     }
 
     /// Convert from a `RingElement` to a `char`.
-    fn to_char(self) -> char {
-        ALPH_ENCODING.iter().find(|&&x| x.1 == self.0).unwrap().0
+    // Should never get `None` here unless `ALPH_ENCODING` has an error.
+    fn to_char(self) -> Option<char> {
+        ALPH_ENCODING.iter().find(|&&x| x.1 == self.0).map(|c| c.0)
     }
-
+    /*
     /// The canonical form of a ring element, i.e., reduced by [`MODULUS`].
     // Note: So far... this isn't used anywhere.
     fn canonical(&self) -> Self {
         Self((self.0).rem_euclid(MODULUS as i8))
     }
+    */
 
     /// Generate a ring element uniformly at random.
     ///
@@ -242,18 +247,14 @@ impl CipherText {
     }
 }
 
-/// An error type required to implement `FromStr for Message`.
-/// TODO: Probably doing something wrong.
-#[derive(Debug, PartialEq, Eq)]
-pub struct ParseMessageError;
-
+/// TODO: Probably doing something wrong with error handling.
 impl FromStr for Message {
-    type Err = ParseCipherTextError;
+    type Err = RingElementEncodingError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let mut msg = Vec::new();
         for c in s.chars() {
-            msg.push(RingElement::from_char(c));
+            msg.push(RingElement::from_char(c)?);
         }
         Ok(Message(msg))
     }
@@ -263,19 +264,18 @@ impl fmt::Display for Message {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut txt = String::new();
         for i in self.0.iter() {
-            txt.push(RingElement::to_char(*i));
+            txt.push(match RingElement::to_char(*i) {
+                Some(c) => c,
+                None => return Err(fmt::Error),
+            });
         }
         write!(f, "{txt}")
     }
 }
 
-/// An error type required to implement `FromStr for CipherText`.
-/// TODO: Probably doing something wrong.
-#[derive(Debug, PartialEq, Eq)]
-pub struct ParseCipherTextError;
-
+/// TODO: Probably doing something wrong with error handling
 impl FromStr for CipherText {
-    type Err = ParseCipherTextError;
+    type Err = RingElementEncodingError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let mut ciphertxt = Vec::new();
@@ -283,7 +283,7 @@ impl FromStr for CipherText {
         let temp = s.to_lowercase();
 
         for c in temp.chars() {
-            ciphertxt.push(RingElement::from_char(c));
+            ciphertxt.push(RingElement::from_char(c)?);
         }
         Ok(CipherText(ciphertxt))
     }
@@ -293,7 +293,10 @@ impl fmt::Display for CipherText {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut txt: String = String::new();
         for i in self.0.iter() {
-            txt.push(RingElement::to_char(*i));
+            txt.push(match RingElement::to_char(*i) {
+                Some(c) => c,
+                None => return Err(fmt::Error), // Should never happen
+            });
         }
         write!(f, "{ }", txt.to_uppercase()) // Following Stinson's convention, ciphertexts are ALL CAPS
     }
@@ -414,8 +417,8 @@ mod tests {
 
     #[test]
     fn encoding_0() {
-        assert_eq!(RingElement::from_char('g').0, 6); // Sanity check on encoding
-        assert_eq!(RingElement::from_char('w').0, 22); // Sanity check on encoding
+        assert_eq!(RingElement::from_char('g').unwrap().0, 6); // Sanity check on encoding
+        assert_eq!(RingElement::from_char('w').unwrap().0, 22); // Sanity check on encoding
 
         assert_eq!(RingElement(5) + RingElement(11), RingElement(16)); // Basic addition test
         assert_eq!(RingElement(22) + RingElement(11), RingElement(7)); // Addition test with overflow
@@ -430,17 +433,18 @@ mod tests {
         assert_eq!(RingElement(29) - RingElement(10), RingElement(19)); // Subtraction test with non-canonical elements
         assert_eq!(RingElement(30) - RingElement(-8), RingElement(12)); // Subtraction test with non-canonical elements
 
+        /*
         // Canonical works as expected
         assert_eq!(RingElement(37).canonical(), RingElement(11));
         assert_eq!(RingElement(-28).canonical(), RingElement(24));
         assert_eq!(RingElement(26).canonical(), RingElement(0));
         assert_eq!(RingElement(0), RingElement(26).canonical());
+        */
     }
 
     #[test]
-    #[should_panic(expected = "Character not from Latin Alphabet")]
     fn encoding_1() {
-        let _x = RingElement::from_char('_');
+        assert_eq!(RingElement::from_char('_'), Err(RingElementEncodingError));
     }
 
     #[test]

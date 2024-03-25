@@ -156,8 +156,7 @@ fn process_key() -> Key {
 }
 
 // Reads a value from standard input and converts to a `Message`.
-// TODO: This code can still panic because lib.rs doesn't do any error handling.
-// TODO: this loop and match statment plus a return line is probably nto idiomatic
+// TODO: this loop and match statment plus a return line is probably not idiomatic
 fn process_msg() -> Message {
     loop {
         let mut input = String::new();
@@ -169,7 +168,7 @@ fn process_msg() -> Message {
         let msg: Message = match input.trim().parse() {
             Ok(txt) => txt,
             Err(_) => {
-                println!("\nWe only accept lowercase letters from the Latin Alphabet, in one of the most awkward API decisions ever:");
+                println!("\nWe only accept lowercase letters from the Latin Alphabet, in one of the most awkward API decisions ever. Please try again:");
                 continue;
             }
         };
@@ -177,7 +176,6 @@ fn process_msg() -> Message {
     }
 }
 
-// TODO: This code can still panic because the underlying lib functions can (and do) panic
 // TODO: Doesn't seem idiomatic
 fn process_ciphertext() -> CipherText {
     println!("\nEnter your ciphertext. Ciphertexts use characters only from the Latin Alphabet:");
@@ -191,7 +189,7 @@ fn process_ciphertext() -> CipherText {
         let ciphertxt: CipherText = match input.trim().parse() {
             Ok(txt) => txt,
             Err(_) => {
-                println!("Ciphertext must only contain characters from the Latin Alphabet");
+                println!("Ciphertext must contain only characters from the Latin Alphabet, please try again:");
                 continue;
             }
         };
