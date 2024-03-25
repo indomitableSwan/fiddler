@@ -105,7 +105,7 @@ fn encrypt() {
 
     let msg = process_msg();
 
-    println!("\nYour ciphertext is {}", msg.encrypt(&key).to_string());
+    println!("\nYour ciphertext is {}", msg.encrypt(&key));
     println!("\nLook for patterns in your ciphertext. Could you definitively figure out the key and original plaintext message if you didn't already know it?");
 }
 
@@ -117,10 +117,7 @@ fn decrypt() {
 
     let key = process_key();
 
-    println!(
-        "\nYour plaintext is {}\n",
-        ciphertxt.decrypt(&key).to_string()
-    );
+    println!("\nYour plaintext is {}\n", ciphertxt.decrypt(&key));
 }
 
 // Reads a value from standard input and converts to a `Key`.
@@ -199,7 +196,7 @@ fn process_ciphertext() -> CipherText {
             }
         };
 
-        println!("\nYou wrote the ciphertext: {}", ciphertxt.to_string());
+        println!("\nYou wrote the ciphertext: {}", ciphertxt);
         return ciphertxt;
     }
 }

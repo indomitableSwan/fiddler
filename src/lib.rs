@@ -82,8 +82,8 @@ impl RingElement {
     }
 
     /// Convert from a `RingElement` to a `char`.
-    fn to_char(&self) -> &char {
-        &ALPH_ENCODING.iter().find(|&&x| x.1 == self.0).unwrap().0
+    fn to_char(self) -> char {
+        ALPH_ENCODING.iter().find(|&&x| x.1 == self.0).unwrap().0
     }
 
     /// The canonical form of a ring element, i.e., reduced by [`MODULUS`].
@@ -154,35 +154,19 @@ impl Message {
     /// # Examples
     /// ```
     /// // Creating this example shows how awkward our API is.
-    /// // We can't use spaces, punctuation, or capital letters:
+    /// // We can't use spaces, punctuation, or capital letters.
+    /// // That said, humans are very quick at understanding mashed up plaintexts
+    /// // without punctuation and spacing.
+    /// // Computers have to check dictionaries.
     /// # use fiddler::{CipherText, Key, Message};
     /// # use rand::thread_rng;
     /// let msg = Message::new("thisisanawkwardapichoice");
+    ///
+    /// // We can also print our message as a string:
+    /// println!("Our message is {msg}");
     /// ```
     pub fn new(str: &str) -> Message {
         Message::from_str(str).expect("Message parsing error")
-    }
-
-    /// Convert a message to a string.
-    /// # Examples
-    ///
-    /// ```
-    /// # use fiddler::{CipherText, Key, Message};
-    /// # use rand::thread_rng;
-    /// // We can print messages as strings.
-    /// // Humans are very quick at understanding mashed up plaintexts
-    /// // without punctuation and spacing.
-    /// // Computers have to check dictionaries.
-    /// let msg = Message::new("thisisanawkwardapichoice");
-    /// println!("Our message is {}", msg.to_string());
-    /// ```
-
-    pub fn to_string(&self) -> String {
-        let mut txt = String::new();
-        for i in self.0.iter() {
-            txt.push(*RingElement::to_char(i));
-        }
-        txt
     }
 
     /// Encrypt a message.
@@ -221,11 +205,11 @@ impl CipherText {
     ///
     /// println!(
     ///    "If we decrypt using the correct key, we get our original
-    /// message back: {}", decrypted.to_string());
+    /// message back: {}", decrypted);
     ///
     /// println!("If we decrypt using an incorrect key, we do not get
     ///  our original message back: {}",
-    /// CipherText::decrypt(&ciphertxt, &Key::new(&mut rng)).to_string());
+    /// CipherText::decrypt(&ciphertxt, &Key::new(&mut rng)));
     ///
     /// // With some non-negligible frequency, you won't get nonsense on
     /// // decryption with the wrong key, but the possible message space
@@ -245,8 +229,8 @@ impl CipherText {
     /// easily see the preservation of patterns:
     /// \n plaintext is {}, ciphertext is {},
     ///  and decryption under a random key gives {}",
-    /// small_msg.to_string(), small_ciphertext.to_string(),
-    /// small_decryption.to_string())
+    /// small_msg, small_ciphertext,
+    /// small_decryption)
     /// ```
     ///
     pub fn decrypt(&self, key: &Key) -> Message {
@@ -255,30 +239,6 @@ impl CipherText {
             msg.push(*i - key.0);
         }
         Message(msg)
-    }
-
-    /// Convert a ciphertext to a string of uppercase letters.
-    ///
-    /// # Examples
-    /// ```
-    /// # use fiddler::{CipherText, Key, Message};
-    /// # use rand::thread_rng;
-    /// # let mut rng = thread_rng();
-    /// # let key = Key::new(&mut rng);
-    /// # let msg = Message::new("thisisanawkwardapichoice");
-    /// # let ciphertxt = Message::encrypt(&msg, &key);
-    /// # let decrypted = CipherText::decrypt(&ciphertxt, &key);
-    /// println!("The corresponding ciphertext is {}",
-    ///  ciphertxt.to_string());
-    /// ```
-    ///
-    // Naming this `to_string` to signify that the operation is expensive
-    pub fn to_string(&self) -> String {
-        let mut txt: String = String::new();
-        for i in self.0.iter() {
-            txt.push(*RingElement::to_char(i));
-        }
-        txt.to_uppercase()
     }
 }
 
@@ -299,6 +259,16 @@ impl FromStr for Message {
     }
 }
 
+impl fmt::Display for Message {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let mut txt = String::new();
+        for i in self.0.iter() {
+            txt.push(RingElement::to_char(*i));
+        }
+        write!(f, "{txt}")
+    }
+}
+
 /// An error type required to implement `FromStr for CipherText`.
 /// TODO: Probably doing something wrong.
 #[derive(Debug, PartialEq, Eq)]
@@ -316,6 +286,16 @@ impl FromStr for CipherText {
             ciphertxt.push(RingElement::from_char(c));
         }
         Ok(CipherText(ciphertxt))
+    }
+}
+
+impl fmt::Display for CipherText {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let mut txt: String = String::new();
+        for i in self.0.iter() {
+            txt.push(RingElement::to_char(*i));
+        }
+        write!(f, "{ }", txt.to_uppercase()) // Following Stinson's convention, ciphertexts are ALL CAPS
     }
 }
 
