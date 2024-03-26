@@ -2,27 +2,57 @@ use fiddler::{CipherText, Key, Message};
 use rand::thread_rng;
 use std::io;
 
+// A struct that represents a user command.
+#[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]
+struct Command<'a> {
+    key: u8,
+    menu_msg: &'a str,
+    function: Option<fn()>,
+}
 fn main() {
     println!("\nWelcome to the Latin Shift Cipher Demo!");
-
     menu();
 }
 
 // Prints menu of user options and matches on user input to do one of:
 // Generate a key, encrypt a message, decrypt a message.
 fn menu() {
+    const MENU: [Command; 4] = [
+        Command {
+            key: 1,
+            menu_msg: "Generate a key",
+            function: Some(make_key),
+        },
+        Command {
+            key: 2,
+            menu_msg: "Encrypt a message",
+            function: Some(encrypt),
+        },
+        Command {
+            key: 3,
+            menu_msg: "Decrypt a ciphertext",
+            function: Some(decrypt),
+        },
+        Command {
+            key: 4,
+            menu_msg: "Quit",
+            function: None,
+        },
+    ];
+
     loop {
         println!("\nPlease enter one of the following options:");
-        println!("1: Generate a key");
-        println!("2: Encrypt a message");
-        println!("3: Decrypt a ciphertext");
-        println!("4: Quit");
+        for item in MENU {
+            println!("{}: {}", item.key, item.menu_msg)
+        }
 
         let mut input = String::new();
 
         io::stdin()
             .read_line(&mut input)
-            .expect("Failed to read line"); // Crashing the program instead of handling errors is suboptimal.
+            // Crashing the program instead of handling errors is suboptimal,
+            // but if reading from `stdin` fails, can we expect to recover somehow?
+            .expect("Failed to read line"); 
 
         // Use shadowing to convert String to u8.
         // `trim`` eliminates white space and newlines/carriage returns at beginning and end.
@@ -34,19 +64,19 @@ fn menu() {
 
         println!("\nYou entered {input}.");
 
-        match input {
-            1 => {
-                make_key();
-            }
-            2 => {
-                encrypt();
-            }
-            3 => {
-                decrypt();
-            }
-            4 => break,
-            // all other u8s
-            _ => continue,
+        // Find and extract command in `MENU` that matches
+        // the user input
+        let command = match MENU.iter().find(|&&x| x.key == input) {
+            Some(x) => x,
+            // If no match, restart loop to ask user again
+            None => continue,
+        };
+
+        // Extract the command's associated function and run it,
+        // Break the loop and exit if there is no such function
+        match command.function {
+            Some(x) => x(),
+            None => break,
         }
     }
 }
@@ -72,6 +102,8 @@ fn make_key() {
 
             io::stdin()
                 .read_line(&mut input)
+                // Crashing the program instead of handling errors is suboptimal,
+                // but if reading from `stdin` fails, can we expect to recover somehow?
                 .expect("Failed to read line");
 
             let input: char = match input.trim().parse() {
@@ -96,6 +128,8 @@ fn make_key() {
     }
 }
 
+// Takes in a key and a message and encrypts, then prints
+// the result
 fn encrypt() {
     println!("\nDo you have a key that was generated uniformly at random that you remember and would like to use? If yes, please enter your key. Otherwise, please pick a fresh key uniformly at random from the ring of integers modulo 26 yourself. \n\nYou won't be as good at this as a computer, but if you understand the cryptosystem you are using (something we cryptographers routinely assume about other people, while pretending that we aren't assuming this), you will probably not pick a key of 0, which is equivalent to sending your messages \"in the clear\", i.e., unencrypted. Good luck! \n\nGo ahead and enter your key now:");
 
@@ -109,6 +143,8 @@ fn encrypt() {
     println!("\nLook for patterns in your ciphertext. Could you definitively figure out the key and original plaintext message if you didn't already know it?");
 }
 
+// Takes in a ciphertext and a key and decrypts, then
+// prints result
 fn decrypt() {
     let ciphertxt = process_ciphertext();
 
@@ -163,6 +199,8 @@ fn process_msg() -> Message {
 
         io::stdin()
             .read_line(&mut input)
+            // Crashing the program instead of handling errors is suboptimal,
+            // but if reading from `stdin` fails, can we expect to recover somehow?
             .expect("Failed to read line");
 
         let msg: Message = match input.trim().parse() {
@@ -184,6 +222,8 @@ fn process_ciphertext() -> CipherText {
 
         io::stdin()
             .read_line(&mut input)
+            // Crashing the program instead of handling errors is suboptimal,
+            // but if reading from `stdin` fails, can we expect to recover somehow?
             .expect("Failed to read line");
 
         let ciphertxt: CipherText = match input.trim().parse() {
