@@ -11,6 +11,8 @@ If you have never used  the `cargo-make` task runner before, see [here](https://
 
 Note that we do not track _Cargo.lock_ in this repository, so builds are not considered reproducible.
 
+Also note that we are currently torturing ourselves by including a test that fails with probability 1/26. For ... reasons.
+
 # documentation
 
 Documentation is built automatically by `cargo make`. After building, open `fiddler/target/doc/fiddler/index.html` in any browser. 
