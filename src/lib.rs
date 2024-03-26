@@ -302,6 +302,22 @@ impl fmt::Display for CipherText {
     }
 }
 
+impl FromStr for Key {
+    type Err = RingElementEncodingError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let key = match i8::from_str(s) {
+            Ok(num) => num,
+            Err(_) => return Err(RingElementEncodingError),
+        };
+
+        match key {
+            x if (0..=25).contains(&x) => Ok(Key::from(key)),
+            _ => Err(RingElementEncodingError),
+        }
+    }
+}
+
 impl Key {
     /// Returns the value of `Key` as an `i8`.
     /// # Examples
