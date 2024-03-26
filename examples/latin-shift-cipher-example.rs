@@ -86,7 +86,7 @@ fn make_key() {
     // Set up an rng.
     let mut rng = thread_rng();
 
-    'outer: loop {
+    loop {
         // Generate a key
         let key = Key::new(&mut rng);
 
@@ -97,33 +97,33 @@ fn make_key() {
         );
         println!("\nAre you happy with your key? Enter Y for yes and N for no.");
 
-        loop {
-            let mut input = String::new();
+        let instr: Instr = process_input("Enter 'Y' for yes or 'N' for no.");
 
-            io::stdin()
-                .read_line(&mut input)
-                // Crashing the program instead of handling errors is suboptimal,
-                // but if reading from `stdin` fails, can we expect to recover somehow?
-                .expect("Failed to read line");
-
-            let input: char = match input.trim().parse() {
-                Ok(c) => c,
-                Err(_) => continue,
-            };
-
-            match input {
-                'N' => break,
-                'Y' => {
-                    println!("\nGreat! We don't have a file system implemented (much less a secure one), so please remember your key in perpetuity!");
-                    break 'outer;
-                }
-                // all other chars
-                _ => {
-                    println!("\nYou entered {input}.");
-                    println!("Enter Y for yes and N for no.");
-                    continue;
-                }
+        match instr {
+            Instr::No => continue,
+            Instr::Yes => {
+                println!("\nGreat! We don't have a file system implemented (much less a secure one), so please remember your key in perpetuity!");
+                break;
             }
+        };
+    }
+}
+
+enum Instr {
+    Yes,
+    No,
+}
+
+struct InstrError;
+
+impl FromStr for Instr {
+    type Err = InstrError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "Y" => Ok(Instr::Yes),
+            "N" => Ok(Instr::No),
+            _ => Err(InstrError),
         }
     }
 }
