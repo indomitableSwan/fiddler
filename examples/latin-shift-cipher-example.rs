@@ -46,27 +46,11 @@ fn menu() {
             println!("{}: {}", item.key, item.menu_msg)
         }
 
-        let mut input = String::new();
-
-        io::stdin()
-            .read_line(&mut input)
-            // Crashing the program instead of handling errors is suboptimal,
-            // but if reading from `stdin` fails, can we expect to recover somehow?
-            .expect("Failed to read line");
-
-        // Use shadowing to convert String to u8
-        // `trim`` eliminates white space and newlines/carriage returns at beginning and end.
-        // `parse` converts a string to another type
-        let input: u8 = match input.trim().parse() {
-            Ok(num) => num,
-            Err(_) => continue,
-        };
-
-        println!("\nYou entered {input}.");
+        let command: u8 = process_input("");
 
         // Find and extract command in `MENU` that matches
-        // the user input
-        let command = match MENU.iter().find(|&&x| x.key == input) {
+        // the command line input
+        let command = match MENU.iter().find(|&&x| x.key == command) {
             Some(x) => x,
             // If no match, restart loop to ask user again
             None => continue,
