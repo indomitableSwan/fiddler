@@ -70,13 +70,18 @@ const MODULUS: usize = ALPH_ENCODING.len();
 struct RingElement(i8);
 
 /// A custom error type that is thrown when a conversion between the Latin Alphabet and
-/// the ring of integers modulo `MODULO`.
+/// the ring of integers modulo [`MODULUS`] fails.
+///
+/// This error should only be thrown if there is:
+/// - A mistake in the definition of the constant [`ALPH_ENCODING`];
+/// - The input was not a lowercase letter from the Latin Alphabet.
 #[derive(Copy, Clone, Debug, Default, Eq, Hash, PartialEq)]
-pub struct RingElementEncodingError;
+struct RingElementEncodingError;
 
 impl RingElement {
-    /// Convert from a `char` to a `RingElement`.
+    /// Convert from a character to a ring element.
     fn from_char(ltr: char) -> Result<Self, RingElementEncodingError> {
+        // This constructor uses the encoding defined in `ALPH_ENCODING`.
         ALPH_ENCODING
             .iter()
             .find(|&&x| x.0 == ltr)
@@ -84,18 +89,29 @@ impl RingElement {
             .ok_or(RingElementEncodingError)
     }
 
-    /// Convert from a `RingElement` to a `char`.
-    // Should never get `None` here unless `ALPH_ENCODING` has an error.
-    fn to_char(self) -> Option<char> {
-        ALPH_ENCODING.iter().find(|&&x| x.1 == self.0).map(|c| c.0)
+    /// Convert from a ring element to a character.
+    ///
+    // This code will never panic unless the library developer has made an error.
+    fn to_char(self) -> char {
+        ALPH_ENCODING
+            .iter()
+            .find(|&&x| x.1 == self.0)
+            .map(|c| c.0)
+            .expect(
+                "Could not map to `char`: The definition of `ALPH_ENCODING` must have an error.",
+            )
     }
-    /*
-    /// The canonical form of a ring element, i.e., reduced by [`MODULUS`].
-    // Note: So far... this isn't used anywhere.
-    fn canonical(&self) -> Self {
-        Self((self.0).rem_euclid(MODULUS as i8))
+
+    /// Convert from an `i8` to a ring element.
+    ///
+    /// This function will compute the canonical form of the inner value, i.e.,
+    /// it will compute and use the least nonnegative remainder modulo `MODULUS`.
+    /// This is meant to reduce the likelihood of future library developers
+    /// constructing and using values of ring elements
+    /// for which the unchecked routines [`add`](RingElement::add) and [`sub`](RingElement::sub) will fail.
+    fn from_i8(int: i8) -> Self {
+        Self(int.rem_euclid(MODULUS as i8))
     }
-    */
 
     /// Generate a ring element uniformly at random.
     ///
@@ -118,8 +134,14 @@ impl Add for RingElement {
     type Output = Self;
 
     /// Computes the sum of `self` and `other`.
+    ///
+    /// Library devs: This operation is unchecked!
     fn add(self, other: Self) -> Self {
-        Self((self.0 + other.0).rem_euclid(MODULUS as i8))
+        Self(if (self.0 + other.0) > MODULUS as i8 {
+            self.0 + other.0 - MODULUS as i8
+        } else {
+            self.0 + other.0
+        })
     }
 }
 
@@ -127,8 +149,14 @@ impl Sub for RingElement {
     type Output = Self;
 
     /// Computes the difference of `self` and `other`.
+    ///
+    /// Library devs: This operation is unchecked!
     fn sub(self, other: Self) -> Self {
-        Self((self.0 - other.0).rem_euclid(MODULUS as i8))
+        Self(if (self.0 - other.0) < 0 {
+            self.0 - other.0 + MODULUS as i8
+        } else {
+            self.0 - other.0
+        })
     }
 }
 
@@ -147,6 +175,7 @@ pub struct Message(Vec<RingElement>);
 pub struct CipherText(Vec<RingElement>);
 
 /// A cryptographic key.
+///
 // Crypto TODO: Keys should always contain context.
 // We *could* implement `Copy` and `Clone` here.
 // We do not because we want to discourage making copies of secrets.
@@ -247,14 +276,26 @@ impl CipherText {
     }
 }
 
-/// TODO: Probably doing something wrong with error handling.
+/// An error type that indicates a failure to parse a string.
+///
+/// This is likely because the string violates one of the constraints
+/// for the desired value type. That is:
+///
+/// - For [`Message`] and [`CipherText`]: the string included
+/// characters that are not lowercase letters from the Latin Alphabet.
+/// - For [`Key`]: the string does not represent a number in the appropriate range.
+/// For the Latin Alphabet, this range is 0 to 25, inclusive.
+#[derive(Copy, Clone, Debug, Default, Eq, Hash, PartialEq)]
+pub struct EncodingError;
+
+/// Parse a message from a string.
 impl FromStr for Message {
-    type Err = RingElementEncodingError;
+    type Err = EncodingError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let mut msg = Vec::new();
         for c in s.chars() {
-            msg.push(RingElement::from_char(c)?);
+            msg.push(RingElement::from_char(c).or(Err(EncodingError))?);
         }
         Ok(Message(msg))
     }
@@ -264,18 +305,15 @@ impl fmt::Display for Message {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut txt = String::new();
         for i in self.0.iter() {
-            txt.push(match RingElement::to_char(*i) {
-                Some(c) => c,
-                None => return Err(fmt::Error),
-            });
+            txt.push(RingElement::to_char(*i));
         }
         write!(f, "{txt}")
     }
 }
 
-/// TODO: Probably doing something wrong with error handling
+/// Parse a ciphertext from a string.
 impl FromStr for CipherText {
-    type Err = RingElementEncodingError;
+    type Err = EncodingError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let mut ciphertxt = Vec::new();
@@ -283,7 +321,7 @@ impl FromStr for CipherText {
         let temp = s.to_lowercase();
 
         for c in temp.chars() {
-            ciphertxt.push(RingElement::from_char(c)?);
+            ciphertxt.push(RingElement::from_char(c).or(Err(EncodingError))?);
         }
         Ok(CipherText(ciphertxt))
     }
@@ -293,27 +331,25 @@ impl fmt::Display for CipherText {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut txt: String = String::new();
         for i in self.0.iter() {
-            txt.push(match RingElement::to_char(*i) {
-                Some(c) => c,
-                None => return Err(fmt::Error), // Should never happen
-            });
+            txt.push(RingElement::to_char(*i));
         }
         write!(f, "{ }", txt.to_uppercase()) // Following Stinson's convention, ciphertexts are ALL CAPS
     }
 }
 
+/// Parse a key from a string.
 impl FromStr for Key {
-    type Err = RingElementEncodingError;
+    type Err = EncodingError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let key = match i8::from_str(s) {
             Ok(num) => num,
-            Err(_) => return Err(RingElementEncodingError),
+            Err(_) => return Err(EncodingError),
         };
 
         match key {
-            x if (0..=25).contains(&x) => Ok(Key::from(key)),
-            _ => Err(RingElementEncodingError),
+            x if (0..=25).contains(&x) => Ok(Key::from(RingElement::from_i8(key))),
+            _ => Err(EncodingError),
         }
     }
 }
@@ -338,6 +374,8 @@ impl Key {
     /// // as an `i8`:
     /// println!("Here is our key value: {}", key.into_i8());
     /// ```
+    // TODO: re-evaluate how best to print a key value. Maybe some serialization/export API makes the most sense.
+    // See also the `FromStr` for `Key` implementation. And note that we purposely did not implement `Display` for `Key`
     pub fn into_i8(&self) -> i8 {
         self.0 .0
     }
@@ -376,9 +414,9 @@ impl Key {
     }
 }
 
-impl From<i8> for Key {
-    fn from(item: i8) -> Self {
-        Key(RingElement(item))
+impl From<RingElement> for Key {
+    fn from(item: RingElement) -> Self {
+        Key(item)
     }
 }
 
@@ -438,24 +476,16 @@ mod tests {
 
         assert_eq!(RingElement(5) + RingElement(11), RingElement(16)); // Basic addition test
         assert_eq!(RingElement(22) + RingElement(11), RingElement(7)); // Addition test with overflow
-        assert_eq!(RingElement(48) + RingElement(11), RingElement(7)); // Addition test with non-canonical elements
-        assert_eq!(RingElement(-3) + RingElement(11), RingElement(8)); // Addition test with non-canonical elements
-        assert_eq!(RingElement(-3) + RingElement(27), RingElement(24)); // Addition test with non-canonical elements
-        assert_eq!(RingElement(-3) + RingElement(-4), RingElement(19)); // Addition test with non-canonical elements
 
         assert_eq!(RingElement(11) - RingElement(3), RingElement(8)); // Basic subtraction test
         assert_eq!(RingElement(4) - RingElement(11), RingElement(19)); // Subtraction test with overflow
-        assert_eq!(RingElement(4) - RingElement(37), RingElement(19)); // Subtraction test with non-canonical elements
-        assert_eq!(RingElement(29) - RingElement(10), RingElement(19)); // Subtraction test with non-canonical elements
-        assert_eq!(RingElement(30) - RingElement(-8), RingElement(12)); // Subtraction test with non-canonical elements
 
-        /*
-        // Canonical works as expected
-        assert_eq!(RingElement(37).canonical(), RingElement(11));
-        assert_eq!(RingElement(-28).canonical(), RingElement(24));
-        assert_eq!(RingElement(26).canonical(), RingElement(0));
-        assert_eq!(RingElement(0), RingElement(26).canonical());
-        */
+        // `from_i8` works as expected
+        assert_eq!(RingElement::from_i8(37), RingElement(11));
+        assert_eq!(RingElement::from_i8(-28), RingElement(24));
+        assert_eq!(RingElement::from_i8(26), RingElement(0));
+        assert_eq!(RingElement::from_i8(-3), RingElement(23));
+        assert_eq!(RingElement::from_i8(5), RingElement(5));
     }
 
     #[test]
