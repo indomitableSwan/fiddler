@@ -355,6 +355,7 @@ impl FromStr for Key {
 }
 
 impl Key {
+    /*
     /// Returns the value of `Key` as an `i8`.
     /// # Examples
     /// ```
@@ -379,6 +380,7 @@ impl Key {
     pub fn into_i8(&self) -> i8 {
         self.0 .0
     }
+    */
     /// Generate a cryptographic key uniformly at random from the key space.
     ///
     /// Note that the mathematical description of the Latin Shift Cipher, as well as this implementation,

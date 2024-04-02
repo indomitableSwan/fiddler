@@ -1,3 +1,6 @@
+//! These integration tests exercise the public API of the crate, but they may not
+//! be entirely sensible as integration tests.
+//! 
 use fiddler::{CipherText, Key, Message};
 use rand::thread_rng;
 use std::str::FromStr;
@@ -7,13 +10,18 @@ fn generate_and_use_key() {
     let mut rng = thread_rng();
     let key0 = Key::new(&mut rng);
     let key1 = Key::new(&mut rng);
-    
-    let msg = Message::new("thisisanawkwardapichoice");
-    let ciphertxt = Message::encrypt(&msg, &key0);
-    let decrypted = CipherText::decrypt(&ciphertxt, &key0);
 
-    // If we decrypt using the correct key, we get our original
-    // message back.
+    // Exercise the `new` associated function.
+    let msg = Message::new("thisisanawkwardapichoice");
+    // We could also have used the `FromStr` implementation for `Message`.
+    assert_eq!(msg, Message::from_str("thisisanawkwardapichoice").unwrap());
+
+    // Encrypt the test message.
+    let ciphertxt = Message::encrypt(&msg, &key0);
+
+    // If we decrypt our ciphertext with the correct key, we
+    // get our original message back.
+    let decrypted = CipherText::decrypt(&ciphertxt, &key0);
     assert_eq!(decrypted, msg);
 
     // If we decrypt using an incorrect key, we do not get
@@ -21,7 +29,17 @@ fn generate_and_use_key() {
     if key0 != key1 {
         assert_ne!(CipherText::decrypt(&ciphertxt, &key1), msg);
     }
-    
+
+    // We can create ciphertexts from strings, too
+    let garbage_ciphertext = CipherText::from_str("THISISNOTGOINGTODECRYPTSENSIBLY").unwrap();
+    assert_eq!(
+        garbage_ciphertext.to_string(),
+        "THISISNOTGOINGTODECRYPTSENSIBLY"
+    );
+}
+
+#[test]
+fn short_msg_example() {
     // With some non-negligible frequency, you won't get nonsense on
     // decryption with the wrong key, but the possible message space
     // is restricted beyond just the length of the message itself.
@@ -40,7 +58,9 @@ fn generate_and_use_key() {
     // Unwrap messages
     let small_msg_0 = small_msg_0.unwrap();
     let small_msg_1 = small_msg_1.unwrap();
-    
+
+    // Set two fixed keys in order to reiterate how patterns are preserved
+    // in Latin shift cipher.
     let fixed_key_0 = Key::from_str("3");
     let fixed_key_1 = Key::from_str("9");
 
@@ -61,6 +81,8 @@ fn generate_and_use_key() {
 
     // Encryption followed by decryption with an incorrect key gets us back a still intelligible
     // message somtimes.
-    assert_eq!(CipherText::decrypt(&small_ciphertext, &fixed_key_1), small_msg_1);
-    
+    assert_eq!(
+        CipherText::decrypt(&small_ciphertext, &fixed_key_1),
+        small_msg_1
+    );
 }

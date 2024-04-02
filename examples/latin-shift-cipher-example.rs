@@ -1,3 +1,13 @@
+//! This example implements a small command line application that
+//! allows key generation, message encryption, and ciphertext decryption
+//! using the Latin Shift Cipher.
+//!
+//! This example does not really satisfy the desired criterion for an
+//! example, in that it does not really showcase "proper" usage of the crate.
+//! It does highlight where the provided library API fails a basic use case, though:
+//! we have to use the `Debug` impl to print `Key` values to sdout because I couldn't decide
+//! how the library ought to handle keys.
+
 use fiddler::{CipherText, Key, Message};
 use rand::thread_rng;
 use std::{io, str::FromStr};
@@ -74,11 +84,12 @@ fn make_key() {
         // Generate a key
         let key = Key::new(&mut rng);
 
-        println!("\nWe generated your key successfully!");
-        println!(
-            "\nWe shouldn't print your key (or say, save it in logs), but we can! Here it is: {}",
-            key.into_i8()
-        );
+        println!("\nWe generated your key successfully!.");
+        println!("\nWe shouldn't print your key (or say, save it in logs), but we can!");
+        println!("\nWe didn't provide a nice way to do this with the library though,");
+        println!("so we expose our internal `RingElement` type that implements the ");
+        println!("mathematics behind this cryptosystem. Your key is the number between 0 and 25.");
+        println!("\nHere it is: {:?}", key);
         println!("\nAre you happy with your key? Enter Y for yes and N for no.");
 
         let instr: Instr = process_input("Enter 'Y' for yes or 'N' for no.");
