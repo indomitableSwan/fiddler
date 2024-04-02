@@ -530,12 +530,6 @@ mod tests {
         let msg1 = Message::new("thisisatest");
         let msg2 = Message::new("thisisanothertest");
 
-        // This is a bad test because the key space is so small
-        // ie this will fail with probability 1/26
-        // TODO: Showing this type of thing experimentally would be nice to know how to do
-        // Question: A separate sanity check tests that nothing totally broke on your rng might be better?
-        assert_ne!(key1, key2);
-
         // If you encrypt, then decrypt with the same key used during encryption, you get the same message
         // back.
         assert_eq!(
@@ -544,13 +538,14 @@ mod tests {
         );
 
         // If you encrypt, then try to decrypt with a different key than the one used during encryption,
-        // you should not get the same one back. (Note this test would fail if the keys collide, which
-        // they will with probability 1/26).
-        // TODO: Construct the second key so that it is always different from the first instead.
-        assert_ne!(
+        // you should not get the same one back. (Note this test won't run if the keys collide, which
+        // they will with probability 1/26, i.e., the keyspace for the Latin Shift Cipher system is
+        // *tiny*.
+        if key1 != key2 {
+            assert_ne!(
             CipherText::decrypt(&Message::encrypt(&msg2, &key1), &key2),
             msg2
-        )
+        )}
     }
 
     // Tests with reproducible randomness

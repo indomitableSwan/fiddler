@@ -16,6 +16,15 @@ args = ["clippy", "--all-targets", "--workspace"]
 [tasks.build]
 dependencies = ["clean"]
 
+# Since examples are not specifed as test code, you have to pass
+# the option "--examples" to make sure that the dev flow builds
+# and runs all the associated examples for the crate. This helps
+# catch problems early that might otherwise impact projects
+# dependent on the library.
+[tasks.test]
+command = "cargo"
+args = ["test", "--examples"]
+
 # Potentially useful options to add include:
 # - "--document-private-items", since this is a tutorial-style library.
 # - "--examples", which allows you to produce documentation for examples.

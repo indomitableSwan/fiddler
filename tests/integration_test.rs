@@ -1,6 +1,6 @@
 //! These integration tests exercise the public API of the crate, but they may not
 //! be entirely sensible as integration tests.
-//! 
+//!
 use fiddler::{CipherText, Key, Message};
 use rand::thread_rng;
 use std::str::FromStr;
