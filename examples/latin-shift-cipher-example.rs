@@ -10,7 +10,7 @@
 
 use fiddler::{CipherText, Key, Message};
 use rand::thread_rng;
-use std::{error::Error, io, str::FromStr};
+use std::{error::Error, io, process, str::FromStr};
 
 // A struct that represents a possible user action.
 #[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]
@@ -19,11 +19,12 @@ struct Command<'a> {
     menu_msg: &'a str,
     function: Option<fn() -> Result<(), Box<dyn Error>>>,
 }
-fn main() -> Result<(), Box<dyn Error>> {
+fn main() {
     println!("\nWelcome to the Latin Shift Cipher Demo!");
-    menu()?;
-
-    Ok(())
+    if let Err(e) = menu(){
+        println!("Application error: {e}");
+        process::exit(1);
+    }
 }
 
 // Prints menu of user options and matches on user input to do one of:
