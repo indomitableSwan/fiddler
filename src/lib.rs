@@ -113,6 +113,11 @@ impl RingElement {
         Self(int.rem_euclid(MODULUS as i8))
     }
 
+    /// Get the inner value of the ring element.
+    fn into_inner(self) -> i8 {
+        self.0
+    }
+
     /// Generate a ring element uniformly at random.
     ///
     /// Implementation notes:
@@ -355,7 +360,6 @@ impl FromStr for Key {
 }
 
 impl Key {
-    /*
     /// Returns the value of `Key` as an `i8`.
     /// # Examples
     /// ```
@@ -369,18 +373,13 @@ impl Key {
     /// # // Generate a key
     /// # let key = Key::new(&mut rng);
     /// # //
-    /// // We can print a key, or print it to a log if we wanted to.
-    /// // We shouldn't. Key handling is another, more complicated
-    /// // and error-prone topic. Here we print the value of the key
-    /// // as an `i8`:
-    /// println!("Here is our key value: {}", key.into_i8());
-    /// ```
+
     // TODO: re-evaluate how best to print a key value. Maybe some serialization/export API makes the most sense.
     // See also the `FromStr` for `Key` implementation. And note that we purposely did not implement `Display` for `Key`
     pub fn into_i8(&self) -> i8 {
         self.0 .0
     }
-    */
+
     /// Generate a cryptographic key uniformly at random from the key space.
     ///
     /// Note that the mathematical description of the Latin Shift Cipher, as well as this implementation,
@@ -402,17 +401,37 @@ impl Key {
     /// //
     /// // Generate a key
     /// let key = Key::new(&mut rng);
-    /// //
-    /// // We can print a key, or print it to a log if we wanted to.
-    /// // We shouldn't. Key handling is another, more complicated
-    /// // and error-prone topic.
-    /// println!("Here is our key value: {:?}", key);
     /// ```
     ///
     // Note: Keys must always be chosen according to a uniform distribution on the
     // underlying key space, i.e., the ring Z/26Z for the Latin Alphabet cipher.
     pub fn new<R: Rng + CryptoRng>(rng: &mut R) -> Self {
         Self(RingElement::new(rng))
+    }
+
+    /// Export the key
+    ///
+    /// # Examples
+    /// ```
+    /// # use fiddler::{CipherText, Key, Message};
+    /// # // Don't forget to include the `rand` crate!
+    /// # use rand::thread_rng;
+    /// # //
+    /// # // Initialize a cryptographic rng.
+    /// # let mut rng = thread_rng();
+    /// # //
+    /// # // Generate a key
+    /// # let key = Key::new(&mut rng);
+    /// //
+    /// // We can export a key for external storage or other uses.
+    /// // This method does not do anything special for secure key
+    /// // handling, which is another, more complicated
+    /// // and error-prone topic.
+    /// // Use caution.
+    /// println!("Here is our key value: {}", key.insecure_export());
+    /// ```
+    pub fn insecure_export(&self) -> String {
+        self.0.into_inner().to_string()
     }
 }
 
@@ -543,9 +562,10 @@ mod tests {
         // *tiny*.
         if key1 != key2 {
             assert_ne!(
-            CipherText::decrypt(&Message::encrypt(&msg2, &key1), &key2),
-            msg2
-        )}
+                CipherText::decrypt(&Message::encrypt(&msg2, &key1), &key2),
+                msg2
+            )
+        }
     }
 
     // Tests with reproducible randomness

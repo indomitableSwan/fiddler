@@ -21,7 +21,7 @@ dependencies = ["clean"]
 # and runs all the associated examples for the crate. This helps
 # catch problems early that might otherwise impact projects
 # dependent on the library.
-[tasks.test]
+[tasks.examples]
 command = "cargo"
 args = ["test", "--examples"]
 
@@ -46,5 +46,6 @@ dependencies = [
     "clippy", 
     "build",
     "test",
+    "examples",
     "doc"
 ]

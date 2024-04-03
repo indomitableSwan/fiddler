@@ -85,11 +85,8 @@ fn make_key() {
         let key = Key::new(&mut rng);
 
         println!("\nWe generated your key successfully!.");
-        println!("\nWe shouldn't print your key (or say, save it in logs), but we can!");
-        println!("\nWe didn't provide a nice way to do this with the library though,");
-        println!("so we expose our internal `RingElement` type that implements the ");
-        println!("mathematics behind this cryptosystem. Your key is the number between 0 and 25.");
-        println!("\nHere it is: {:?}", key);
+        println!("\nWe shouldn't export your key (or say, save it in logs), but we can!");
+        println!("Here it is: {}", key.insecure_export());
         println!("\nAre you happy with your key? Enter Y for yes and N for no.");
 
         let instr: Instr = process_input("Enter 'Y' for yes or 'N' for no.");

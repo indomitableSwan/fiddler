@@ -1,7 +1,7 @@
 # fiddler
 This repository is a playground for learning Rust. It is not meant to be used for anything in practice.
 
-It may develop into a beginner tutorial in writing cryptography in Rust, using Douglas Stinson's "Cryptography, Theory and Practice", as a guide. But for now, it is just a container for my thoughts and learning.
+It may develop into a beginner tutorial in writing cryptography in Rust, using Douglas Stinson's "Cryptography, Theory and Practice", as a guiding rail. But for now, it is mostly just a container for my thoughts and learning. Many of the crypto-related comments are tongue-in-cheek, pretending that the implemented cryptosystems _are_ for use in the real world, and attempting to support best practices with respect to security and privacy.
 
 # build instructions
 To build, run 
