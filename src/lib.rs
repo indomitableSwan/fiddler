@@ -98,7 +98,7 @@ impl RingElement {
             .find(|&&x| x.1 == self.0)
             .map(|c| c.0)
             .expect(
-                "Could not map to `char`: The definition of `ALPH_ENCODING` must have an error.",
+                "Could not map to `char`: The definition of `ALPH_ENCODING` must have an error or there is an invalid `RingElement`.",
             )
     }
 
@@ -142,7 +142,7 @@ impl Add for RingElement {
     ///
     /// Library devs: This operation is unchecked!
     fn add(self, other: Self) -> Self {
-        Self(if (self.0 + other.0) > MODULUS as i8 {
+        Self(if (self.0 + other.0) >= MODULUS as i8 {
             self.0 + other.0 - MODULUS as i8
         } else {
             self.0 + other.0
@@ -236,6 +236,7 @@ impl CipherText {
     /// ```
     /// # use fiddler::{CipherText, Key, Message};
     /// # use rand::thread_rng;
+    /// #
     /// # let mut rng = thread_rng();
     /// # let key = Key::new(&mut rng);
     /// # let msg = Message::new("thisisanawkwardapichoice");
@@ -246,10 +247,21 @@ impl CipherText {
     ///    "If we decrypt using the correct key, we get our original
     /// message back: {}", decrypted);
     ///
+    /// let wrong_key = Key::new(&mut rng);
+    /// if key != wrong_key {
     /// println!("If we decrypt using an incorrect key, we do not get
     ///  our original message back: {}",
-    /// CipherText::decrypt(&ciphertxt, &Key::new(&mut rng)));
+    /// CipherText::decrypt(&ciphertxt, &wrong_key));
+    /// }
+    /// ```
     ///
+    /// ```
+    /// # use fiddler::{CipherText, Key, Message};
+    /// # use rand::thread_rng;
+    /// #
+    /// # let mut rng = thread_rng();
+    /// # let key = Key::new(&mut rng);
+    /// #
     /// // With some non-negligible frequency, you won't get nonsense on
     /// // decryption with the wrong key, but the possible message space
     /// // is restricted beyond just the length of the message itself.
@@ -260,11 +272,12 @@ impl CipherText {
     /// // is other context available to validate possible plaintexts.
     /// let small_msg = Message::new("dad");
     /// let small_ciphertext = Message::encrypt(&small_msg, &key);
+    /// // This will also decrypt the message properly with probability 1/26
+    /// // which is of course a huge probability of success.
     /// let small_decryption = CipherText::decrypt(&small_ciphertext,
     ///  &Key::new(&mut rng));
     ///
-    /// println!("The API makes it hard to make this example work the way
-    /// I want consistently, but here is a small example, where we can more
+    /// println!("Here is a small example, where we can more
     /// easily see the preservation of patterns:
     /// \n plaintext is {}, ciphertext is {},
     ///  and decryption under a random key gives {}",
@@ -477,9 +490,11 @@ mod tests {
 
         assert_eq!(RingElement(5) + RingElement(11), RingElement(16)); // Basic addition test
         assert_eq!(RingElement(22) + RingElement(11), RingElement(7)); // Addition test with overflow
+        assert_eq!(RingElement(20) + RingElement(6), RingElement(0)); // Addition boundary check
 
         assert_eq!(RingElement(11) - RingElement(3), RingElement(8)); // Basic subtraction test
         assert_eq!(RingElement(4) - RingElement(11), RingElement(19)); // Subtraction test with overflow
+        assert_eq!(RingElement(15) - RingElement(15), RingElement(0)); // Subtraction boundary check
 
         // `from_i8` works as expected
         assert_eq!(RingElement::from_i8(37), RingElement(11));

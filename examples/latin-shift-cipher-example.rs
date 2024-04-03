@@ -12,17 +12,19 @@ use fiddler::{CipherText, Key, Message};
 use rand::thread_rng;
 use std::{error::Error, io, process, str::FromStr};
 
+type CommandPtr = fn() -> Result<(), Box<dyn Error>>;
+
 // A struct that represents a possible user action.
 #[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]
 struct Command<'a> {
     key: u8,
     menu_msg: &'a str,
-    function: Option<fn() -> Result<(), Box<dyn Error>>>,
+    function: Option<CommandPtr>,
 }
 fn main() {
     println!("\nWelcome to the Latin Shift Cipher Demo!");
     if let Err(e) = menu() {
-        println!("Application error: {e}");
+        eprintln!("Application error: {e}");
         process::exit(1);
     }
 }
@@ -34,17 +36,17 @@ fn menu() -> Result<(), Box<dyn Error>> {
         Command {
             key: 1,
             menu_msg: "Generate a key",
-            function: Some(make_key as fn() -> Result<(), Box<dyn Error>>),
+            function: Some(make_key as CommandPtr),
         },
         Command {
             key: 2,
             menu_msg: "Encrypt a message",
-            function: Some(encrypt as fn() -> Result<(), Box<dyn Error>>),
+            function: Some(encrypt as CommandPtr),
         },
         Command {
             key: 3,
             menu_msg: "Decrypt a ciphertext",
-            function: Some(decrypt as fn() -> Result<(), Box<dyn Error>>),
+            function: Some(decrypt as CommandPtr),
         },
         Command {
             key: 4,
