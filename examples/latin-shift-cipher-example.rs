@@ -21,7 +21,7 @@ struct Command<'a> {
 }
 fn main() {
     println!("\nWelcome to the Latin Shift Cipher Demo!");
-    if let Err(e) = menu(){
+    if let Err(e) = menu() {
         println!("Application error: {e}");
         process::exit(1);
     }
@@ -76,7 +76,6 @@ fn menu() -> Result<(), Box<dyn Error>> {
             None => break Ok(()),
         }
     }
-
 }
 
 // Creates keys and prints the key to standard output.
@@ -167,9 +166,7 @@ fn process_input<T: FromStr>(instructions: &str) -> Result<T, Box<dyn Error>> {
     loop {
         let mut input = String::new();
 
-        io::stdin()
-            .read_line(&mut input)?;
-            
+        io::stdin().read_line(&mut input)?;
 
         let result: T = match input.trim().parse::<T>() {
             Ok(txt) => txt,

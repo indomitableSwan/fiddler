@@ -360,26 +360,6 @@ impl FromStr for Key {
 }
 
 impl Key {
-    /// Returns the value of `Key` as an `i8`.
-    /// # Examples
-    /// ```
-    /// # use fiddler::{CipherText, Key, Message};
-    /// # // Don't forget to include the `rand` crate!
-    /// # use rand::thread_rng;
-    /// # //
-    /// # // Initialize a cryptographic rng.
-    /// # let mut rng = thread_rng();
-    /// # //
-    /// # // Generate a key
-    /// # let key = Key::new(&mut rng);
-    /// # //
-
-    // TODO: re-evaluate how best to print a key value. Maybe some serialization/export API makes the most sense.
-    // See also the `FromStr` for `Key` implementation. And note that we purposely did not implement `Display` for `Key`
-    pub fn into_i8(&self) -> i8 {
-        self.0 .0
-    }
-
     /// Generate a cryptographic key uniformly at random from the key space.
     ///
     /// Note that the mathematical description of the Latin Shift Cipher, as well as this implementation,
