@@ -83,9 +83,8 @@ impl RingElement {
     fn from_char(ltr: char) -> Result<Self, RingElementEncodingError> {
         // This constructor uses the encoding defined in `ALPH_ENCODING`.
         ALPH_ENCODING
-            .iter()
-            .find(|&&x| x.0 == ltr)
-            .map(|(_, y)| RingElement(*y))
+            .into_iter()
+            .find_map(|(x, y)| if x == ltr { Some(RingElement(y)) } else { None })
             .ok_or(RingElementEncodingError)
     }
 
@@ -94,9 +93,8 @@ impl RingElement {
     // This code will never panic unless the library developer has made an error.
     fn to_char(self) -> char {
         ALPH_ENCODING
-            .iter()
-            .find(|&&x| x.1 == self.0)
-            .map(|c| c.0)
+            .into_iter()
+            .find_map(|(x, y)| if y == self.0 { Some(x) } else { None })
             .expect(
                 "Could not map to `char`: The definition of `ALPH_ENCODING` must have an error or there is an invalid `RingElement`.",
             )
@@ -199,13 +197,13 @@ impl Message {
     /// // Computers have to check dictionaries.
     /// # use fiddler::{CipherText, Key, Message};
     /// # use rand::thread_rng;
-    /// let msg = Message::new("thisisanawkwardapichoice");
+    /// let msg = Message::new("thisisanawkwardapichoice").expect("This example is hardcoded; it should work!");
     ///
     /// // We can also print our message as a string:
     /// println!("Our message is {msg}");
     /// ```
-    pub fn new(str: &str) -> Message {
-        Message::from_str(str).expect("Message parsing error")
+    pub fn new(str: &str) -> Result<Message, EncodingError> {
+        Message::from_str(str)
     }
 
     /// Encrypt a message.
@@ -216,16 +214,12 @@ impl Message {
     /// # use rand::thread_rng;
     /// # let mut rng = thread_rng();
     /// # let key = Key::new(&mut rng);
-    /// # let msg = Message::new("thisisanawkwardapichoice");
+    /// # let msg = Message::new("thisisanawkwardapichoice").expect("This example is hardcoded; it should work!");
     /// let ciphertxt = Message::encrypt(&msg, &key);
     /// ```
     ///
     pub fn encrypt(&self, key: &Key) -> CipherText {
-        let mut ciph_txt: Vec<RingElement> = Vec::new();
-        for i in self.0.iter() {
-            ciph_txt.push(*i + key.0);
-        }
-        CipherText(ciph_txt)
+        self.0.iter().map(|&i| i + key.0).collect()
     }
 }
 
@@ -239,7 +233,7 @@ impl CipherText {
     /// #
     /// # let mut rng = thread_rng();
     /// # let key = Key::new(&mut rng);
-    /// # let msg = Message::new("thisisanawkwardapichoice");
+    /// # let msg = Message::new("thisisanawkwardapichoice").expect("This example is hardcoded; it should work!");
     /// # let ciphertxt = Message::encrypt(&msg, &key);
     /// let decrypted = CipherText::decrypt(&ciphertxt, &key);
     ///
@@ -270,7 +264,7 @@ impl CipherText {
     /// // one sample, one ciphertext may not be enough to definitively
     /// // break the system with a brute force attack. But likely there
     /// // is other context available to validate possible plaintexts.
-    /// let small_msg = Message::new("dad");
+    /// let small_msg = Message::new("dad").expect("This example is hardcoded; it should work!");
     /// let small_ciphertext = Message::encrypt(&small_msg, &key);
     /// // This will also decrypt the message properly with probability 1/26
     /// // which is of course a huge probability of success.
@@ -286,11 +280,7 @@ impl CipherText {
     /// ```
     ///
     pub fn decrypt(&self, key: &Key) -> Message {
-        let mut msg: Vec<RingElement> = Vec::new();
-        for i in self.0.iter() {
-            msg.push(*i - key.0);
-        }
-        Message(msg)
+        self.0.iter().map(|&i| i - key.0).collect()
     }
 }
 
@@ -311,21 +301,29 @@ impl FromStr for Message {
     type Err = EncodingError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let mut msg = Vec::new();
-        for c in s.chars() {
-            msg.push(RingElement::from_char(c).or(Err(EncodingError))?);
-        }
-        Ok(Message(msg))
+        s.chars()
+            .map(|i| RingElement::from_char(i).or(Err(EncodingError)))
+            .collect()
     }
 }
 
 impl fmt::Display for Message {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let mut txt = String::new();
-        for i in self.0.iter() {
-            txt.push(RingElement::to_char(*i));
-        }
+        let txt: String = self.0.iter().map(|i| i.to_char()).collect();
+
         write!(f, "{txt}")
+    }
+}
+// Question: Can I do something generic here that covers both Message and  Ciphertext?
+impl FromIterator<RingElement> for Message {
+    fn from_iter<I: IntoIterator<Item = RingElement>>(iter: I) -> Self {
+        let mut c = Vec::new();
+
+        for i in iter {
+            c.push(i);
+        }
+
+        Message(c)
     }
 }
 
@@ -334,24 +332,30 @@ impl FromStr for CipherText {
     type Err = EncodingError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let mut ciphertxt = Vec::new();
-
-        let temp = s.to_lowercase();
-
-        for c in temp.chars() {
-            ciphertxt.push(RingElement::from_char(c).or(Err(EncodingError))?);
-        }
-        Ok(CipherText(ciphertxt))
+        s.to_lowercase()
+            .chars()
+            .map(|i| RingElement::from_char(i).or(Err(EncodingError)))
+            .collect()
     }
 }
 
 impl fmt::Display for CipherText {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let mut txt: String = String::new();
-        for i in self.0.iter() {
-            txt.push(RingElement::to_char(*i));
-        }
+        let txt: String = self.0.iter().map(|i| RingElement::to_char(*i)).collect();
+
         write!(f, "{ }", txt.to_uppercase()) // Following Stinson's convention, ciphertexts are ALL CAPS
+    }
+}
+
+impl FromIterator<RingElement> for CipherText {
+    fn from_iter<I: IntoIterator<Item = RingElement>>(iter: I) -> Self {
+        let mut c = Vec::new();
+
+        for i in iter {
+            c.push(i);
+        }
+
+        CipherText(c)
     }
 }
 
@@ -474,7 +478,12 @@ mod tests {
     thread_local!(static CIPH0_STR: String = "HPHTWWXPPELEXTOYTRSE".to_string());
 
     #[test]
-    fn ring_elmt_tests() {
+    fn ring_elmnt_into_inner() {
+        let x = RingElement(5);
+        assert_eq!(x.into_inner(), 5)
+    }
+    #[test]
+    fn ring_elmt_display() {
         // Test Display impl
         let x = RingElement(3);
         assert_eq!(
@@ -484,10 +493,15 @@ mod tests {
     }
 
     #[test]
-    fn encoding_0() {
-        assert_eq!(RingElement::from_char('g').unwrap().0, 6); // Sanity check on encoding
-        assert_eq!(RingElement::from_char('w').unwrap().0, 22); // Sanity check on encoding
+    fn ring_elmt_encoding_basics() {
+        assert_eq!(RingElement::from_char('g').unwrap().0, 6); // Sanity check `from_char`
+        assert_eq!(RingElement::from_char('w').unwrap().0, 22); // Sanity check `from_char`
+        assert_eq!(RingElement(5).to_char(), 'f'); // Sanity check `to_char`
+        assert_eq!(RingElement(0).to_char(), 'a') // Sanity check to `to_char`
+    }
 
+    #[test]
+    fn ring_elmt_arithmetic() {
         assert_eq!(RingElement(5) + RingElement(11), RingElement(16)); // Basic addition test
         assert_eq!(RingElement(22) + RingElement(11), RingElement(7)); // Addition test with overflow
         assert_eq!(RingElement(20) + RingElement(6), RingElement(0)); // Addition boundary check
@@ -495,7 +509,10 @@ mod tests {
         assert_eq!(RingElement(11) - RingElement(3), RingElement(8)); // Basic subtraction test
         assert_eq!(RingElement(4) - RingElement(11), RingElement(19)); // Subtraction test with overflow
         assert_eq!(RingElement(15) - RingElement(15), RingElement(0)); // Subtraction boundary check
+    }
 
+    #[test]
+    fn ring_elmt_from_i8() {
         // `from_i8` works as expected
         assert_eq!(RingElement::from_i8(37), RingElement(11));
         assert_eq!(RingElement::from_i8(-28), RingElement(24));
@@ -505,28 +522,81 @@ mod tests {
     }
 
     #[test]
-    fn encoding_1() {
+    fn ring_elmt_encoding_error() {
         assert_eq!(RingElement::from_char('_'), Err(RingElementEncodingError));
+        assert_eq!(RingElement::from_char('A'), Err(RingElementEncodingError));
+    }
+
+    #[test]
+    #[should_panic(
+        expected = "Could not map to `char`: The definition of `ALPH_ENCODING` must have an error or there is an invalid `RingElement`."
+    )]
+    fn ring_elmt_encoding_panic() {
+        let _fail = RingElement(26).to_char();
     }
 
     #[test]
     // Example 1.1, Stinson 3rd Edition, Example 2.1 Stinson 4th Edition
-    fn msg_encoding_0() {
+    fn msg_encoding_basic() {
         assert_eq!(
-            Message::new("wewillmeetatmidnight"),
+            Message::new("wewillmeetatmidnight").unwrap(),
             MSG0.with(|msg| msg.clone())
-        ) // Message maps to ring correctly
+        ); // Message maps to ring correctly using `new`
+
+        assert_eq!(
+            Message::from_str("wewillmeetatmidnight").unwrap(),
+            MSG0.with(|msg| msg.clone())
+        ); // Message maps from string correctly using `from_str`
+
+        assert_eq!(
+            MSG0.with(|msg| msg.clone()).to_string(),
+            "wewillmeetatmidnight"
+        ); // Message maps to string correctly
+    }
+
+    #[test]
+    // Malformed message errors.
+    fn msg_encoding_error() {
+        assert_eq!(Message::new("we will meet at midnight"), Err(EncodingError))
+    }
+
+    #[test]
+    fn msg_display() {
+        assert_eq!(
+            format!("{}", Message::new("wewillmeetatmidnight").unwrap()),
+            "wewillmeetatmidnight"
+        )
+    }
+
+    #[test]
+    fn ciphertxt_encoding_basic() {
+        let ciphertxt = CipherText::from_str("HPHTWWXPPELEXTOYTRSE").unwrap();
+
+        assert_eq!(ciphertxt, CIPH0.with(|ciph| ciph.clone())); // Ciphertext maps from string correctly
+        assert_eq!(ciphertxt.to_string(), CIPH0_STR.with(|ciph| ciph.clone())); // Ciphertext maps to string correctly
+    }
+
+    #[test]
+    fn ciphertxt_display() {
+        assert_eq!(
+            format!("{}", CipherText::from_str("HPHTWWXPPELEXTOYTRSE").unwrap()),
+            "HPHTWWXPPELEXTOYTRSE"
+        )
+    }
+
+    #[test]
+    fn ciphertxt_encoding_error() {
+        assert_eq!(CipherText::from_str("a;k"), Err(EncodingError))
     }
 
     // Example 1.1, Stinson 3rd Edition, Example 2.1 Stinson 4th Edition.
     #[test]
-    fn enc_dec_0() {
+    fn enc_dec_basic() {
         let key0 = Key(RingElement(11));
 
-        let ciph0 = Message::encrypt(&Message::new("wewillmeetatmidnight"), &key0);
+        let ciph0 = Message::encrypt(&Message::new("wewillmeetatmidnight").unwrap(), &key0);
 
-        assert_eq!(ciph0, CIPH0.with(|ciph| ciph.clone())); // Ciphertext maps to ring correctly
-        assert_eq!(ciph0.to_string(), CIPH0_STR.with(|ciph| ciph.clone())); // Ciphertext maps to string correctly
+        assert_eq!(ciph0, CIPH0.with(|ciph| ciph.clone())); // Ciphertext is correct
         assert_eq!(
             CipherText::decrypt(&ciph0, &key0),
             MSG0.with(|msg| msg.clone()) // Ciphertext decrypts correctly
@@ -535,14 +605,14 @@ mod tests {
 
     // Tests with randomly generated keys.
     #[test]
-    fn enc_dec_1() {
+    fn enc_dec_random_keys() {
         let mut rng = rand::thread_rng();
 
         let key1 = Key::new(&mut rng);
         let key2 = Key::new(&mut rng);
 
-        let msg1 = Message::new("thisisatest");
-        let msg2 = Message::new("thisisanothertest");
+        let msg1 = Message::new("thisisatest").unwrap();
+        let msg2 = Message::new("thisisanothertest").unwrap();
 
         // If you encrypt, then decrypt with the same key used during encryption, you get the same message
         // back.
@@ -565,13 +635,13 @@ mod tests {
 
     // Tests with reproducible randomness
     #[test]
-    fn enc_dec_2() {
+    fn enc_dec_reprod_rand() {
         let mut rng = reprod_rng();
 
         let key1 = Key(RingElement(rng.gen_range(0..MODULUS as i8)));
         let key2 = Key(RingElement(rng.gen_range(0..MODULUS as i8)));
 
-        let msg1 = Message::new("thisisyetanothertestmessage");
+        let msg1 = Message::new("thisisyetanothertestmessage").unwrap();
 
         // This test is OK as long you check that it passes once
         assert_ne!(key1, key2);

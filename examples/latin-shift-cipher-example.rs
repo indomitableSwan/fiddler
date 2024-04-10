@@ -65,7 +65,7 @@ fn menu() -> Result<(), Box<dyn Error>> {
 
         // Find and extract command in `MENU` that matches
         // the command line input
-        let command = match MENU.iter().find(|&&x| x.key == command) {
+        let command = match MENU.into_iter().find(|&x| x.key == command) {
             Some(x) => x,
             // If no match, restart loop to ask user again
             None => continue,
