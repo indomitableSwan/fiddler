@@ -12,7 +12,7 @@ fn generate_and_use_key() {
     let key1 = Key::new(&mut rng);
 
     // Exercise the `new` associated function.
-    let msg = Message::new("thisisanawkwardapichoice");
+    let msg = Message::new("thisisanawkwardapichoice").unwrap();
     // We could also have used the `FromStr` implementation for `Message`.
     assert_eq!(msg, Message::from_str("thisisanawkwardapichoice").unwrap());
 
