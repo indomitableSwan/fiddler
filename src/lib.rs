@@ -83,9 +83,8 @@ impl RingElement {
     fn from_char(ltr: char) -> Result<Self, RingElementEncodingError> {
         // This constructor uses the encoding defined in `ALPH_ENCODING`.
         ALPH_ENCODING
-            .iter()
-            .find(|&&x| x.0 == ltr)
-            .map(|(_, y)| RingElement(*y))
+            .into_iter()
+            .find_map(|(x, y)| if x == ltr { Some(RingElement(y)) } else { None })
             .ok_or(RingElementEncodingError)
     }
 
@@ -94,9 +93,8 @@ impl RingElement {
     // This code will never panic unless the library developer has made an error.
     fn to_char(self) -> char {
         ALPH_ENCODING
-            .iter()
-            .find(|&&x| x.1 == self.0)
-            .map(|c| c.0)
+            .into_iter()
+            .find_map(|(x, y)| if y == self.0 { Some(x) } else { None })
             .expect(
                 "Could not map to `char`: The definition of `ALPH_ENCODING` must have an error or there is an invalid `RingElement`.",
             )
@@ -221,11 +219,7 @@ impl Message {
     /// ```
     ///
     pub fn encrypt(&self, key: &Key) -> CipherText {
-        let mut ciph_txt: Vec<RingElement> = Vec::new();
-        for i in self.0.iter() {
-            ciph_txt.push(*i + key.0);
-        }
-        CipherText(ciph_txt)
+        self.0.iter().map(|&i| i + key.0).collect()
     }
 }
 
@@ -286,11 +280,7 @@ impl CipherText {
     /// ```
     ///
     pub fn decrypt(&self, key: &Key) -> Message {
-        let mut msg: Vec<RingElement> = Vec::new();
-        for i in self.0.iter() {
-            msg.push(*i - key.0);
-        }
-        Message(msg)
+        self.0.iter().map(|&i| i - key.0).collect()
     }
 }
 
@@ -311,21 +301,29 @@ impl FromStr for Message {
     type Err = EncodingError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let mut msg = Vec::new();
-        for c in s.chars() {
-            msg.push(RingElement::from_char(c).or(Err(EncodingError))?);
-        }
-        Ok(Message(msg))
+        s.chars()
+            .map(|i| RingElement::from_char(i).or(Err(EncodingError)))
+            .collect()
     }
 }
 
 impl fmt::Display for Message {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let mut txt = String::new();
-        for i in self.0.iter() {
-            txt.push(RingElement::to_char(*i));
-        }
+        let txt: String = self.0.iter().map(|i| i.to_char()).collect();
+
         write!(f, "{txt}")
+    }
+}
+// Question: Can I do something generic here that covers both Message and  Ciphertext?
+impl FromIterator<RingElement> for Message {
+    fn from_iter<I: IntoIterator<Item = RingElement>>(iter: I) -> Self {
+        let mut c = Vec::new();
+
+        for i in iter {
+            c.push(i);
+        }
+
+        Message(c)
     }
 }
 
@@ -334,24 +332,30 @@ impl FromStr for CipherText {
     type Err = EncodingError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let mut ciphertxt = Vec::new();
-
-        let temp = s.to_lowercase();
-
-        for c in temp.chars() {
-            ciphertxt.push(RingElement::from_char(c).or(Err(EncodingError))?);
-        }
-        Ok(CipherText(ciphertxt))
+        s.to_lowercase()
+            .chars()
+            .map(|i| RingElement::from_char(i).or(Err(EncodingError)))
+            .collect()
     }
 }
 
 impl fmt::Display for CipherText {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let mut txt: String = String::new();
-        for i in self.0.iter() {
-            txt.push(RingElement::to_char(*i));
-        }
+        let txt: String = self.0.iter().map(|i| RingElement::to_char(*i)).collect();
+
         write!(f, "{ }", txt.to_uppercase()) // Following Stinson's convention, ciphertexts are ALL CAPS
+    }
+}
+
+impl FromIterator<RingElement> for CipherText {
+    fn from_iter<I: IntoIterator<Item = RingElement>>(iter: I) -> Self {
+        let mut c = Vec::new();
+
+        for i in iter {
+            c.push(i);
+        }
+
+        CipherText(c)
     }
 }
 
