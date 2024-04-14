@@ -72,14 +72,17 @@ struct RingElement(i8);
 /// A custom error type that is thrown when a conversion between the Latin Alphabet and
 /// the ring of integers modulo [`MODULUS`] fails.
 ///
-/// This error should only be thrown if there is:
-/// - A mistake in the definition of the constant [`ALPH_ENCODING`];
+/// This error should only be thrown if:
+/// - There is a mistake in the definition of the constant [`ALPH_ENCODING`];
 /// - The input was not a lowercase letter from the Latin Alphabet.
 #[derive(Copy, Clone, Debug, Default, Eq, Hash, PartialEq)]
 struct RingElementEncodingError;
 
 impl RingElement {
     /// Convert from a character to a ring element.
+    /// 
+    /// # Errors
+    /// This method will return a custom pub(crate) error if the constant [`ALPH_ENCODING`] does not specify a mapping to the ring of integers for the given input. This happens if the input is not from the lowercase Latin Alphabet. For crate users, this error type will get "lifted" to the public error type [`EncodingError`] by the caller, e.g., when parsing a [`Message`] from a string.
     fn from_char(ltr: char) -> Result<Self, RingElementEncodingError> {
         // This constructor uses the encoding defined in `ALPH_ENCODING`.
         ALPH_ENCODING
@@ -90,7 +93,10 @@ impl RingElement {
 
     /// Convert from a ring element to a character.
     ///
-    // This code will never panic unless the library developer has made an error.
+    /// # Panics
+    /// This method will never panic unless the library developer has made an error. 
+    /// For example,
+    /// if the library developer does not use a constructor to create a ring element and creates an invalid element such as `RingElement(26)` when representing the Latin Alphabet.
     fn to_char(self) -> char {
         ALPH_ENCODING
             .into_iter()
@@ -289,14 +295,19 @@ impl CipherText {
 /// This is likely because the string violates one of the constraints
 /// for the desired value type. That is:
 ///
-/// - For [`Message`] and [`CipherText`]: the string included
-/// characters that are not lowercase letters from the Latin Alphabet.
-/// - For [`Key`]: the string does not represent a number in the appropriate range.
+/// - For [`Message`]: The string included
+/// one or more characters that are not lowercase letters from the Latin Alphabet. 
+/// - For [`CipherText`]: The string included
+/// one or more characters that are not letters from the Latin Alphabet. We allow for strings containing both capitalized and lowercase letters when parsing as string as a ciphertext.
+/// - For [`Key`]: The string does not represent a number in the appropriate range.
 /// For the Latin Alphabet, this range is 0 to 25, inclusive.
 #[derive(Copy, Clone, Debug, Default, Eq, Hash, PartialEq)]
 pub struct EncodingError;
 
 /// Parse a message from a string.
+/// 
+/// # Errors
+/// This trait implementation returns an error when parsing a string that contains an invalid character, i.e., if there is some `char` that is not from the lowercase Latin Alphabet.
 impl FromStr for Message {
     type Err = EncodingError;
 
@@ -328,6 +339,9 @@ impl FromIterator<RingElement> for Message {
 }
 
 /// Parse a ciphertext from a string.
+/// 
+/// # Errors
+/// This trait implementation returns an error when parsing a string that contains an invalid character, i.e., if there is some `char` that is not from the Latin Alphabet. Although the library generally follows the convention that ciphertexts are represented as ALL CAPS strings, this implementation ignores case, so parsing a string that includes lowercase letters may succeed.
 impl FromStr for CipherText {
     type Err = EncodingError;
 
@@ -360,6 +374,9 @@ impl FromIterator<RingElement> for CipherText {
 }
 
 /// Parse a key from a string.
+/// 
+/// # Errors
+/// This implementation will produce an error if the input string does not represent an integer in the key space, i.e., an integer between 0 and 25, inclusive. While it would be a simple matter to accept _any_ integer as input and map to the ring of integers, we chose not to do so for clarity of use.
 impl FromStr for Key {
     type Err = EncodingError;
 
