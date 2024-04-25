@@ -66,7 +66,7 @@ const ALPH_ENCODING: [(char, i8); 26] = [
 const MODULUS: usize = ALPH_ENCODING.len();
 
 /// An implementation of the ring &#x2124;/_m_&#x2124;, where _m_ is set to [`MODULUS`].
-#[derive(Copy, Clone, Debug, Default, Eq, Hash, PartialEq, PartialOrd, Ord)]
+#[derive(Copy, Clone, Debug, Eq, Hash, PartialEq, PartialOrd, Ord)]
 struct RingElement(i8);
 
 /// A custom error type that is thrown when a conversion between the Latin Alphabet and
@@ -79,6 +79,16 @@ struct RingElement(i8);
 struct RingElementEncodingError;
 
 impl RingElement {
+    /// Returns zero, the additive identity.
+    pub const fn zero() -> RingElement{
+        RingElement(0)
+    }
+
+    /// Returns true if zero and false otherwise.
+    pub fn _is_zero(&self) -> bool {
+        self.eq(&RingElement::zero())
+    }
+
     /// Convert from a character to a ring element.
     ///
     /// # Errors
@@ -136,6 +146,12 @@ impl RingElement {
     fn new<R: Rng + CryptoRng>(rng: &mut R) -> Self {
         let elmt: i8 = rng.gen_range(0..MODULUS as i8);
         Self(elmt)
+    }
+}
+
+impl Default for RingElement {
+    fn default() -> Self {
+        RingElement::zero()
     }
 }
 
@@ -495,6 +511,11 @@ mod tests {
     thread_local!(static CIPH0_STR: String = "HPHTWWXPPELEXTOYTRSE".to_string());
 
     #[test]
+    fn ring_elmnt_default() {
+        assert_eq!(RingElement::default(), RingElement(0));
+    }
+
+    #[test]
     fn ring_elmnt_into_inner() {
         let x = RingElement(5);
         assert_eq!(x.into_inner(), 5)
@@ -553,6 +574,13 @@ mod tests {
     }
 
     #[test]
+    fn msg_default (){
+        assert_eq!(
+            Message::default(),
+            Message(vec![])
+        )
+    }
+    #[test]
     // Example 1.1, Stinson 3rd Edition, Example 2.1 Stinson 4th Edition
     fn msg_encoding_basic() {
         assert_eq!(
@@ -583,6 +611,14 @@ mod tests {
             format!("{}", Message::new("wewillmeetatmidnight").unwrap()),
             "wewillmeetatmidnight"
         )
+    }
+
+    #[test]
+    fn ciphertxt_default(){
+        assert_eq!(
+            CipherText::default(),
+            CipherText(vec![])
+        );
     }
 
     #[test]
