@@ -80,7 +80,7 @@ struct RingElementEncodingError;
 
 impl RingElement {
     /// Returns zero, the additive identity.
-    pub const fn zero() -> RingElement{
+    pub const fn zero() -> RingElement {
         RingElement(0)
     }
 
@@ -574,11 +574,8 @@ mod tests {
     }
 
     #[test]
-    fn msg_default (){
-        assert_eq!(
-            Message::default(),
-            Message(vec![])
-        )
+    fn msg_default() {
+        assert_eq!(Message::default(), Message(vec![]))
     }
     #[test]
     // Example 1.1, Stinson 3rd Edition, Example 2.1 Stinson 4th Edition
@@ -614,11 +611,8 @@ mod tests {
     }
 
     #[test]
-    fn ciphertxt_default(){
-        assert_eq!(
-            CipherText::default(),
-            CipherText(vec![])
-        );
+    fn ciphertxt_default() {
+        assert_eq!(CipherText::default(), CipherText(vec![]));
     }
 
     #[test]
