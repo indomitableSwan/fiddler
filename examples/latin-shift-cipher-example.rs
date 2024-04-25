@@ -92,7 +92,7 @@ fn make_key() -> Result<(), Box<dyn Error>> {
         println!("\nWe generated your key successfully!.");
         println!("\nWe shouldn't export your key (or say, save it in logs), but we can!");
         println!("Here it is: {}", key.insecure_export());
-        println!("\nAre you happy with your key? Enter Y for yes and N for no.");
+        println!("Are you happy with your key? Enter Y for yes and N for no.");
 
         let instr: Instr = process_input("Enter 'Y' for yes or 'N' for no.")?;
 
@@ -151,12 +151,25 @@ fn decrypt() -> Result<(), Box<dyn Error>> {
         process_input("Ciphertext must contain characters from the Latin Alphabet only.")?;
 
     println!("\nGreat, let's work on decrypting your ciphertext.");
-    println!("Do you know what key was used to encrypt this message?. If so, enter it now. If not, feel free to guess!");
 
-    let key: Key = process_input("A key is a number between 0 and 25 inclusive.")?;
+    println!("If you know what key was used to encrypt this message, this should only take 1 try. If not, don't despair. Just guess! On average, you can expect success using this simple brute force attack method after trying 13 keys chosen uniformly at random.");
+    loop {
+        println!("\nOK. Please enter a key now:");
+        let key: Key = process_input("A key is a number between 0 and 25 inclusive.")?;
 
-    println!("\nYour plaintext is {}\n", ciphertxt.decrypt(&key));
+        println!("\nYour plaintext is {}\n", ciphertxt.decrypt(&key));
 
+        println!("\nAre you happy with your decryption? Enter Y for yes N for no:");
+
+        let instr: Instr = process_input("Enter 'Y' for yes or 'N' for no.")?;
+
+        match instr {
+            Instr::No => continue,
+            Instr::Yes => {
+                break;
+            }
+        };
+    }
     Ok(())
 }
 
