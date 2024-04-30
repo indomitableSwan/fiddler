@@ -12,14 +12,14 @@ use fiddler::{CipherText, Key, Message};
 use rand::thread_rng;
 use std::{error::Error, io, process, str::FromStr};
 
-type CommandPtr = fn() -> Result<(), Box<dyn Error>>;
+type CommandPtr<T> = fn(T) -> Result<(), Box<dyn Error>>;
 
 // A struct that represents a possible user action.
 #[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]
-struct Command<'a> {
+struct Command<'a, T> {
     key: u8,
     menu_msg: &'a str,
-    function: Option<CommandPtr>,
+    function: Option<CommandPtr<T>>,
 }
 fn main() {
     println!("\nWelcome to the Latin Shift Cipher Demo!");
@@ -32,21 +32,21 @@ fn main() {
 // Prints menu of user options and matches on user input to do one of:
 // Generate a key, encrypt a message, decrypt a message.
 fn menu() -> Result<(), Box<dyn Error>> {
-    const MENU: [Command; 4] = [
+    let menu: [Command<()>; 4] = [
         Command {
             key: 1,
-            menu_msg: "Generate a key",
-            function: Some(make_key as CommandPtr),
+            menu_msg: "Generate a key.",
+            function: Some(make_key as CommandPtr<()>),
         },
         Command {
             key: 2,
-            menu_msg: "Encrypt a message",
-            function: Some(encrypt as CommandPtr),
+            menu_msg: "Encrypt a message.",
+            function: Some(encrypt as CommandPtr<()>),
         },
         Command {
             key: 3,
-            menu_msg: "Decrypt a ciphertext",
-            function: Some(decrypt as CommandPtr),
+            menu_msg: "Decrypt a ciphertext.",
+            function: Some(decrypt as CommandPtr<()>),
         },
         Command {
             key: 4,
@@ -57,7 +57,7 @@ fn menu() -> Result<(), Box<dyn Error>> {
 
     loop {
         println!("\nPlease enter one of the following options:");
-        for item in MENU {
+        for item in menu {
             println!("{}: {}", item.key, item.menu_msg)
         }
 
@@ -65,7 +65,7 @@ fn menu() -> Result<(), Box<dyn Error>> {
 
         // Find and extract command in `MENU` that matches
         // the command line input
-        let command = match MENU.into_iter().find(|&x| x.key == command) {
+        let command = match menu.into_iter().find(|&x| x.key == command) {
             Some(x) => x,
             // If no match, restart loop to ask user again
             None => continue,
@@ -74,14 +74,68 @@ fn menu() -> Result<(), Box<dyn Error>> {
         // Extract the command's associated function and run it,
         // Break the loop and exit if there is no such function
         match command.function {
-            Some(x) => x()?,
+            Some(x) => x(())?,
+            None => break Ok(()),
+        }
+    }
+}
+
+// Prints menu of user options and matches on user input to do one of:
+// Generate a key, encrypt a message, decrypt a message.
+fn decryption_menu(ciphertxt: &CipherText) -> Result<(), Box<dyn Error>> {
+    let menu: [Command<&CipherText>; 4] = [
+        Command {
+            key: 1,
+            menu_msg: "Decrypt with a known key.",
+            function: Some(chosen_key as CommandPtr<&CipherText>),
+        },
+        Command {
+            key: 2,
+            menu_msg: "Brute force by manually guessing keys. (Choose this option if you want to try \nsampling from the uniform distribution.)",
+            function: Some(chosen_key as CommandPtr<&CipherText>),
+        },
+        Command {
+            key: 3,
+            menu_msg: "Brute force by having the computer guess keys. (Choose this option once you realize \nhow difficult it is to reliably sample from the uniform distribution.)",
+            function: Some(computer_chosen_key as CommandPtr<&CipherText>),
+        },
+        Command {
+            key: 4,
+            menu_msg: "Quit.",
+            function: None,
+        },
+    ];
+
+    loop {
+        println!("\nPlease enter one of the following options:");
+        for item in menu {
+            println!("{}: {}", item.key, item.menu_msg)
+        }
+
+        let command: u8 = process_input("")?;
+
+        // Find and extract command in `MENU` that matches
+        // the command line input
+        let command = match menu.into_iter().find(|x| x.key == command) {
+            Some(x) => x,
+            // If no match, restart loop to ask user again
+            None => continue,
+        };
+
+        // Extract the command's associated function and run it,
+        // Break the loop and exit if there is no such function
+        match command.function {
+            Some(x) => {
+                x(ciphertxt)?;
+                break Ok(());
+            }
             None => break Ok(()),
         }
     }
 }
 
 // Creates keys and prints the key to standard output.
-fn make_key() -> Result<(), Box<dyn Error>> {
+fn make_key(_: ()) -> Result<(), Box<dyn Error>> {
     // Set up an rng.
     let mut rng = thread_rng();
 
@@ -92,14 +146,14 @@ fn make_key() -> Result<(), Box<dyn Error>> {
         println!("\nWe generated your key successfully!.");
         println!("\nWe shouldn't export your key (or say, save it in logs), but we can!");
         println!("Here it is: {}", key.insecure_export());
-        println!("Are you happy with your key? Enter Y for yes and N for no.");
+        println!("Are you happy with your key? Enter Y for yes and N for no:");
 
-        let instr: Instr = process_input("Enter 'Y' for yes or 'N' for no.")?;
+        let instr: Instr = process_input("Enter 'Y' for yes or 'N' for no:")?;
 
         match instr {
             Instr::No => continue,
             Instr::Yes => {
-                println!("\nGreat! We don't have a file system implemented (much less a secure one), so please remember your key in perpetuity!");
+                println!("\nGreat! We don't have a file system implemented (much less a secure one), so please \nremember your key in perpetuity!");
                 break Ok(());
             }
         };
@@ -127,50 +181,80 @@ impl FromStr for Instr {
 
 // Takes in a key and a message and encrypts, then prints
 // the result.
-fn encrypt() -> Result<(), Box<dyn Error>> {
+fn encrypt(_: ()) -> Result<(), Box<dyn Error>> {
     println!("\nPlease enter the message you want to encrypt:");
 
-    let msg: Message = process_input("\nWe only accept lowercase letters from the Latin Alphabet, in one of the most awkward API decisions ever.")?;
+    let msg: Message = process_input("\nWe only accept lowercase letters from the Latin Alphabet, in one of the most awkward \nAPI decisions ever.")?;
 
-    println!("\nNow, do you have a key that was generated uniformly at random that you remember and would like to use? If yes, please enter your key. Otherwise, please pick a fresh key uniformly at random from the ring of integers modulo 26 yourself. \n\nYou won't be as good at this as a computer, but if you understand the cryptosystem you are using (something we cryptographers routinely assume about other people, while pretending that we aren't assuming this), you will probably not pick a key of 0, which is equivalent to sending your messages \"in the clear\", i.e., unencrypted. Good luck! \n\nGo ahead and enter your key now:");
+    println!("\nNow, do you have a key that was generated uniformly at random that you remember and \nwould like to use? If yes, please enter your key. Otherwise, please pick a fresh key \nuniformly at random from the ring of integers modulo 26 yourself. \n\nYou won't be as good at this as a computer, but if you understand the cryptosystem \nyou are using (something we cryptographers routinely assume about other people, while \npretending that we aren't assuming this), you will probably not pick a key of 0, \nwhich is equivalent to sending your messages \"in the clear\", i.e., unencrypted. Good \nluck! \n\nGo ahead and enter your key now:");
 
     let key: Key = process_input("A key is a number between 0 and 25 inclusive.")?;
 
     println!("\nYour ciphertext is {}", msg.encrypt(&key));
-    println!("\nLook for patterns in your ciphertext. Could you definitively figure out the key and original plaintext message if you didn't already know it?");
+    println!("\nLook for patterns in your ciphertext. Could you definitively figure out the key and \noriginal plaintext message if you didn't already know it?");
 
     Ok(())
 }
 
-// Takes in a ciphertext and a key and decrypts, then
-// prints result.
-fn decrypt() -> Result<(), Box<dyn Error>> {
+// Takes in a ciphertext and attempts to decrypt and
+// print result.
+fn decrypt(_: ()) -> Result<(), Box<dyn Error>> {
     println!("\nEnter your ciphertext. Ciphertexts use characters only from the Latin Alphabet:");
 
     let ciphertxt: CipherText =
         process_input("Ciphertext must contain characters from the Latin Alphabet only.")?;
 
     println!("\nGreat, let's work on decrypting your ciphertext.");
+    println!(
+        "If you know what key was used to encrypt this message, this should only take one try."
+    );
+    println!(
+    "If not, don't despair. Just guess! On average, you can expect success using this \nsimple brute force attack method after trying 13 keys chosen uniformly at random. \n(How good are you at choosing uniformly at random?)"
+    );
 
-    println!("If you know what key was used to encrypt this message, this should only take 1 try. If not, don't despair. Just guess! On average, you can expect success using this simple brute force attack method after trying 13 keys chosen uniformly at random.");
+    decryption_menu(&ciphertxt)?;
+
+    Ok(())
+}
+
+// Gets key from stdin and attempts to decrypt
+fn chosen_key(ciphertxt: &CipherText) -> Result<(), Box<dyn Error>> {
     loop {
         println!("\nOK. Please enter a key now:");
         let key: Key = process_input("A key is a number between 0 and 25 inclusive.")?;
-
-        println!("\nYour plaintext is {}\n", ciphertxt.decrypt(&key));
-
-        println!("\nAre you happy with your decryption? Enter Y for yes N for no:");
-
-        let instr: Instr = process_input("Enter 'Y' for yes or 'N' for no.")?;
-
-        match instr {
-            Instr::No => continue,
-            Instr::Yes => {
-                break;
-            }
-        };
+        match try_decrypt(ciphertxt, key) {
+            Ok(_) => break,
+            Err(_) => continue,
+        }
     }
     Ok(())
+}
+
+// Has computer choose key uniformly at random and attempts to decrypt
+fn computer_chosen_key(ciphertxt: &CipherText) -> Result<(), Box<dyn Error>> {
+    let mut rng = thread_rng();
+
+    loop {
+        let key = Key::new(&mut rng);
+        match try_decrypt(ciphertxt, key) {
+            Ok(_) => break,
+            Err(_) => continue,
+        }
+    }
+    Ok(())
+}
+
+// Decrypt with given key and ask whether to try again or not
+fn try_decrypt(ciphertxt: &CipherText, key: Key) -> Result<(), Box<dyn Error>> {
+    println!("\nYour computed plaintext is {}\n", ciphertxt.decrypt(&key));
+    println!("\nAre you happy with this decryption? Enter Y for yes N for no:");
+
+    let instr: Instr = process_input("Enter 'Y' for yes or 'N' for no.")?;
+
+    match instr {
+        Instr::No => Err("try again".into()),
+        Instr::Yes => Ok(()),
+    }
 }
 
 // TODO: this loop and match statment plus a return line is probably not idiomatic
