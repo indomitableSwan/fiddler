@@ -63,7 +63,7 @@ fn menu() -> Result<(), Box<dyn Error>> {
 
         let command: u8 = process_input("")?;
 
-        // Find and extract command in `MENU` that matches
+        // Find and extract command in menu that matches
         // the command line input
         let command = match menu.into_iter().find(|&x| x.key == command) {
             Some(x) => x,
@@ -111,7 +111,7 @@ fn decryption_menu(ciphertxt: &CipherText) -> Result<(), Box<dyn Error>> {
 
         let command: u8 = process_input("")?;
 
-        // Find and extract command in `MENU` that matches
+        // Find and extract command in menu that matches
         // the command line input
         let command = match menu.into_iter().find(|x| x.key == command) {
             Some(x) => x,
@@ -206,7 +206,7 @@ fn decrypt(_: ()) -> Result<(), Box<dyn Error>> {
         "If you know what key was used to encrypt this message, this should only take one try."
     );
     println!(
-    "If not, don't despair. Just guess! On average, you can expect success using this \nsimple brute force attack method after trying 13 keys chosen uniformly at random. \n(How good are you at choosing uniformly at random?)"
+    "If not, don't despair. Just guess! On average, you can expect success using this \nsimple brute force attack method after trying 13 keys chosen uniformly at random."
     );
 
     decryption_menu(&ciphertxt)?;
