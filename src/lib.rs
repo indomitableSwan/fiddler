@@ -22,8 +22,6 @@
 //! We allow for messages (and, correspondingly, ciphertexts) of arbitrary length, because in practice we can encrypt (and decrypt) using ordered sequences of ring elements (i.e., plaintexts and ciphertexts, respectively).
 // (&#x2124; is Unicode for blackboard bold Z)
 
-mod brute_force;
-
 use rand::{CryptoRng, Rng};
 use std::{
     fmt,
