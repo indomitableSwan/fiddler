@@ -81,7 +81,7 @@ fn menu() -> Result<(), Box<dyn Error>> {
 }
 
 // Prints menu of user options and matches on user input to do one of:
-// Generate a key, encrypt a message, decrypt a message.
+// Decrypt using a known key, computer-aided brute force attack
 fn decryption_menu(ciphertxt: &CipherText) -> Result<(), Box<dyn Error>> {
     let menu: [Command<&CipherText>; 3] = [
         Command {
