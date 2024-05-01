@@ -83,7 +83,7 @@ fn menu() -> Result<(), Box<dyn Error>> {
 // Prints menu of user options and matches on user input to do one of:
 // Generate a key, encrypt a message, decrypt a message.
 fn decryption_menu(ciphertxt: &CipherText) -> Result<(), Box<dyn Error>> {
-    let menu: [Command<&CipherText>; 4] = [
+    let menu: [Command<&CipherText>; 3] = [
         Command {
             key: 1,
             menu_msg: "Decrypt with a known key.",
@@ -91,17 +91,13 @@ fn decryption_menu(ciphertxt: &CipherText) -> Result<(), Box<dyn Error>> {
         },
         Command {
             key: 2,
-            menu_msg: "Brute force by manually guessing keys. (Choose this option if you want to try \nsampling from the uniform distribution.)",
-            function: Some(chosen_key as CommandPtr<&CipherText>),
-        },
-        Command {
-            key: 3,
-            menu_msg: "Brute force by having the computer guess keys. (Choose this option once you realize \nhow difficult it is to reliably sample from the uniform distribution.)",
+            menu_msg:
+                "Brute force by having the computer guess keys and provide possible plaintexts.",
             function: Some(computer_chosen_key as CommandPtr<&CipherText>),
         },
         Command {
-            key: 4,
-            menu_msg: "Quit.",
+            key: 3,
+            menu_msg: "Return to main menu.",
             function: None,
         },
     ];
@@ -146,9 +142,9 @@ fn make_key(_: ()) -> Result<(), Box<dyn Error>> {
         println!("\nWe generated your key successfully!.");
         println!("\nWe shouldn't export your key (or say, save it in logs), but we can!");
         println!("Here it is: {}", key.insecure_export());
-        println!("Are you happy with your key? Enter Y for yes and N for no:");
+        println!("Are you happy with your key? Enter 'y' for yes and 'n' for no:");
 
-        let instr: Instr = process_input("Enter 'Y' for yes or 'N' for no:")?;
+        let instr: Instr = process_input("Enter 'y' for yes or 'n' for no:")?;
 
         match instr {
             Instr::No => continue,
@@ -172,8 +168,8 @@ impl FromStr for Instr {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            "Y" => Ok(Instr::Yes),
-            "N" => Ok(Instr::No),
+            "y" => Ok(Instr::Yes),
+            "n" => Ok(Instr::No),
             _ => Err(InstrError),
         }
     }
@@ -247,9 +243,9 @@ fn computer_chosen_key(ciphertxt: &CipherText) -> Result<(), Box<dyn Error>> {
 // Decrypt with given key and ask whether to try again or not
 fn try_decrypt(ciphertxt: &CipherText, key: Key) -> Result<(), Box<dyn Error>> {
     println!("\nYour computed plaintext is {}\n", ciphertxt.decrypt(&key));
-    println!("\nAre you happy with this decryption? Enter Y for yes N for no:");
+    println!("\nAre you happy with this decryption? Enter 'y' for yes 'n' for no:");
 
-    let instr: Instr = process_input("Enter 'Y' for yes or 'N' for no.")?;
+    let instr: Instr = process_input("Enter 'y' for yes or 'n' for no.")?;
 
     match instr {
         Instr::No => Err("try again".into()),
