@@ -81,7 +81,8 @@ fn menu() -> Result<(), Box<dyn Error>> {
 }
 
 // Prints menu of user options and matches on user input to do one of:
-// Decrypt using a known key, computer-aided brute force attack
+// Decrypt using a known key, computer-aided brute force attack, return
+// to main menu
 fn decryption_menu(ciphertxt: &CipherText) -> Result<(), Box<dyn Error>> {
     let menu: [Command<&CipherText>; 3] = [
         Command {
