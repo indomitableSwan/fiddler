@@ -196,6 +196,18 @@ fn print_key_instr() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
+trait Menu<'a, const N: usize> {
+    fn menu_array() -> MenuArray<'a, N>;
+
+    fn print_menu() -> Result<(), Box<dyn Error>> {
+        println!("\nPlease enter one of the following options:");
+        for item in Self::menu_array().0 {
+            println!("{}: {}", item.key, item.menu_msg)
+        }
+        Ok(())
+    }
+}
+
 // A struct that represents a set of possible user actions
 struct MenuArray<'a, const N: usize>([Command<'a>; N]);
 
@@ -207,49 +219,43 @@ enum MainMenu {
     QuitKE,
 }
 
+impl<'a> Menu<'a, 4> for MainMenu {
+    fn menu_array() -> MenuArray<'a, 4> {
+        MenuArray([Self::GEN, Self::ENCRYPT, Self::DECRYPT, Self::QUIT])
+    }
+}
+
 impl<'a> MainMenu {
     // Key Events
-    const GEN_KE: &'static str = "1"; // Key Event for "Generate a key" 
-    const ENCRYPT_KE: &'static str = "2"; // Key Event for "encrypt a message" 
-    const DECRYPT_KE: &'static str = "3"; // Key Event for "decrypt" 
-    const QUIT_KE: &'static str = "4"; // Key Event for "quit" 
+    const GEN_KE: &'a str = "1"; // Key Event for "Generate a key"
+    const ENCRYPT_KE: &'a str = "2"; // Key Event for "encrypt a message"
+    const DECRYPT_KE: &'a str = "3"; // Key Event for "decrypt"
+    const QUIT_KE: &'a str = "4"; // Key Event for "quit"
 
     // Main Menu commands
     //
-    const GEN: Command<'static> = Command {
+    const GEN: Command<'a> = Command {
         key: Self::GEN_KE,
         menu_msg: "Generate a key.",
     };
 
     // Command to encrypt a message
-    const ENCRYPT: Command<'static> = Command {
+    const ENCRYPT: Command<'a> = Command {
         key: Self::ENCRYPT_KE,
         menu_msg: "Encrypt a message.",
     };
 
     // Command to decrypt a message
-    const DECRYPT: Command<'static> = Command {
+    const DECRYPT: Command<'a> = Command {
         key: Self::DECRYPT_KE,
         menu_msg: "Decrypt a ciphertext.",
     };
 
     // Command to quit
-    const QUIT: Command<'static> = Command {
+    const QUIT: Command<'a> = Command {
         key: Self::QUIT_KE,
         menu_msg: "Quit",
     };
-
-    fn menu_array() -> MenuArray<'a, 4> {
-        MenuArray([Self::GEN, Self::ENCRYPT, Self::DECRYPT, Self::QUIT])
-    }
-
-    fn print_menu() -> Result<(), Box<dyn Error>> {
-        println!("\nPlease enter one of the following options:");
-        for item in MainMenu::menu_array().0 {
-            println!("{}: {}", item.key, item.menu_msg)
-        }
-        Ok(())
-    }
 }
 
 impl FromStr for MainMenu {
@@ -272,14 +278,24 @@ enum ConsentMenu {
     NoKE,
 }
 
-impl ConsentMenu {
-    const YES_KE: &'static str = "y";
-    const NO_KE: &'static str = "n";
-
-    fn print_menu() -> Result<(), Box<dyn Error>> {
-        println!("\nEnter 'y' for yes and 'n' for no.");
-        Ok(())
+impl<'a> Menu<'a, 2> for ConsentMenu {
+    fn menu_array() -> MenuArray<'a, 2> {
+        MenuArray([
+            Command {
+                key: Self::YES_KE,
+                menu_msg: "Yes",
+            },
+            Command {
+                key: Self::NO_KE,
+                menu_msg: "No",
+            },
+        ])
     }
+}
+
+impl<'a> ConsentMenu {
+    const YES_KE: &'a str = "y";
+    const NO_KE: &'a str = "n";
 }
 
 impl FromStr for ConsentMenu {
@@ -300,10 +316,16 @@ enum DecryptMenu {
     Quit,
 }
 
+impl<'a> Menu<'a, 3> for DecryptMenu {
+    fn menu_array() -> MenuArray<'a, 3> {
+        MenuArray([Self::KNOWN_KEY, Self::BRUTE_FORCE, Self::QUIT])
+    }
+}
+
 impl<'a> DecryptMenu {
     // Define Key Events
-    const KNOWN_KEY_KE: &'static str = "1";
-    const BRUTE_FORCE_KE: &'static str = "2";
+    const KNOWN_KEY_KE: &'a str = "1";
+    const BRUTE_FORCE_KE: &'a str = "2";
     const QUIT_KE: &'static str = "3";
 
     // Decryption Menu commands
@@ -313,27 +335,15 @@ impl<'a> DecryptMenu {
         menu_msg: "Decrypt with a known key.",
     };
 
-    const BRUTE_FORCE: Command<'static> = Command {
+    const BRUTE_FORCE: Command<'a> = Command {
         key: Self::BRUTE_FORCE_KE,
         menu_msg: "Brute force by having the computer guess keys and provide possible plaintexts.",
     };
 
-    const QUIT: Command<'static> = Command {
+    const QUIT: Command<'a> = Command {
         key: Self::QUIT_KE,
         menu_msg: "Return to main menu.",
     };
-
-    fn menu_array() -> MenuArray<'a, 3> {
-        MenuArray([Self::KNOWN_KEY, Self::BRUTE_FORCE, Self::QUIT])
-    }
-
-    fn print_menu() -> Result<(), Box<dyn Error>> {
-        println!("\nPlease enter one of the following options:");
-        for item in DecryptMenu::menu_array().0 {
-            println!("{}: {}", item.key, item.menu_msg)
-        }
-        Ok(())
-    }
 }
 
 impl FromStr for DecryptMenu {
@@ -358,4 +368,3 @@ struct Command<'a> {
 
 // A struct that represents an error parsing a command from a string
 struct CommandError;
-
