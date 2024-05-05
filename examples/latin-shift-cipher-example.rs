@@ -1,13 +1,6 @@
 //! This example implements a small command line application that
 //! allows key generation, message encryption, and ciphertext decryption
-//! using the Latin Shift Cipher.
-//!
-//! This example does not really satisfy the desired criterion for an
-//! example, in that it does not really showcase "proper" usage of the crate.
-//! It does highlight where the provided library API fails a basic use case, though:
-//! we have to use the `Debug` impl to print `Key` values to sdout because I couldn't decide
-//! how the library ought to handle keys.
-
+//! (including a computer-aided brute force attack) using the Latin Shift Cipher.
 use fiddler::{CipherText, Key, Message};
 use rand::thread_rng;
 use std::{error::Error, io, process, str::FromStr};
@@ -21,7 +14,7 @@ fn main() {
 }
 
 // Prints menu of user options and matches on user input to do one of:
-// Generate a key, encrypt a message, decrypt a message
+// Generate a key, encrypt a message, decrypt a message, quit program
 fn menu() -> Result<(), Box<dyn Error>> {
     loop {
         MainMenu::print_menu()?;
@@ -203,7 +196,6 @@ fn print_key_instr() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-
 // A struct that represents a set of possible user actions
 struct MenuArray<'a, const N: usize>([Command<'a>; N]);
 
@@ -217,10 +209,10 @@ enum MainMenu {
 
 impl<'a> MainMenu {
     // Key Events
-    const GEN_KE: &'static str = "1"; // Key Event for "Generate a key" menu option
-    const ENCRYPT_KE: &'static str = "2"; // Key Event for "encrypt a message" menu option
-    const DECRYPT_KE: &'static str = "3"; // Key Event for "decrypt" menu option
-    const QUIT_KE: &'static str = "4"; // Key Event for "quit" menu option
+    const GEN_KE: &'static str = "1"; // Key Event for "Generate a key" 
+    const ENCRYPT_KE: &'static str = "2"; // Key Event for "encrypt a message" 
+    const DECRYPT_KE: &'static str = "3"; // Key Event for "decrypt" 
+    const QUIT_KE: &'static str = "4"; // Key Event for "quit" 
 
     // Main Menu commands
     //
@@ -364,5 +356,6 @@ struct Command<'a> {
     menu_msg: &'a str,
 }
 
+// A struct that represents an error parsing a command from a string
 struct CommandError;
 
