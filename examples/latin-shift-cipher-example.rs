@@ -196,6 +196,18 @@ fn print_key_instr() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
+trait Menu<'a, const N: usize> {
+    fn menu_array() -> MenuArray<'a, N>;
+
+    fn print_menu() -> Result<(), Box<dyn Error>> {
+        println!("\nPlease enter one of the following options:");
+        for item in Self::menu_array().0 {
+            println!("{}: {}", item.key, item.menu_msg)
+        }
+        Ok(())
+    }
+}
+
 // A struct that represents a set of possible user actions
 struct MenuArray<'a, const N: usize>([Command<'a>; N]);
 
@@ -207,12 +219,18 @@ enum MainMenu {
     QuitKE,
 }
 
-impl<'a> MainMenu {
+impl<'a> Menu<'a, 4> for MainMenu {
+    fn menu_array() -> MenuArray<'a, 4> {
+        MenuArray([Self::GEN, Self::ENCRYPT, Self::DECRYPT, Self::QUIT])
+    }
+}
+
+impl MainMenu {
     // Key Events
-    const GEN_KE: &'static str = "1"; // Key Event for "Generate a key" 
-    const ENCRYPT_KE: &'static str = "2"; // Key Event for "encrypt a message" 
-    const DECRYPT_KE: &'static str = "3"; // Key Event for "decrypt" 
-    const QUIT_KE: &'static str = "4"; // Key Event for "quit" 
+    const GEN_KE: &'static str = "1"; // Key Event for "Generate a key"
+    const ENCRYPT_KE: &'static str = "2"; // Key Event for "encrypt a message"
+    const DECRYPT_KE: &'static str = "3"; // Key Event for "decrypt"
+    const QUIT_KE: &'static str = "4"; // Key Event for "quit"
 
     // Main Menu commands
     //
@@ -238,18 +256,6 @@ impl<'a> MainMenu {
         key: Self::QUIT_KE,
         menu_msg: "Quit",
     };
-
-    fn menu_array() -> MenuArray<'a, 4> {
-        MenuArray([Self::GEN, Self::ENCRYPT, Self::DECRYPT, Self::QUIT])
-    }
-
-    fn print_menu() -> Result<(), Box<dyn Error>> {
-        println!("\nPlease enter one of the following options:");
-        for item in MainMenu::menu_array().0 {
-            println!("{}: {}", item.key, item.menu_msg)
-        }
-        Ok(())
-    }
 }
 
 impl FromStr for MainMenu {
@@ -272,14 +278,24 @@ enum ConsentMenu {
     NoKE,
 }
 
+impl<'a> Menu<'a, 2> for ConsentMenu {
+    fn menu_array() -> MenuArray<'a, 2> {
+        MenuArray([
+            Command {
+                key: Self::YES_KE,
+                menu_msg: "Yes",
+            },
+            Command {
+                key: Self::NO_KE,
+                menu_msg: "No",
+            },
+        ])
+    }
+}
+
 impl ConsentMenu {
     const YES_KE: &'static str = "y";
     const NO_KE: &'static str = "n";
-
-    fn print_menu() -> Result<(), Box<dyn Error>> {
-        println!("\nEnter 'y' for yes and 'n' for no.");
-        Ok(())
-    }
 }
 
 impl FromStr for ConsentMenu {
@@ -300,7 +316,13 @@ enum DecryptMenu {
     Quit,
 }
 
-impl<'a> DecryptMenu {
+impl<'a> Menu<'a, 3> for DecryptMenu {
+    fn menu_array() -> MenuArray<'a, 3> {
+        MenuArray([Self::KNOWN_KEY, Self::BRUTE_FORCE, Self::QUIT])
+    }
+}
+
+impl DecryptMenu {
     // Define Key Events
     const KNOWN_KEY_KE: &'static str = "1";
     const BRUTE_FORCE_KE: &'static str = "2";
@@ -308,7 +330,7 @@ impl<'a> DecryptMenu {
 
     // Decryption Menu commands
     //
-    const KNOWN_KEY: Command<'a> = Command {
+    const KNOWN_KEY: Command<'static> = Command {
         key: Self::KNOWN_KEY_KE,
         menu_msg: "Decrypt with a known key.",
     };
@@ -322,18 +344,6 @@ impl<'a> DecryptMenu {
         key: Self::QUIT_KE,
         menu_msg: "Return to main menu.",
     };
-
-    fn menu_array() -> MenuArray<'a, 3> {
-        MenuArray([Self::KNOWN_KEY, Self::BRUTE_FORCE, Self::QUIT])
-    }
-
-    fn print_menu() -> Result<(), Box<dyn Error>> {
-        println!("\nPlease enter one of the following options:");
-        for item in DecryptMenu::menu_array().0 {
-            println!("{}: {}", item.key, item.menu_msg)
-        }
-        Ok(())
-    }
 }
 
 impl FromStr for DecryptMenu {
@@ -358,4 +368,3 @@ struct Command<'a> {
 
 // A struct that represents an error parsing a command from a string
 struct CommandError;
-
