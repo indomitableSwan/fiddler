@@ -225,34 +225,34 @@ impl<'a> Menu<'a, 4> for MainMenu {
     }
 }
 
-impl MainMenu {
+impl<'a> MainMenu {
     // Key Events
-    const GEN_KE: &'static str = "1"; // Key Event for "Generate a key"
-    const ENCRYPT_KE: &'static str = "2"; // Key Event for "encrypt a message"
-    const DECRYPT_KE: &'static str = "3"; // Key Event for "decrypt"
-    const QUIT_KE: &'static str = "4"; // Key Event for "quit"
+    const GEN_KE: &'a str = "1"; // Key Event for "Generate a key"
+    const ENCRYPT_KE: &'a str = "2"; // Key Event for "encrypt a message"
+    const DECRYPT_KE: &'a str = "3"; // Key Event for "decrypt"
+    const QUIT_KE: &'a str = "4"; // Key Event for "quit"
 
     // Main Menu commands
     //
-    const GEN: Command<'static> = Command {
+    const GEN: Command<'a> = Command {
         key: Self::GEN_KE,
         menu_msg: "Generate a key.",
     };
 
     // Command to encrypt a message
-    const ENCRYPT: Command<'static> = Command {
+    const ENCRYPT: Command<'a> = Command {
         key: Self::ENCRYPT_KE,
         menu_msg: "Encrypt a message.",
     };
 
     // Command to decrypt a message
-    const DECRYPT: Command<'static> = Command {
+    const DECRYPT: Command<'a> = Command {
         key: Self::DECRYPT_KE,
         menu_msg: "Decrypt a ciphertext.",
     };
 
     // Command to quit
-    const QUIT: Command<'static> = Command {
+    const QUIT: Command<'a> = Command {
         key: Self::QUIT_KE,
         menu_msg: "Quit",
     };
@@ -293,9 +293,9 @@ impl<'a> Menu<'a, 2> for ConsentMenu {
     }
 }
 
-impl ConsentMenu {
-    const YES_KE: &'static str = "y";
-    const NO_KE: &'static str = "n";
+impl<'a> ConsentMenu {
+    const YES_KE: &'a str = "y";
+    const NO_KE: &'a str = "n";
 }
 
 impl FromStr for ConsentMenu {
@@ -322,25 +322,25 @@ impl<'a> Menu<'a, 3> for DecryptMenu {
     }
 }
 
-impl DecryptMenu {
+impl<'a> DecryptMenu {
     // Define Key Events
-    const KNOWN_KEY_KE: &'static str = "1";
-    const BRUTE_FORCE_KE: &'static str = "2";
+    const KNOWN_KEY_KE: &'a str = "1";
+    const BRUTE_FORCE_KE: &'a str = "2";
     const QUIT_KE: &'static str = "3";
 
     // Decryption Menu commands
     //
-    const KNOWN_KEY: Command<'static> = Command {
+    const KNOWN_KEY: Command<'a> = Command {
         key: Self::KNOWN_KEY_KE,
         menu_msg: "Decrypt with a known key.",
     };
 
-    const BRUTE_FORCE: Command<'static> = Command {
+    const BRUTE_FORCE: Command<'a> = Command {
         key: Self::BRUTE_FORCE_KE,
         menu_msg: "Brute force by having the computer guess keys and provide possible plaintexts.",
     };
 
-    const QUIT: Command<'static> = Command {
+    const QUIT: Command<'a> = Command {
         key: Self::QUIT_KE,
         menu_msg: "Return to main menu.",
     };
