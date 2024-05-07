@@ -162,8 +162,8 @@ impl Add for RingElement {
     ///
     /// Library devs: This operation is unchecked!
     fn add(self, other: Self) -> Self {
-        Self(if (self.0 + other.0) >= MODULUS  {
-            self.0 + other.0 - MODULUS 
+        Self(if (self.0 + other.0) >= MODULUS {
+            self.0 + other.0 - MODULUS
         } else {
             self.0 + other.0
         })
@@ -178,7 +178,7 @@ impl Sub for RingElement {
     /// Library devs: This operation is unchecked!
     fn sub(self, other: Self) -> Self {
         Self(if (self.0 - other.0) < 0 {
-            self.0 - other.0 + MODULUS 
+            self.0 - other.0 + MODULUS
         } else {
             self.0 - other.0
         })
@@ -685,8 +685,8 @@ mod tests {
     fn enc_dec_reprod_rand() {
         let mut rng = reprod_rng();
 
-        let key1 = Key(RingElement(rng.gen_range(0..MODULUS )));
-        let key2 = Key(RingElement(rng.gen_range(0..MODULUS )));
+        let key1 = Key(RingElement(rng.gen_range(0..MODULUS)));
+        let key2 = Key(RingElement(rng.gen_range(0..MODULUS)));
 
         let msg1 = Message::new("thisisyetanothertestmessage").unwrap();
 

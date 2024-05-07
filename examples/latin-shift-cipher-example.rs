@@ -196,8 +196,8 @@ fn print_key_instr() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-trait Menu<'a, const N: usize> {
-    fn menu_array() -> MenuArray<'a, N>;
+trait Menu<const N: usize> {
+    fn menu_array() -> MenuArray<N>;
 
     fn print_menu() -> Result<(), Box<dyn Error>> {
         println!("\nPlease enter one of the following options:");
@@ -209,7 +209,7 @@ trait Menu<'a, const N: usize> {
 }
 
 // A struct that represents a set of possible user actions
-struct MenuArray<'a, const N: usize>([Command<'a>; N]);
+struct MenuArray<const N: usize>([Command<'static>; N]);
 
 // Represents the program's main menu
 enum MainMenu {
@@ -219,40 +219,40 @@ enum MainMenu {
     QuitKE,
 }
 
-impl<'a> Menu<'a, 4> for MainMenu {
-    fn menu_array() -> MenuArray<'a, 4> {
+impl Menu<4> for MainMenu {
+    fn menu_array() -> MenuArray<4> {
         MenuArray([Self::GEN, Self::ENCRYPT, Self::DECRYPT, Self::QUIT])
     }
 }
 
-impl<'a> MainMenu {
+impl MainMenu {
     // Key Events
-    const GEN_KE: &'a str = "1"; // Key Event for "Generate a key"
-    const ENCRYPT_KE: &'a str = "2"; // Key Event for "encrypt a message"
-    const DECRYPT_KE: &'a str = "3"; // Key Event for "decrypt"
-    const QUIT_KE: &'a str = "4"; // Key Event for "quit"
+    const GEN_KE: &'static str = "1"; // Key Event for "Generate a key"
+    const ENCRYPT_KE: &'static str = "2"; // Key Event for "encrypt a message"
+    const DECRYPT_KE: &'static str = "3"; // Key Event for "decrypt"
+    const QUIT_KE: &'static str = "4"; // Key Event for "quit"
 
     // Main Menu commands
     //
-    const GEN: Command<'a> = Command {
+    const GEN: Command<'static> = Command {
         key: Self::GEN_KE,
         menu_msg: "Generate a key.",
     };
 
     // Command to encrypt a message
-    const ENCRYPT: Command<'a> = Command {
+    const ENCRYPT: Command<'static> = Command {
         key: Self::ENCRYPT_KE,
         menu_msg: "Encrypt a message.",
     };
 
     // Command to decrypt a message
-    const DECRYPT: Command<'a> = Command {
+    const DECRYPT: Command<'static> = Command {
         key: Self::DECRYPT_KE,
         menu_msg: "Decrypt a ciphertext.",
     };
 
     // Command to quit
-    const QUIT: Command<'a> = Command {
+    const QUIT: Command<'static> = Command {
         key: Self::QUIT_KE,
         menu_msg: "Quit",
     };
@@ -278,8 +278,8 @@ enum ConsentMenu {
     NoKE,
 }
 
-impl<'a> Menu<'a, 2> for ConsentMenu {
-    fn menu_array() -> MenuArray<'a, 2> {
+impl Menu<2> for ConsentMenu {
+    fn menu_array() -> MenuArray<2> {
         MenuArray([
             Command {
                 key: Self::YES_KE,
@@ -293,9 +293,9 @@ impl<'a> Menu<'a, 2> for ConsentMenu {
     }
 }
 
-impl<'a> ConsentMenu {
-    const YES_KE: &'a str = "y";
-    const NO_KE: &'a str = "n";
+impl ConsentMenu {
+    const YES_KE: &'static str = "y";
+    const NO_KE: &'static str = "n";
 }
 
 impl FromStr for ConsentMenu {
@@ -316,31 +316,31 @@ enum DecryptMenu {
     Quit,
 }
 
-impl<'a> Menu<'a, 3> for DecryptMenu {
-    fn menu_array() -> MenuArray<'a, 3> {
+impl Menu<3> for DecryptMenu {
+    fn menu_array() -> MenuArray<3> {
         MenuArray([Self::KNOWN_KEY, Self::BRUTE_FORCE, Self::QUIT])
     }
 }
 
-impl<'a> DecryptMenu {
+impl DecryptMenu {
     // Define Key Events
-    const KNOWN_KEY_KE: &'a str = "1";
-    const BRUTE_FORCE_KE: &'a str = "2";
+    const KNOWN_KEY_KE: &'static str = "1";
+    const BRUTE_FORCE_KE: &'static str = "2";
     const QUIT_KE: &'static str = "3";
 
     // Decryption Menu commands
     //
-    const KNOWN_KEY: Command<'a> = Command {
+    const KNOWN_KEY: Command<'static> = Command {
         key: Self::KNOWN_KEY_KE,
         menu_msg: "Decrypt with a known key.",
     };
 
-    const BRUTE_FORCE: Command<'a> = Command {
+    const BRUTE_FORCE: Command<'static> = Command {
         key: Self::BRUTE_FORCE_KE,
         menu_msg: "Brute force by having the computer guess keys and provide possible plaintexts.",
     };
 
-    const QUIT: Command<'a> = Command {
+    const QUIT: Command<'static> = Command {
         key: Self::QUIT_KE,
         menu_msg: "Return to main menu.",
     };
