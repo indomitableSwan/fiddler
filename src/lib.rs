@@ -63,7 +63,7 @@ const ALPH_ENCODING: [(char, i8); 26] = [
 /// as the plaintext space, ciphertext space, and key space, i.e., the ring of integers modulo _m_, denoted by &#x2124;/_m_&#x2124;, where the modulus _m_ is drawn directly from [`ALPH_ENCODING`].
 // The modulus m for the ring Z/mZ.
 // Included in order to make generalizing to other alphabets easier later.
-const MODULUS: usize = ALPH_ENCODING.len();
+const MODULUS: i8 = ALPH_ENCODING.len() as i8;
 
 /// An implementation of the ring &#x2124;/_m_&#x2124;, where _m_ is set to [`MODULUS`].
 #[derive(Copy, Clone, Debug, Eq, Hash, PartialEq, PartialOrd, Ord)]
@@ -124,7 +124,7 @@ impl RingElement {
     /// constructing and using values of ring elements
     /// for which the unchecked routines [`add`](RingElement::add) and [`sub`](RingElement::sub) will fail.
     fn from_i8(int: i8) -> Self {
-        Self(int.rem_euclid(MODULUS as i8))
+        Self(int.rem_euclid(MODULUS))
     }
 
     /// Get the inner value of the ring element.
@@ -144,7 +144,7 @@ impl RingElement {
     /// 2. `CryptoRng` is a marker trait to indicate generators suitable for crypto,
     /// but user beware.
     fn new<R: Rng + CryptoRng>(rng: &mut R) -> Self {
-        let elmt: i8 = rng.gen_range(0..MODULUS as i8);
+        let elmt: i8 = rng.gen_range(0..MODULUS);
         Self(elmt)
     }
 }
@@ -162,8 +162,8 @@ impl Add for RingElement {
     ///
     /// Library devs: This operation is unchecked!
     fn add(self, other: Self) -> Self {
-        Self(if (self.0 + other.0) >= MODULUS as i8 {
-            self.0 + other.0 - MODULUS as i8
+        Self(if (self.0 + other.0) >= MODULUS {
+            self.0 + other.0 - MODULUS
         } else {
             self.0 + other.0
         })
@@ -178,7 +178,7 @@ impl Sub for RingElement {
     /// Library devs: This operation is unchecked!
     fn sub(self, other: Self) -> Self {
         Self(if (self.0 - other.0) < 0 {
-            self.0 - other.0 + MODULUS as i8
+            self.0 - other.0 + MODULUS
         } else {
             self.0 - other.0
         })
@@ -685,8 +685,8 @@ mod tests {
     fn enc_dec_reprod_rand() {
         let mut rng = reprod_rng();
 
-        let key1 = Key(RingElement(rng.gen_range(0..MODULUS as i8)));
-        let key2 = Key(RingElement(rng.gen_range(0..MODULUS as i8)));
+        let key1 = Key(RingElement(rng.gen_range(0..MODULUS)));
+        let key2 = Key(RingElement(rng.gen_range(0..MODULUS)));
 
         let msg1 = Message::new("thisisyetanothertestmessage").unwrap();
 
