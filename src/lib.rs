@@ -1,6 +1,5 @@
 //! This repository is a playground for learning Rust.
 //! It is not meant to be used for anything in practice.
-//!
 #![warn(missing_docs)]
 #![warn(missing_debug_implementations)]
 #![warn(unused_qualifications, unused_results)]
@@ -17,9 +16,16 @@
 #![warn(rustdoc::redundant_explicit_links)]
 
 //! Currently we implement the Shift Cipher using the Latin Alphabet.
-//! This cipher uses an encoding of the Latin Alphabet in the ring of integers modulo 26, which we denote by &#x2124;/26&#x2124;. That is, the ring &#x2124;/26&#x2124; is both the _plaintext space_ and the _ciphertext space_. As the name implies, ciphertexts are shifts (computed using modular arithmetic) of the corresponding plaintexts, so the _key space_ is &#x2124;/26&#x2124; as well.
+//! This cipher uses an encoding of the Latin Alphabet in the ring of integers
+//! modulo 26, which we denote by &#x2124;/26&#x2124;. That is, the ring
+//! &#x2124;/26&#x2124; is both the _plaintext space_ and the _ciphertext
+//! space_. As the name implies, ciphertexts are shifts (computed using modular
+//! arithmetic) of the corresponding plaintexts, so the _key space_ is
+//! &#x2124;/26&#x2124; as well.
 //!
-//! We allow for messages (and, correspondingly, ciphertexts) of arbitrary length, because in practice we can encrypt (and decrypt) using ordered sequences of ring elements (i.e., plaintexts and ciphertexts, respectively).
+//! We allow for messages (and, correspondingly, ciphertexts) of arbitrary
+//! length, because in practice we can encrypt (and decrypt) using ordered
+//! sequences of ring elements (i.e., plaintexts and ciphertexts, respectively).
 // (&#x2124; is Unicode for blackboard bold Z)
 
 use rand::{CryptoRng, Rng};
@@ -59,20 +65,24 @@ const ALPH_ENCODING: [(char, i8); 26] = [
     ('z', 25),
 ];
 
-/// The modulus used to construct the ring of integers used in the given Shift Cipher
-/// as the plaintext space, ciphertext space, and key space, i.e., the ring of integers modulo _m_, denoted by &#x2124;/_m_&#x2124;, where the modulus _m_ is drawn directly from [`ALPH_ENCODING`].
+/// The modulus used to construct the ring of integers used in the given Shift
+/// Cipher as the plaintext space, ciphertext space, and key space, i.e., the
+/// ring of integers modulo _m_, denoted by &#x2124;/_m_&#x2124;, where the
+/// modulus _m_ is drawn directly from [`ALPH_ENCODING`].
 // The modulus m for the ring Z/mZ.
 // Included in order to make generalizing to other alphabets easier later.
 // Note that the longest alphabet is Khmer, which has 74 characters, so this
-// casting should be OK even if this code is used for a different alphabet later.
+// casting should be OK even if this code is used for a different alphabet
+// later.
 const MODULUS: i8 = ALPH_ENCODING.len() as i8;
 
-/// An implementation of the ring &#x2124;/_m_&#x2124;, where _m_ is set to [`MODULUS`].
+/// An implementation of the ring &#x2124;/_m_&#x2124;, where _m_ is set to
+/// [`MODULUS`].
 #[derive(Copy, Clone, Debug, Eq, Hash, PartialEq, PartialOrd, Ord)]
 struct RingElement(i8);
 
-/// A custom error type that is thrown when a conversion between the Latin Alphabet and
-/// the ring of integers modulo [`MODULUS`] fails.
+/// A custom error type that is thrown when a conversion between the Latin
+/// Alphabet and the ring of integers modulo [`MODULUS`] fails.
 ///
 /// This error should only be thrown if:
 /// - There is a mistake in the definition of the constant [`ALPH_ENCODING`];
@@ -94,7 +104,12 @@ impl RingElement {
     /// Convert from a character to a ring element.
     ///
     /// # Errors
-    /// This method will return a custom pub(crate) error if the constant [`ALPH_ENCODING`] does not specify a mapping to the ring of integers for the given input. This happens if the input is not from the lowercase Latin Alphabet. For crate users, this error type will get "lifted" to the public error type [`EncodingError`] by the caller, e.g., when parsing a [`Message`] from a string.
+    /// This method will return a custom pub(crate) error if the constant
+    /// [`ALPH_ENCODING`] does not specify a mapping to the ring of integers for
+    /// the given input. This happens if the input is not from the lowercase
+    /// Latin Alphabet. For crate users, this error type will get "lifted" to
+    /// the public error type [`EncodingError`] by the caller, e.g., when
+    /// parsing a [`Message`] from a string.
     fn from_char(ltr: char) -> Result<Self, RingElementEncodingError> {
         // This constructor uses the encoding defined in `ALPH_ENCODING`.
         ALPH_ENCODING
@@ -106,9 +121,11 @@ impl RingElement {
     /// Convert from a ring element to a character.
     ///
     /// # Panics
-    /// This method will never panic unless the library developer has made an error.
-    /// For example,
-    /// if the library developer does not use a constructor to create a ring element and creates an invalid element such as `RingElement(26)` when representing the Latin Alphabet.
+    /// This method will never panic unless the library developer has made an
+    /// error. For example,
+    /// if the library developer does not use a constructor to create a ring
+    /// element and creates an invalid element such as `RingElement(26)` when
+    /// representing the Latin Alphabet.
     fn to_char(self) -> char {
         ALPH_ENCODING
             .into_iter()
@@ -121,10 +138,11 @@ impl RingElement {
     /// Convert from an `i8` to a ring element.
     ///
     /// This function will compute the canonical form of the inner value, i.e.,
-    /// it will compute and use the least nonnegative remainder modulo `MODULUS`.
-    /// This is meant to reduce the likelihood of future library developers
-    /// constructing and using values of ring elements
-    /// for which the unchecked routines [`add`](RingElement::add) and [`sub`](RingElement::sub) will fail.
+    /// it will compute and use the least nonnegative remainder modulo
+    /// `MODULUS`. This is meant to reduce the likelihood of future library
+    /// developers constructing and using values of ring elements
+    /// for which the unchecked routines [`add`](RingElement::add) and
+    /// [`sub`](RingElement::sub) will fail.
     fn from_i8(int: i8) -> Self {
         Self(int.rem_euclid(MODULUS))
     }
@@ -137,13 +155,15 @@ impl RingElement {
     /// Generate a ring element uniformly at random.
     ///
     /// Implementation notes:
-    /// 1. This is easy here because we used `i8` as the underlying type for `RingElement`
-    /// and choosing uniformly from a range is already implemented for `i8` in `rand`.
-    /// But note that in general you must be careful,
+    /// 1. This is easy here because we used `i8` as the underlying type for
+    ///    `RingElement`
+    /// and choosing uniformly from a range is already implemented for `i8` in
+    /// `rand`. But note that in general you must be careful,
     /// e.g., if you pick a `u8` from the uniform distribution
     /// and then reduce mod 26, you will pick each of {24, 25} with probability
     /// 4/128 and all other elements with probability 5/128
-    /// 2. `CryptoRng` is a marker trait to indicate generators suitable for crypto,
+    /// 2. `CryptoRng` is a marker trait to indicate generators suitable for
+    ///    crypto,
     /// but user beware.
     fn new<R: Rng + CryptoRng>(rng: &mut R) -> Self {
         let elmt: i8 = rng.gen_range(0..MODULUS);
@@ -202,7 +222,6 @@ pub struct Message(Vec<RingElement>);
 pub struct CipherText(Vec<RingElement>);
 
 /// A cryptographic key.
-///
 // Crypto TODO: Keys should always contain context.
 // We *could* implement `Copy` and `Clone` here.
 // We do not because we want to discourage making copies of secrets.
@@ -241,7 +260,6 @@ impl Message {
     /// # let msg = Message::new("thisisanawkwardapichoice").expect("This example is hardcoded; it should work!");
     /// let ciphertxt = Message::encrypt(&msg, &key);
     /// ```
-    ///
     pub fn encrypt(&self, key: &Key) -> CipherText {
         self.0.iter().map(|&i| i + key.0).collect()
     }
@@ -302,7 +320,6 @@ impl CipherText {
     /// small_msg, small_ciphertext,
     /// small_decryption)
     /// ```
-    ///
     pub fn decrypt(&self, key: &Key) -> Message {
         self.0.iter().map(|&i| i - key.0).collect()
     }
@@ -314,10 +331,14 @@ impl CipherText {
 /// for the desired value type. That is:
 ///
 /// - For [`Message`]: The string included
-/// one or more characters that are not lowercase letters from the Latin Alphabet.
+/// one or more characters that are not lowercase letters from the Latin
+/// Alphabet.
 /// - For [`CipherText`]: The string included
-/// one or more characters that are not letters from the Latin Alphabet. We allow for strings containing both capitalized and lowercase letters when parsing as string as a ciphertext.
-/// - For [`Key`]: The string does not represent a number in the appropriate range.
+/// one or more characters that are not letters from the Latin Alphabet. We
+/// allow for strings containing both capitalized and lowercase letters when
+/// parsing as string as a ciphertext.
+/// - For [`Key`]: The string does not represent a number in the appropriate
+///   range.
 /// For the Latin Alphabet, this range is 0 to 25, inclusive.
 #[derive(Copy, Clone, Debug, Default, Eq, Hash, PartialEq)]
 pub struct EncodingError;
@@ -325,7 +346,9 @@ pub struct EncodingError;
 /// Parse a message from a string.
 ///
 /// # Errors
-/// This trait implementation returns an error when parsing a string that contains an invalid character, i.e., if there is some `char` that is not from the lowercase Latin Alphabet.
+/// This trait implementation returns an error when parsing a string that
+/// contains an invalid character, i.e., if there is some `char` that is not
+/// from the lowercase Latin Alphabet.
 impl FromStr for Message {
     type Err = EncodingError;
 
@@ -343,7 +366,8 @@ impl fmt::Display for Message {
         write!(f, "{txt}")
     }
 }
-// Question: Can I do something generic here that covers both Message and  Ciphertext?
+// Question: Can I do something generic here that covers both Message and
+// Ciphertext?
 impl FromIterator<RingElement> for Message {
     fn from_iter<I: IntoIterator<Item = RingElement>>(iter: I) -> Self {
         let mut c = Vec::new();
@@ -359,7 +383,12 @@ impl FromIterator<RingElement> for Message {
 /// Parse a ciphertext from a string.
 ///
 /// # Errors
-/// This trait implementation returns an error when parsing a string that contains an invalid character, i.e., if there is some `char` that is not from the Latin Alphabet. Although the library generally follows the convention that ciphertexts are represented as ALL CAPS strings, this implementation ignores case, so parsing a string that includes lowercase letters may succeed.
+/// This trait implementation returns an error when parsing a string that
+/// contains an invalid character, i.e., if there is some `char` that is not
+/// from the Latin Alphabet. Although the library generally follows the
+/// convention that ciphertexts are represented as ALL CAPS strings, this
+/// implementation ignores case, so parsing a string that includes lowercase
+/// letters may succeed.
 impl FromStr for CipherText {
     type Err = EncodingError;
 
@@ -375,7 +404,8 @@ impl fmt::Display for CipherText {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let txt: String = self.0.iter().map(|i| RingElement::to_char(*i)).collect();
 
-        write!(f, "{ }", txt.to_uppercase()) // Following Stinson's convention, ciphertexts are ALL CAPS
+        write!(f, "{ }", txt.to_uppercase()) // Following Stinson's convention,
+                                             // ciphertexts are ALL CAPS
     }
 }
 
@@ -394,7 +424,11 @@ impl FromIterator<RingElement> for CipherText {
 /// Parse a key from a string.
 ///
 /// # Errors
-/// This implementation will produce an error if the input string does not represent an integer in the key space, i.e., an integer between 0 and 25, inclusive. While it would be a simple matter to accept _any_ integer as input and map to the ring of integers, we chose not to do so for clarity of use.
+/// This implementation will produce an error if the input string does not
+/// represent an integer in the key space, i.e., an integer between 0 and 25,
+/// inclusive. While it would be a simple matter to accept _any_ integer as
+/// input and map to the ring of integers, we chose not to do so for clarity of
+/// use.
 impl FromStr for Key {
     type Err = EncodingError;
 
@@ -414,13 +448,15 @@ impl FromStr for Key {
 impl Key {
     /// Generate a cryptographic key uniformly at random from the key space.
     ///
-    /// Note that the mathematical description of the Latin Shift Cipher, as well as this implementation,
-    /// does not disallow a key of 0, so sometimes the encryption algorithm is just the identity function.
+    /// Note that the mathematical description of the Latin Shift Cipher, as
+    /// well as this implementation, does not disallow a key of 0, so
+    /// sometimes the encryption algorithm is just the identity function.
     ///
-    /// This is, after all, a cryptosystem designed for use by humans and not computers. Humans are not
-    ///  as good at computers at picking a value mod 26 uniformly at random, but we tend not to pick a key of 0
-    /// and send our private messages to their recipients in plaintext. Oh wait ...  
-    /// we do this all the time, in the form of emails.
+    /// This is, after all, a cryptosystem designed for use by humans and not
+    /// computers. Humans are not  as good at computers at picking a value
+    /// mod 26 uniformly at random, but we tend not to pick a key of 0
+    /// and send our private messages to their recipients in plaintext. Oh wait
+    /// ... we do this all the time, in the form of emails.
     ///
     /// # Examples
     /// ```
@@ -434,7 +470,6 @@ impl Key {
     /// // Generate a key
     /// let key = Key::new(&mut rng);
     /// ```
-    ///
     // Note: Keys must always be chosen according to a uniform distribution on the
     // underlying key space, i.e., the ring Z/26Z for the Latin Alphabet cipher.
     pub fn new<R: Rng + CryptoRng>(rng: &mut R) -> Self {
@@ -482,34 +517,38 @@ mod tests {
     // Create a test seed for reproducible tests.
     // Notes:
     // 1. This sets us up to make tests (with randomness) that are reproducible.
-    // 2. We use `ChaCha12Rng` directly here, in order to not rely on `StdRng`, since
+    // 2. We use `ChaCha12Rng` directly here, in order to not rely on `StdRng`,
+    //    since
     // the documentation of the latter warns that `StdRng` is not guaranteed to be
     // reproducible, i.e., they might change the underlying algorithm, and why not
-    // just show this concretely in order to remember for codebases where this actually
-    // matters.
+    // just show this concretely in order to remember for codebases where this
+    // actually matters.
     pub const TEST_SEED: [u8; 32] = *b"MY DISTRIBUTION IS NOT UNIFORM!!";
     pub fn reprod_rng() -> impl Rng {
         ChaCha12Rng::from_seed(TEST_SEED)
     }
 
     // Data for our running example/test.
-    // Note: This is an attempt at global constants for the tests. If it would be better to use std::cell::OnceCell, I'm not sure
-    // I understand how to do that properly.
-    // Encoded "wewillmeetatmidnight" message from Example 1.1, Stinson 3rd Edition, Example 2.1 Stinson 4th Edition
+    // Note: This is an attempt at global constants for the tests. If it would be
+    // better to use std::cell::OnceCell, I'm not sure I understand how to do
+    // that properly. Encoded "wewillmeetatmidnight" message from Example 1.1,
+    // Stinson 3rd Edition, Example 2.1 Stinson 4th Edition
     thread_local! (static MSG0: Message = Message(vec![RingElement(22), RingElement(4), 
             RingElement(22), RingElement(8), RingElement(11), RingElement(11),
             RingElement(12), RingElement(4), RingElement(4), RingElement(19),
             RingElement(0), RingElement(19),
             RingElement(12), RingElement(8), RingElement(3), RingElement(13), RingElement(8), RingElement(6), RingElement(7), RingElement(19)]));
 
-    // Encrypted "wewillmeetatmidnight" message with key=11, from Example 1.1, Stinson 3rd Edition, Example 2.1 Stinson 4th Edition
+    // Encrypted "wewillmeetatmidnight" message with key=11, from Example 1.1,
+    // Stinson 3rd Edition, Example 2.1 Stinson 4th Edition
     thread_local! (static CIPH0: CipherText = CipherText(vec![RingElement(7), RingElement(15), 
             RingElement(7), RingElement(19), RingElement(22), RingElement(22),
             RingElement(23), RingElement(15), RingElement(15), RingElement(4),
             RingElement(11), RingElement(4),
             RingElement(23), RingElement(19), RingElement(14), RingElement(24), RingElement(19), RingElement(17), RingElement(18), RingElement(4)]));
 
-    // Encrypted "wewillmeetatmidnight" as a string, from Example 1.1 Stinson 3rd Edition, Example 2.1 Stinson 4th Edition
+    // Encrypted "wewillmeetatmidnight" as a string, from Example 1.1 Stinson 3rd
+    // Edition, Example 2.1 Stinson 4th Edition
     thread_local!(static CIPH0_STR: String = "HPHTWWXPPELEXTOYTRSE".to_string());
 
     #[test]
@@ -663,17 +702,17 @@ mod tests {
         let msg1 = Message::new("thisisatest").unwrap();
         let msg2 = Message::new("thisisanothertest").unwrap();
 
-        // If you encrypt, then decrypt with the same key used during encryption, you get the same message
-        // back.
+        // If you encrypt, then decrypt with the same key used during encryption, you
+        // get the same message back.
         assert_eq!(
             CipherText::decrypt(&Message::encrypt(&msg1, &key1), &key1),
             msg1
         );
 
-        // If you encrypt, then try to decrypt with a different key than the one used during encryption,
-        // you should not get the same one back. (Note this test won't run if the keys collide, which
-        // they will with probability 1/26, i.e., the keyspace for the Latin Shift Cipher system is
-        // *tiny*.
+        // If you encrypt, then try to decrypt with a different key than the one used
+        // during encryption, you should not get the same one back. (Note this
+        // test won't run if the keys collide, which they will with probability
+        // 1/26, i.e., the keyspace for the Latin Shift Cipher system is *tiny*.
         if key1 != key2 {
             assert_ne!(
                 CipherText::decrypt(&Message::encrypt(&msg2, &key1), &key2),
@@ -701,7 +740,8 @@ mod tests {
             msg1
         );
         // Encrypted message won't decrypt correctly without the correct key
-        // This test is OK because a manual check has been done to ensure the keys are different.
+        // This test is OK because a manual check has been done to ensure the keys are
+        // different.
         assert_ne!(
             CipherText::decrypt(&Message::encrypt(&msg1, &key1), &key2),
             msg1
