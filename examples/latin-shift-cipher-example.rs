@@ -1,6 +1,7 @@
 //! This example implements a small command line application that
 //! allows key generation, message encryption, and ciphertext decryption
-//! (including a computer-aided brute force attack) using the Latin Shift Cipher.
+//! (including a computer-aided brute force attack) using the Latin Shift
+//! Cipher.
 use fiddler::{CipherText, Key, Message};
 use rand::thread_rng;
 use std::{error::Error, io, process, str::FromStr};
@@ -168,10 +169,12 @@ fn try_decrypt(ciphertxt: &CipherText, key: Key) -> Result<(), Box<dyn Error>> {
 
 type Instr = fn() -> Result<(), Box<dyn Error>>;
 
-// TODO: this loop and match statment plus a return line is probably not idiomatic
-// Processes command line input and converts to type `T` as specified by caller
-// If successful, returns conversion. If not, prints clarifying instructions
-// so that the person can try again
+// TODO: this loop and match statment plus a return line is probably not
+// idiomatic 
+//
+// Processes command line input and converts to type `T` as specified
+// by caller. If successful, returns conversion. If not, prints clarifying
+// instructions so that the person can try again
 fn process_input<T: FromStr>(instr: Instr) -> Result<T, Box<dyn Error>> {
     loop {
         let mut input = String::new();

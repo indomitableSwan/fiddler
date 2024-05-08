@@ -1,6 +1,5 @@
-//! These integration tests exercise the public API of the crate, but they may not
-//! be entirely sensible as integration tests.
-//!
+//! These integration tests exercise the public API of the crate, but they may
+//! not be entirely sensible as integration tests.
 use fiddler::{CipherText, Key, Message};
 use rand::thread_rng;
 use std::str::FromStr;
@@ -75,12 +74,13 @@ fn short_msg_example() {
     let small_ciphertext = Message::encrypt(&small_msg_0, &fixed_key_0);
     let small_decryption = CipherText::decrypt(&small_ciphertext, &fixed_key_0);
 
-    // Encryption followed by decryption with the correct gets us back the original message
+    // Encryption followed by decryption with the correct gets us back the original
+    // message
     assert_eq!(small_decryption, small_msg_0);
     assert_eq!(small_decryption.to_string(), small_msg_0.to_string());
 
-    // Encryption followed by decryption with an incorrect key gets us back a still intelligible
-    // message somtimes.
+    // Encryption followed by decryption with an incorrect key gets us back a still
+    // intelligible message somtimes.
     assert_eq!(
         CipherText::decrypt(&small_ciphertext, &fixed_key_1),
         small_msg_1
