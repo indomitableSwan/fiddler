@@ -63,6 +63,8 @@ const ALPH_ENCODING: [(char, i8); 26] = [
 /// as the plaintext space, ciphertext space, and key space, i.e., the ring of integers modulo _m_, denoted by &#x2124;/_m_&#x2124;, where the modulus _m_ is drawn directly from [`ALPH_ENCODING`].
 // The modulus m for the ring Z/mZ.
 // Included in order to make generalizing to other alphabets easier later.
+// Note that the longest alphabet is Khmer, which has 74 characters, so this
+// casting should be OK even if this code is used for a different alphabet later.
 const MODULUS: i8 = ALPH_ENCODING.len() as i8;
 
 /// An implementation of the ring &#x2124;/_m_&#x2124;, where _m_ is set to [`MODULUS`].
