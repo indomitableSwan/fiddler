@@ -170,8 +170,10 @@ fn try_decrypt(ciphertxt: &CipherText, key: Key) -> Result<(), Box<dyn Error>> {
 type Instr = fn() -> Result<(), Box<dyn Error>>;
 
 // TODO: this loop and match statment plus a return line is probably not
-// idiomatic Processes command line input and converts to type `T` as specified
-// by caller If successful, returns conversion. If not, prints clarifying
+// idiomatic 
+//
+// Processes command line input and converts to type `T` as specified
+// by caller. If successful, returns conversion. If not, prints clarifying
 // instructions so that the person can try again
 fn process_input<T: FromStr>(instr: Instr) -> Result<T, Box<dyn Error>> {
     loop {
