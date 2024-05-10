@@ -56,6 +56,9 @@ trait Ring:
 
     /// Returns true if zero and false otherwise.
     fn is_zero(&self) -> bool;
+
+    /// Chooses a ring element uniformly at random using an RNG provided by caller.
+    fn random<R: Rng + CryptoRng>(rng: &mut R) -> Self;
 }
 
 /// An implementation of the ring &#x2124;/_m_&#x2124; for modulus _m_.
@@ -128,24 +131,6 @@ impl RingElement {
     fn into_inner(self) -> i8 {
         self.0
     }
-
-    /// Generate a ring element uniformly at random.
-    ///
-    /// Implementation notes:
-    /// 1. This is easy here because we used `i8` as the underlying type for
-    ///    `RingElement`
-    /// and choosing uniformly from a range is already implemented for `i8` in
-    /// `rand`. But note that in general you must be careful,
-    /// e.g., if you pick a `u8` from the uniform distribution
-    /// and then reduce mod 26, you will pick each of {24, 25} with probability
-    /// 4/128 and all other elements with probability 5/128
-    /// 2. `CryptoRng` is a marker trait to indicate generators suitable for
-    ///    crypto,
-    /// but user beware.
-    fn new<R: Rng + CryptoRng>(rng: &mut R) -> Self {
-        let elmt: i8 = rng.gen_range(0..RingElement::MODULUS);
-        Self(elmt)
-    }
 }
 
 impl AlphabetEncoding for RingElement {
@@ -184,6 +169,24 @@ impl Ring for RingElement {
 
     fn is_zero(&self) -> bool {
         self.eq(&RingElement::ZERO)
+    }
+
+    /// Generate a ring element uniformly at random.
+    ///
+    /// Implementation notes:
+    /// 1. This is easy here because we used `i8` as the underlying type for
+    ///    `RingElement`
+    /// and choosing uniformly from a range is already implemented for `i8` in
+    /// `rand`. But note that in general you must be careful,
+    /// e.g., if you pick a `u8` from the uniform distribution
+    /// and then reduce mod 26, you will pick each of {24, 25} with probability
+    /// 4/128 and all other elements with probability 5/128
+    /// 2. `CryptoRng` is a marker trait to indicate generators suitable for
+    ///    crypto,
+    /// but user beware.
+    fn random<R: Rng + CryptoRng>(rng: &mut R) -> Self {
+        let elmt: i8 = rng.gen_range(0..RingElement::MODULUS);
+        Self(elmt)
     }
 }
 
@@ -489,7 +492,7 @@ impl Key {
     // Note: Keys must always be chosen according to a uniform distribution on the
     // underlying key space, i.e., the ring Z/26Z for the Latin Alphabet cipher.
     pub fn new<R: Rng + CryptoRng>(rng: &mut R) -> Self {
-        Self(RingElement::new(rng))
+        Self(RingElement::random(rng))
     }
 
     /// Export the key
