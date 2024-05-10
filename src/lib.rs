@@ -51,9 +51,6 @@ trait AlphabetEncoding: Sized {
 trait Ring:
     Add<Output = Self> + Sub<Output = Self> + Eq + Copy + Clone + Default + fmt::Debug + Sized
 {
-    /// The modulus of the ring.
-    const MODULUS: i8;
-
     /// Zero, the additive identity.
     const ZERO: Self;
 
@@ -104,6 +101,16 @@ impl RingElement {
         ('y', 24),
         ('z', 25),
     ];
+
+    /// The modulus used to construct the ring of integers used in the given Shift
+    /// Cipher as the plaintext space, ciphertext space, and key space, i.e., the
+    /// ring of integers modulo _m_, denoted by &#x2124;/_m_&#x2124;, where the
+    /// modulus _m_ is drawn directly from [`RingElement::ALPH_ENCODING`].
+    // The modulus m for the ring Z/mZ.
+    // Note that the longest alphabet is Khmer, which has 74 characters, so this
+    // casting should be OK even if this code is used for a different alphabet
+    // later.
+    const MODULUS: i8 = RingElement::ALPH_ENCODING.len() as i8;
 
     /// Convert from an `i8` to a ring element.
     ///
@@ -178,16 +185,6 @@ impl Ring for RingElement {
     fn is_zero(&self) -> bool {
         self.eq(&RingElement::ZERO)
     }
-
-    /// The modulus used to construct the ring of integers used in the given Shift
-    /// Cipher as the plaintext space, ciphertext space, and key space, i.e., the
-    /// ring of integers modulo _m_, denoted by &#x2124;/_m_&#x2124;, where the
-    /// modulus _m_ is drawn directly from [`RingElement::ALPH_ENCODING`].
-    // The modulus m for the ring Z/mZ.
-    // Note that the longest alphabet is Khmer, which has 74 characters, so this
-    // casting should be OK even if this code is used for a different alphabet
-    // later.
-    const MODULUS: i8 = RingElement::ALPH_ENCODING.len() as i8;
 }
 
 impl Default for RingElement {
