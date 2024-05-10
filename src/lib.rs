@@ -65,19 +65,31 @@ const ALPH_ENCODING: [(char, i8); 26] = [
     ('z', 25),
 ];
 
-/// The modulus used to construct the ring of integers used in the given Shift
-/// Cipher as the plaintext space, ciphertext space, and key space, i.e., the
-/// ring of integers modulo _m_, denoted by &#x2124;/_m_&#x2124;, where the
-/// modulus _m_ is drawn directly from [`ALPH_ENCODING`].
-// The modulus m for the ring Z/mZ.
-// Included in order to make generalizing to other alphabets easier later.
-// Note that the longest alphabet is Khmer, which has 74 characters, so this
-// casting should be OK even if this code is used for a different alphabet
-// later.
-const MODULUS: i8 = ALPH_ENCODING.len() as i8;
+trait AlphabetEncoding {
+    type Error;
 
-/// An implementation of the ring &#x2124;/_m_&#x2124;, where _m_ is set to
-/// [`MODULUS`].
+    fn to_char(self) -> char;
+
+    fn from_char(ltr: char) -> Result<Self, Self::Error>
+    where
+        Self: Sized;
+}
+
+trait Ring
+where
+    Self: Sized + Add + Sub,
+{
+    /// Returns the modulus of the ring.
+    fn modulus() -> i8;
+
+    /// Returns zero, the additive identity.
+    fn zero() -> Self;
+
+    /// Returns true if zero and false otherwise.
+    fn is_zero(&self) -> bool;
+}
+
+/// An implementation of the ring &#x2124;/_m_&#x2124;, where _m_ is set to [`MODULUS`].
 #[derive(Copy, Clone, Debug, Eq, Hash, PartialEq, PartialOrd, Ord)]
 struct RingElement(i8);
 
@@ -91,50 +103,6 @@ struct RingElement(i8);
 struct RingElementEncodingError;
 
 impl RingElement {
-    /// Returns zero, the additive identity.
-    pub const fn zero() -> RingElement {
-        RingElement(0)
-    }
-
-    /// Returns true if zero and false otherwise.
-    pub fn _is_zero(&self) -> bool {
-        self.eq(&RingElement::zero())
-    }
-
-    /// Convert from a character to a ring element.
-    ///
-    /// # Errors
-    /// This method will return a custom pub(crate) error if the constant
-    /// [`ALPH_ENCODING`] does not specify a mapping to the ring of integers for
-    /// the given input. This happens if the input is not from the lowercase
-    /// Latin Alphabet. For crate users, this error type will get "lifted" to
-    /// the public error type [`EncodingError`] by the caller, e.g., when
-    /// parsing a [`Message`] from a string.
-    fn from_char(ltr: char) -> Result<Self, RingElementEncodingError> {
-        // This constructor uses the encoding defined in `ALPH_ENCODING`.
-        ALPH_ENCODING
-            .into_iter()
-            .find_map(|(x, y)| if x == ltr { Some(RingElement(y)) } else { None })
-            .ok_or(RingElementEncodingError)
-    }
-
-    /// Convert from a ring element to a character.
-    ///
-    /// # Panics
-    /// This method will never panic unless the library developer has made an
-    /// error. For example,
-    /// if the library developer does not use a constructor to create a ring
-    /// element and creates an invalid element such as `RingElement(26)` when
-    /// representing the Latin Alphabet.
-    fn to_char(self) -> char {
-        ALPH_ENCODING
-            .into_iter()
-            .find_map(|(x, y)| if y == self.0 { Some(x) } else { None })
-            .expect(
-                "Could not map to `char`: The definition of `ALPH_ENCODING` must have an error or there is an invalid `RingElement`.",
-            )
-    }
-
     /// Convert from an `i8` to a ring element.
     ///
     /// This function will compute the canonical form of the inner value, i.e.,
@@ -144,7 +112,7 @@ impl RingElement {
     /// for which the unchecked routines [`add`](RingElement::add) and
     /// [`sub`](RingElement::sub) will fail.
     fn from_i8(int: i8) -> Self {
-        Self(int.rem_euclid(MODULUS))
+        Self(int.rem_euclid(RingElement::modulus()))
     }
 
     /// Get the inner value of the ring element.
@@ -166,8 +134,62 @@ impl RingElement {
     ///    crypto,
     /// but user beware.
     fn new<R: Rng + CryptoRng>(rng: &mut R) -> Self {
-        let elmt: i8 = rng.gen_range(0..MODULUS);
+        let elmt: i8 = rng.gen_range(0..RingElement::modulus());
         Self(elmt)
+    }
+}
+
+impl AlphabetEncoding for RingElement {
+    type Error = RingElementEncodingError;
+
+    /// Convert from a character to a ring element.
+    ///
+    /// # Errors
+    /// This method will return a custom pub(crate) error if the constant [`ALPH_ENCODING`] does not specify a mapping to the ring of integers for the given input. This happens if the input is not from the lowercase Latin Alphabet. For crate users, this error type will get "lifted" to the public error type [`EncodingError`] by the caller, e.g., when parsing a [`Message`] from a string.
+    fn from_char(ltr: char) -> Result<Self, RingElementEncodingError> {
+        // This constructor uses the encoding defined in `ALPH_ENCODING`.
+        ALPH_ENCODING
+            .into_iter()
+            .find_map(|(x, y)| if x == ltr { Some(RingElement(y)) } else { None })
+            .ok_or(RingElementEncodingError)
+    }
+
+    /// Convert from a ring element to a character.
+    ///
+    /// # Panics
+    /// This method will never panic unless the library developer has made an error.
+    /// For example,
+    /// if the library developer does not use a constructor to create a ring element and creates an invalid element such as `RingElement(26)` when representing the Latin Alphabet.
+    fn to_char(self) -> char {
+        ALPH_ENCODING
+            .into_iter()
+            .find_map(|(x, y)| if y == self.0 { Some(x) } else { None })
+            .expect(
+                "Could not map to `char`: The definition of `ALPH_ENCODING` must have an error or there is an invalid `RingElement`.",
+            )
+    }
+}
+
+impl Ring for RingElement {
+    fn zero() -> RingElement {
+        RingElement(0)
+    }
+
+    fn is_zero(&self) -> bool {
+        self.eq(&RingElement::zero())
+    }
+
+    /// The modulus used to construct the ring of integers used in the given Shift
+    /// Cipher as the plaintext space, ciphertext space, and key space, i.e., the
+    /// ring of integers modulo _m_, denoted by &#x2124;/_m_&#x2124;, where the
+    /// modulus _m_ is drawn directly from [`ALPH_ENCODING`].
+    // The modulus m for the ring Z/mZ.
+    // Included in order to make generalizing to other alphabets easier later.
+    // Note that the longest alphabet is Khmer, which has 74 characters, so this
+    // casting should be OK even if this code is used for a different alphabet
+    // later.
+    fn modulus() -> i8 {
+        ALPH_ENCODING.len() as i8
     }
 }
 
@@ -184,8 +206,8 @@ impl Add for RingElement {
     ///
     /// Library devs: This operation is unchecked!
     fn add(self, other: Self) -> Self {
-        Self(if (self.0 + other.0) >= MODULUS {
-            self.0 + other.0 - MODULUS
+        Self(if (self.0 + other.0) >= RingElement::modulus() {
+            self.0 + other.0 - RingElement::modulus()
         } else {
             self.0 + other.0
         })
@@ -200,7 +222,7 @@ impl Sub for RingElement {
     /// Library devs: This operation is unchecked!
     fn sub(self, other: Self) -> Self {
         Self(if (self.0 - other.0) < 0 {
-            self.0 - other.0 + MODULUS
+            self.0 - other.0 + RingElement::modulus()
         } else {
             self.0 - other.0
         })
@@ -726,8 +748,8 @@ mod tests {
     fn enc_dec_reprod_rand() {
         let mut rng = reprod_rng();
 
-        let key1 = Key(RingElement(rng.gen_range(0..MODULUS)));
-        let key2 = Key(RingElement(rng.gen_range(0..MODULUS)));
+        let key1 = Key(RingElement(rng.gen_range(0..RingElement::modulus())));
+        let key2 = Key(RingElement(rng.gen_range(0..RingElement::modulus())));
 
         let msg1 = Message::new("thisisyetanothertestmessage").unwrap();
 
