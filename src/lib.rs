@@ -190,45 +190,6 @@ impl Ring for RingElement {
     }
 }
 
-impl AlphabetEncoding for RingElement {
-    type Error = RingElementEncodingError;
-
-    /// Convert from a character.
-    ///
-    /// # Errors
-    /// This method will return a custom pub(crate) error if the constant [`RingElement::ALPH_ENCODING`] does not specify a mapping to the ring of integers for the given input. This happens if the input is not from the lowercase Latin Alphabet. For crate users, this error type will get "lifted" to the public error type [`EncodingError`] by the caller, e.g., when parsing a [`Message`] from a string.
-    fn from_char(ltr: char) -> Result<Self, RingElementEncodingError> {
-        // This constructor uses the encoding defined in `RingElement::ALPH_ENCODING`.
-        RingElement::ALPH_ENCODING
-            .into_iter()
-            .find_map(|(x, y)| if x == ltr { Some(RingElement(y)) } else { None })
-            .ok_or(RingElementEncodingError)
-    }
-
-    /// Convert from a ring element to a character.
-    ///
-    /// # Panics
-    /// This method will never panic unless the library developer has made an error.
-    /// For example,
-    /// if the library developer does not use a constructor to create a ring element and creates an invalid element such as `RingElement(26)` when representing the Latin Alphabet.
-    fn to_char(self) -> char {
-        RingElement::ALPH_ENCODING
-            .into_iter()
-            .find_map(|(x, y)| if y == self.0 { Some(x) } else { None })
-            .expect(
-                "Could not map to `char`: The definition of `RingElement::ALPH_ENCODING` must have an error or there is an invalid `RingElement`.",
-            )
-    }
-}
-
-impl Ring for RingElement {
-    const ZERO: Self = RingElement(0);
-
-    fn is_zero(&self) -> bool {
-        self.eq(&RingElement::ZERO)
-    }
-}
-
 impl Default for RingElement {
     fn default() -> Self {
         RingElement::ZERO
