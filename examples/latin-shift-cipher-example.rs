@@ -4,14 +4,11 @@
 //! Cipher.
 use fiddler::{CipherText, Key, Message};
 use rand::thread_rng;
-use std::{error::Error, io, process, str::FromStr};
+use std::{error::Error, io, str::FromStr};
 
-fn main() {
+fn main() -> Result<(), Box<dyn Error>> {
     println!("\nWelcome to the Latin Shift Cipher Demo!");
-    if let Err(e) = menu() {
-        eprintln!("Application error: {e}");
-        process::exit(1);
-    }
+    menu().inspect_err(|e| eprintln!("Application error: {e}"))
 }
 
 // Prints menu of user options and matches on user input to do one of:
@@ -20,7 +17,7 @@ fn menu() -> Result<(), Box<dyn Error>> {
     loop {
         MainMenu::print_menu()?;
 
-        let command: MainMenu = process_input(MainMenu::print_menu as Instr)?;
+        let command: MainMenu = process_input(MainMenu::print_menu)?;
 
         match command {
             MainMenu::GenKE => make_key()?,
@@ -37,7 +34,7 @@ fn menu() -> Result<(), Box<dyn Error>> {
 fn decryption_menu(ciphertxt: &CipherText) -> Result<(), Box<dyn Error>> {
     DecryptMenu::print_menu()?;
 
-    let command: DecryptMenu = process_input(DecryptMenu::print_menu as Instr)?;
+    let command: DecryptMenu = process_input(DecryptMenu::print_menu)?;
 
     match command {
         DecryptMenu::Bruteforce => {
@@ -67,7 +64,7 @@ fn make_key() -> Result<(), Box<dyn Error>> {
         println!("\nAre you happy with your key?");
         ConsentMenu::print_menu()?;
 
-        let command: ConsentMenu = process_input(ConsentMenu::print_menu as Instr)?;
+        let command: ConsentMenu = process_input(ConsentMenu::print_menu)?;
 
         match command {
             ConsentMenu::NoKE => continue,
@@ -84,11 +81,11 @@ fn make_key() -> Result<(), Box<dyn Error>> {
 fn encrypt() -> Result<(), Box<dyn Error>> {
     println!("\nPlease enter the message you want to encrypt:");
 
-    let msg: Message = process_input(print_msg_instr as Instr)?;
+    let msg: Message = process_input(print_msg_instr)?;
 
     println!("\nNow, do you have a key that was generated uniformly at random that you remember and \nwould like to use? If yes, please enter your key. Otherwise, please pick a fresh key \nuniformly at random from the ring of integers modulo 26 yourself. \n\nYou won't be as good at this as a computer, but if you understand the cryptosystem \nyou are using (something we cryptographers routinely assume about other people, while \npretending that we aren't assuming this), you will probably not pick a key of 0, \nwhich is equivalent to sending your messages \"in the clear\", i.e., unencrypted. Good \nluck! \n\nGo ahead and enter your key now:");
 
-    let key: Key = process_input(print_key_instr as Instr)?;
+    let key: Key = process_input(print_key_instr)?;
 
     println!("\nYour ciphertext is {}", msg.encrypt(&key));
     println!("\nLook for patterns in your ciphertext. Could you definitively figure out the key and \noriginal plaintext message if you didn't already know it?");
@@ -106,7 +103,7 @@ fn encrypt() -> Result<(), Box<dyn Error>> {
 fn decrypt() -> Result<(), Box<dyn Error>> {
     println!("\nEnter your ciphertext. Ciphertexts use characters only from the Latin Alphabet:");
 
-    let ciphertxt: CipherText = process_input(print_ciphertxt_instr as Instr)?;
+    let ciphertxt: CipherText = process_input(print_ciphertxt_instr)?;
 
     println!("\nGreat, let's work on decrypting your ciphertext.");
     println!(
@@ -130,7 +127,7 @@ fn decrypt() -> Result<(), Box<dyn Error>> {
 fn chosen_key(ciphertxt: &CipherText) -> Result<(), Box<dyn Error>> {
     loop {
         println!("\nOK. Please enter a key now:");
-        let key: Key = process_input(print_key_instr as Instr)?;
+        let key: Key = process_input(print_key_instr)?;
         match try_decrypt(ciphertxt, key) {
             Ok(_) => break,
             Err(_) => continue,
@@ -159,7 +156,7 @@ fn try_decrypt(ciphertxt: &CipherText, key: Key) -> Result<(), Box<dyn Error>> {
     println!("\nAre you happy with this decryption?");
     ConsentMenu::print_menu()?;
 
-    let command: ConsentMenu = process_input(ConsentMenu::print_menu as Instr)?;
+    let command: ConsentMenu = process_input(ConsentMenu::print_menu)?;
 
     match command {
         ConsentMenu::NoKE => Err("try again".into()),
@@ -167,15 +164,17 @@ fn try_decrypt(ciphertxt: &CipherText, key: Key) -> Result<(), Box<dyn Error>> {
     }
 }
 
-type Instr = fn() -> Result<(), Box<dyn Error>>;
-
 // TODO: this loop and match statment plus a return line is probably not
 // idiomatic
 //
 // Processes command line input and converts to type `T` as specified
 // by caller. If successful, returns conversion. If not, prints clarifying
 // instructions so that the person can try again
-fn process_input<T: FromStr>(instr: Instr) -> Result<T, Box<dyn Error>> {
+fn process_input<T, F>(instr: F) -> Result<T, Box<dyn Error>>
+where
+    T: FromStr,
+    F: Fn() -> Result<(), Box<dyn Error>>,
+{
     loop {
         let mut input = String::new();
 
