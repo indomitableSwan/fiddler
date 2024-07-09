@@ -169,9 +169,6 @@ fn try_decrypt(ciphertxt: &CipherText, key: Key) -> Result<(), Box<dyn Error>> {
 
 type Instr = fn() -> Result<(), Box<dyn Error>>;
 
-// TODO: this loop and match statment plus a return line is probably not
-// idiomatic
-//
 // Processes command line input and converts to type `T` as specified
 // by caller. If successful, returns conversion. If not, prints clarifying
 // instructions so that the person can try again
@@ -181,16 +178,12 @@ fn process_input<T: FromStr>(instr: Instr) -> Result<T, Box<dyn Error>> {
 
         io::stdin().read_line(&mut input)?;
 
-        let result: T = match input.trim().parse::<T>() {
-            Ok(txt) => txt,
-            Err(_) => {
-                instr()?;
-                println!("\nPlease try again:");
-                continue;
-            }
-        };
-
-        return Ok(result);
+        if let Ok(result) = input.trim().parse::<T>() {
+            return Ok(result);
+        } else {
+            instr()?;
+            println!("\nPlease try again:");
+        }
     }
 }
 
