@@ -4,14 +4,11 @@
 //! Cipher.
 use fiddler::{CipherText, Key, Message};
 use rand::thread_rng;
-use std::{error::Error, io, process, str::FromStr};
+use std::{error::Error, io, str::FromStr};
 
-fn main() {
+fn main() -> Result<(), Box<dyn Error>> {
     println!("\nWelcome to the Latin Shift Cipher Demo!");
-    if let Err(e) = menu() {
-        eprintln!("Application error: {e}");
-        process::exit(1);
-    }
+    menu().inspect_err(|e| eprintln!("Application error: {e}"))
 }
 
 // Prints menu of user options and matches on user input to do one of:
