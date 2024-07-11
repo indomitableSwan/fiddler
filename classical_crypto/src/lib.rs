@@ -259,7 +259,7 @@ impl Message {
     /// // That said, humans are very quick at understanding mashed up plaintexts
     /// // without punctuation and spacing.
     /// // Computers have to check dictionaries.
-    /// # use fiddler::{CipherText, Key, Message};
+    /// # use classical_crypto::{CipherText, Key, Message};
     /// # use rand::thread_rng;
     /// let msg = Message::new("thisisanawkwardapichoice").expect("This example is hardcoded; it should work!");
     ///
@@ -398,7 +398,7 @@ impl Key {
     ///
     /// # Examples
     /// ```
-    /// # use fiddler::{CipherText, Key, Message};
+    /// # use classical_crypto::{CipherText, Key, Message};
     /// # // Don't forget to include the `rand` crate!
     /// # use rand::thread_rng;
     /// # //

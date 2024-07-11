@@ -12,7 +12,7 @@ impl Message {
     ///
     /// # Examples
     /// ```
-    /// # use fiddler::{CipherText, Key, Message};
+    /// # use classical_crypto::{CipherText, Key, Message};
     /// # use rand::thread_rng;
     /// # let mut rng = thread_rng();
     /// # let key = Key::new(&mut rng);
@@ -31,7 +31,7 @@ impl CipherText {
     ///
     /// # Examples
     /// ```
-    /// # use fiddler::{CipherText, Key, Message};
+    /// # use classical_crypto::{CipherText, Key, Message};
     /// # use rand::thread_rng;
     /// #
     /// # let mut rng = thread_rng();
@@ -53,7 +53,7 @@ impl CipherText {
     /// ```
     ///
     /// ```
-    /// # use fiddler::{CipherText, Key, Message};
+    /// # use classical_crypto::{CipherText, Key, Message};
     /// # use rand::thread_rng;
     /// #
     /// # let mut rng = thread_rng();
@@ -102,7 +102,7 @@ impl Key {
     ///
     /// # Examples
     /// ```
-    /// # use fiddler::{CipherText, Key, Message};
+    /// # use classical_crypto::{CipherText, Key, Message};
     /// // Don't forget to include the `rand` crate!
     /// use rand::thread_rng;
     /// //

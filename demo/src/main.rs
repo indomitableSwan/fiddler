@@ -2,7 +2,7 @@
 //! allows key generation, message encryption, and ciphertext decryption
 //! (including a computer-aided brute force attack) using the Latin Shift
 //! Cipher.
-use fiddler::{CipherText, Key, Message};
+use classical_crypto::{CipherText, Key, Message};
 use rand::thread_rng;
 use std::{error::Error, io, str::FromStr};
 
