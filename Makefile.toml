@@ -42,7 +42,7 @@ args = ["doc", "--no-deps", "--workspace"]
 [tasks.default]
 alias = "member_task"
 
-## Fancy flow is you need to run different commands
+## Fancy flow if you need to run different commands
 ## at the workspace level than for each member crate
 ## This flow runs "member_flow" for each member crate
 ## and "workspace_flow" at root.

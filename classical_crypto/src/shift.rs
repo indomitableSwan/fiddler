@@ -95,7 +95,7 @@ impl Key {
     /// sometimes the encryption algorithm is just the identity function.
     ///
     /// This is, after all, a cryptosystem designed for use by humans and not
-    /// computers. Humans are not  as good at computers at picking a value
+    /// computers. Humans are not as good as computers at picking a value
     /// mod 26 uniformly at random, but we tend not to pick a key of 0
     /// and send our private messages to their recipients in plaintext. Oh wait
     /// ... we do this all the time, in the form of emails.
