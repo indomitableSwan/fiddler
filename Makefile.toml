@@ -44,21 +44,34 @@ alias = "composite"
 
 [tasks.composite]
 workspace = false
-dependencies = ["my-flow", "workspace-flow"]
+dependencies = ["member_flow", "workspace_flow"]
 
-[tasks.workspace-flow]
+# Tasks here run from root directory
+[tasks.workspace_flow]
 workspace = false
+# Build docs for all workspace members
+# Note: prevents overwriting of documentation that occurrs
+# when building docs as part of member_flow
 dependencies = ["doc"]
 
-# My dev flow.
-[tasks.my-flow]
-# fork = true
+# Build and open docs for all workspace members
+[tasks.open_docs]
+workspace = false
+command = "cargo"
+args = ["doc", "--no-deps", "--open"]
+
+# Run member_task for each workspace member.
+[tasks.member_flow]
+run_task = { name = "member_task", fork = true }
+
+# Tasks to be run in each workspace member
+[tasks.member_task]
 dependencies = [
     "format",
     "clean",
     "clippy", 
-  #  "build",
+    "build",
     "test",
     "examples",
-    
 ]
+
