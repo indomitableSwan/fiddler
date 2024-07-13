@@ -56,9 +56,8 @@ alias = "member_task"
 
 # Build and open docs for all workspace members
 [tasks.open_docs]
-workspace = false
 command = "cargo"
-args = ["doc", "--no-deps", "--open"]
+args = ["doc", "--no-deps", "--workspace", "--open"]
 
 ## Run member_task for each workspace member.
 #[tasks.member_flow]
