@@ -3,6 +3,8 @@
 # There is a lot more functionality than what is used here, including 
 # testing multiple platforms, running benchmarks, security checks, etc.
 
+[env]
+CARGO_MAKE_EXTEND_WORKSPACE_MAKEFILE = true
 
 # Clippy is a collection of lints that can be helpful to catch common mistakes.
 # See: https://doc.rust-lang.org/clippy/index.html.
@@ -23,29 +25,40 @@ dependencies = ["clean"]
 # dependent on the library.
 [tasks.examples]
 command = "cargo"
-args = ["test", "--examples"]
+args = ["test", "--examples", "--workspace"]
 
 # Potentially useful options to add include:
 # - "--document-private-items", since this is a tutorial-style library.
 # - "--examples", which allows you to produce documentation for examples.
 [tasks.doc]
 # Uncomment following line to elevate warnings to errors here as well
-# env = { "RUSTDOCFLAGS" = "-Dwarnings" }
+# env = { "RUSTDOCFLAGS" = "-Dwarnings"}
+# Try to get workspace index into docs using nightly toolchain
+ env = { "RUSTDOCFLAGS" = "--enable-index-page -Zunstable-options"}
 command = "cargo"
 args = ["doc", "--no-deps"]
 
 # Set alias so that the default dev flow points to my-flow instead.
 [tasks.default]
-alias = "my-flow"
+alias = "composite"
+
+[tasks.composite]
+workspace = false
+dependencies = ["my-flow", "workspace-flow"]
+
+[tasks.workspace-flow]
+workspace = false
+dependencies = ["doc"]
 
 # My dev flow.
 [tasks.my-flow]
+# fork = true
 dependencies = [
     "format",
     "clean",
     "clippy", 
-    "build",
+  #  "build",
     "test",
     "examples",
-    "doc"
+    
 ]

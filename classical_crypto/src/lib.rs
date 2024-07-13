@@ -15,12 +15,14 @@
 #![warn(rustdoc::unescaped_backticks)]
 #![warn(rustdoc::redundant_explicit_links)]
 
-//! Currently we implement the Shift Cipher using the Latin Alphabet. We plan to implement the other classical ciphers (also using the Latin Alphabet) as presented in Douglas R. Stinson's _Cryptography: Theory and Practice_.
+//! Currently we implement the Shift Cipher using the Latin Alphabet. We plan to
+//! implement the other classical ciphers (also using the Latin Alphabet) as
+//! presented in Douglas R. Stinson's _Cryptography: Theory and Practice_.
 //!
-//! The Shift Cipher, Affine Cipher, and Substitution Cipher all make use of an encoding of the Latin Alphabet in the ring of integers
-//! modulo 26, which we denote by &#x2124;/26&#x2124;. That is, the ring
-//! &#x2124;/26&#x2124; is both the _plaintext space_ and the _ciphertext
-//! space_.
+//! The Shift Cipher, Affine Cipher, and Substitution Cipher all make use of an
+//! encoding of the Latin Alphabet in the ring of integers modulo 26, which we
+//! denote by &#x2124;/26&#x2124;. That is, the ring &#x2124;/26&#x2124; is both
+//! the _plaintext space_ and the _ciphertext space_.
 //!
 //! We allow for messages (and, correspondingly, ciphertexts) of arbitrary
 //! length, because in practice we can encrypt (and decrypt) using ordered
@@ -58,7 +60,8 @@ trait Ring:
     /// Returns true if zero and false otherwise.
     fn is_zero(&self) -> bool;
 
-    /// Chooses a ring element uniformly at random using an RNG provided by caller.
+    /// Chooses a ring element uniformly at random using an RNG provided by
+    /// caller.
     fn random<R: Rng + CryptoRng>(rng: &mut R) -> Self;
 }
 
@@ -70,7 +73,8 @@ struct RingElement(i8);
 /// Alphabet and the ring of integers modulo [`RingElement::MODULUS`] fails.
 ///
 /// This error should only be thrown if:
-/// - There is a mistake in the definition of the constant [`RingElement::ALPH_ENCODING`];
+/// - There is a mistake in the definition of the constant
+///   [`RingElement::ALPH_ENCODING`];
 /// - The input was not a lowercase letter from the Latin Alphabet.
 #[derive(Copy, Clone, Debug, Default, Eq, Hash, PartialEq)]
 struct RingElementEncodingError;
@@ -106,10 +110,11 @@ impl RingElement {
         ('z', 25),
     ];
 
-    /// The modulus used to construct the ring of integers used in the given Shift
-    /// Cipher as the plaintext space, ciphertext space, and key space, i.e., the
-    /// ring of integers modulo _m_, denoted by &#x2124;/_m_&#x2124;, where the
-    /// modulus _m_ is drawn directly from [`RingElement::ALPH_ENCODING`].
+    /// The modulus used to construct the ring of integers used in the given
+    /// Shift Cipher as the plaintext space, ciphertext space, and key
+    /// space, i.e., the ring of integers modulo _m_, denoted by
+    /// &#x2124;/_m_&#x2124;, where the modulus _m_ is drawn directly from
+    /// [`RingElement::ALPH_ENCODING`].
     // The modulus m for the ring Z/mZ.
     // Note that the longest alphabet is Khmer, which has 74 characters, so this
     // casting should be OK even if this code is used for a different alphabet
@@ -120,10 +125,10 @@ impl RingElement {
     ///
     /// This function will compute the canonical form of the inner value, i.e.,
     /// it will compute and use the least nonnegative remainder modulo
-    /// [`RingElement::MODULUS`]. This is meant to reduce the likelihood of future library
-    /// developers constructing and using values of ring elements
-    /// for which the unchecked routines [`add`](RingElement::add) and
-    /// [`sub`](RingElement::sub) will fail.
+    /// [`RingElement::MODULUS`]. This is meant to reduce the likelihood of
+    /// future library developers constructing and using values of ring
+    /// elements for which the unchecked routines [`add`](RingElement::add)
+    /// and [`sub`](RingElement::sub) will fail.
     fn from_i8(int: i8) -> Self {
         Self(int.rem_euclid(RingElement::MODULUS))
     }
@@ -140,7 +145,12 @@ impl AlphabetEncoding for RingElement {
     /// Convert from a character.
     ///
     /// # Errors
-    /// This method will return a custom pub(crate) error if the constant [`RingElement::ALPH_ENCODING`] does not specify a mapping to the ring of integers for the given input. This happens if the input is not from the lowercase Latin Alphabet. For crate users, this error type will get "lifted" to the public error type [`EncodingError`] by the caller, e.g., when parsing a [`Message`] from a string.
+    /// This method will return a custom pub(crate) error if the constant
+    /// [`RingElement::ALPH_ENCODING`] does not specify a mapping to the ring of
+    /// integers for the given input. This happens if the input is not from the
+    /// lowercase Latin Alphabet. For crate users, this error type will get
+    /// "lifted" to the public error type [`EncodingError`] by the caller, e.g.,
+    /// when parsing a [`Message`] from a string.
     fn from_char(ltr: char) -> Result<Self, RingElementEncodingError> {
         // This constructor uses the encoding defined in `RingElement::ALPH_ENCODING`.
         RingElement::ALPH_ENCODING
@@ -152,9 +162,11 @@ impl AlphabetEncoding for RingElement {
     /// Convert from a ring element to a character.
     ///
     /// # Panics
-    /// This method will never panic unless the library developer has made an error.
-    /// For example,
-    /// if the library developer does not use a constructor to create a ring element and creates an invalid element such as `RingElement(26)` when representing the Latin Alphabet.
+    /// This method will never panic unless the library developer has made an
+    /// error. For example,
+    /// if the library developer does not use a constructor to create a ring
+    /// element and creates an invalid element such as `RingElement(26)` when
+    /// representing the Latin Alphabet.
     fn to_char(self) -> char {
         RingElement::ALPH_ENCODING
             .into_iter()
@@ -175,16 +187,14 @@ impl Ring for RingElement {
     /// Generate a ring element uniformly at random.
     ///
     /// Implementation notes:
-    /// 1. This is easy here because we used `i8` as the underlying type for
-    ///    `RingElement`
-    /// and choosing uniformly from a range is already implemented for `i8` in
-    /// `rand`. But note that in general you must be careful,
-    /// e.g., if you pick a `u8` from the uniform distribution
-    /// and then reduce mod 26, you will pick each of {24, 25} with probability
-    /// 4/128 and all other elements with probability 5/128
+    /// 1. This is easy here because we used `i8` as the underlying   type for
+    ///    `RingElement` and choosing uniformly from a range is already
+    ///    implemented for `i8` in `rand`. But note that in general you must be
+    ///    careful, e.g., if you pick a `u8` from the uniform distribution and
+    ///    then reduce mod 26, you will pick each of {24, 25} with probability
+    ///    4/128 and all other elements with probability 5/128
     /// 2. `CryptoRng` is a marker trait to indicate generators suitable for
-    ///    crypto,
-    /// but user beware.
+    ///    crypto, but user beware.
     fn random<R: Rng + CryptoRng>(rng: &mut R) -> Self {
         let elmt: i8 = rng.gen_range(0..RingElement::MODULUS);
         Self(elmt)
@@ -276,16 +286,13 @@ impl Message {
 /// This is likely because the string violates one of the constraints
 /// for the desired value type. That is:
 ///
-/// - For [`Message`]: The string included
-/// one or more characters that are not lowercase letters from the Latin
-/// Alphabet.
-/// - For [`CipherText`]: The string included
-/// one or more characters that are not letters from the Latin Alphabet. We
-/// allow for strings containing both capitalized and lowercase letters when
-/// parsing as string as a ciphertext.
+/// - For [`Message`]: The string included one or more characters that are not
+///   lowercase letters from the Latin Alphabet.
+/// - For [`CipherText`]: The string included one or more characters that are
+///   not letters from the Latin Alphabet. We allow for strings containing both
+///   capitalized and lowercase letters when parsing as string as a ciphertext.
 /// - For [`Key`]: The string does not represent a number in the appropriate
-///   range.
-/// For the Latin Alphabet, this range is 0 to 25, inclusive.
+///   range. For the Latin Alphabet, this range is 0 to 25, inclusive.
 #[derive(Copy, Clone, Debug, Default, Eq, Hash, PartialEq)]
 pub struct EncodingError;
 
@@ -457,6 +464,7 @@ mod tests {
     #[test]
     fn ring_elmnt_default() {
         assert_eq!(RingElement::default(), RingElement(0));
+        assert!(RingElement::default().is_zero())
     }
 
     #[test]

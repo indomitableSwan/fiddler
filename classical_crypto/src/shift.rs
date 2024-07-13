@@ -1,8 +1,8 @@
 //! This is an implementation of the Latin Shift Cipher.
-//! The plaintext and ciphertext space are the ring of integers modulo 26, &#x2124;/26&#x2124;.
-//! As the name implies, ciphertexts are shifts (computed using modular
-//! arithmetic) of the corresponding plaintexts, so the _key space_ is
-//! &#x2124;/26&#x2124;. as well.
+//! The plaintext and ciphertext space are the ring of integers modulo 26,
+//! &#x2124;/26&#x2124;. As the name implies, ciphertexts are shifts (computed
+//! using modular arithmetic) of the corresponding plaintexts, so the _key
+//! space_ is &#x2124;/26&#x2124;. as well.
 use crate::{CipherText, Key, Message, Ring, RingElement};
 use rand::{CryptoRng, Rng};
 
