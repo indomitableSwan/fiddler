@@ -7,27 +7,27 @@ Currently there is a library crate, `classical_crypto`, which implements some hi
 
 # build instructions
 To build, run 
-`cargo make`.
+`cargo make` using the nightly toolchain[^1].
+
 
 If you have never used  the `cargo-make` task runner before, see [here](https://github.com/sagiegurari/cargo-make?tab=readme-ov-file#installation) for installation instructions.
 
 Note that we do not track _Cargo.lock_ in this repository, so builds are not considered reproducible.
 
+[^1]: We use nightly to create documentation that results in a top-level index file. The build should otherwise still work on the stable rust toolchain.
+
 # documentation
 
-Documentation of the workspace members is built automatically by `cargo make`. After building, you can open `fiddler/target/doc/index.html` in any browser. Alternatively, you can build and open the documentation by running
-`
-cargo make open_docs
-`, which uses the custom flags set in the top-level Makefile.toml file.
+Documentation of the workspace members is built automatically by `cargo make` _when using the nightly toolchain_. After building, you can open `fiddler/target/doc/index.html` in any browser. 
 
 Alternatively, run 
 `
 cargo make open_docs
 ` from the workspace root, which uses custom flags set in the top-level Makefile.toml file, 
-or the standard
+or, if you are not on nightly, the standard
 `
 cargo doc --open
-`, which builds and opens the documentation for the included crates as well as their dependencies.
+`, which builds and opens the documentation for the included crates as well as their dependencies. 
 
 Since this is a learning crate, it may also be helpful to document private items. To do so, pass the option `--document-private-items` to `cargo doc`.
 

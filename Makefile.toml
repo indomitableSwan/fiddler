@@ -57,6 +57,8 @@ dependencies = ["doc"]
 
 # Build and open docs for all workspace members
 [tasks.open_docs]
+env = { "RUSTDOCFLAGS" = "--enable-index-page -Zunstable-options"}
+workspace = false
 command = "cargo"
 args = ["doc", "--no-deps", "--open"]
 
