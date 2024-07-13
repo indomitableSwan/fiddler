@@ -3,6 +3,8 @@
 # There is a lot more functionality than what is used here, including 
 # testing multiple platforms, running benchmarks, security checks, etc.
 
+[env]
+CARGO_MAKE_EXTEND_WORKSPACE_MAKEFILE = true
 
 # Clippy is a collection of lints that can be helpful to catch common mistakes.
 # See: https://doc.rust-lang.org/clippy/index.html.
@@ -23,23 +25,46 @@ dependencies = ["clean"]
 # dependent on the library.
 [tasks.examples]
 command = "cargo"
-args = ["test", "--examples"]
+args = ["test", "--examples", "--workspace"]
 
 # Potentially useful options to add include:
 # - "--document-private-items", since this is a tutorial-style library.
 # - "--examples", which allows you to produce documentation for examples.
 [tasks.doc]
 # Uncomment following line to elevate warnings to errors here as well
-# env = { "RUSTDOCFLAGS" = "-Dwarnings" }
+# env = { "RUSTDOCFLAGS" = "-Dwarnings"}
+# Try to get workspace index into docs using nightly toolchain
+ env = { "RUSTDOCFLAGS" = "--enable-index-page -Zunstable-options"}
 command = "cargo"
-args = ["doc", "--no-deps"]
+args = ["doc", "--no-deps", "--workspace"]
 
-# Set alias so that the default dev flow points to my-flow instead.
+# Set alias so that the default dev flow points to member_task instead.
 [tasks.default]
-alias = "my-flow"
+alias = "member_task"
 
-# My dev flow.
-[tasks.my-flow]
+## Fancy flow is you need to run different commands
+## at the workspace level than for each member crate
+## This flow runs "member_flow" for each member crate
+## and "workspace_flow" at root.
+#[tasks.composite]
+#workspace = false
+#dependencies = ["member_flow", "workspace_flow"]
+
+## Tasks here run from root directory
+#[tasks.workspace_flow]
+#workspace = false
+
+# Build and open docs for all workspace members
+[tasks.open_docs]
+command = "cargo"
+args = ["doc", "--no-deps", "--workspace", "--open"]
+
+## Run member_task for each workspace member.
+#[tasks.member_flow]
+#run_task = { name = "member_task", fork = true }
+
+# Tasks to be run in each workspace member
+[tasks.member_task]
 dependencies = [
     "format",
     "clean",
@@ -49,3 +74,4 @@ dependencies = [
     "examples",
     "doc"
 ]
+
