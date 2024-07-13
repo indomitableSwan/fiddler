@@ -15,7 +15,7 @@ Note that we do not track _Cargo.lock_ in this repository, so builds are not con
 
 # documentation
 
-Documentation of the workspace members is built automatically by `cargo make`. After building, you can open `fiddler/target/doc/fiddler/index.html` in any browser. Alternatively, you can build and open the documentation by running
+Documentation of the workspace members is built automatically by `cargo make`. After building, you can open `fiddler/target/doc/index.html` in any browser. Alternatively, you can build and open the documentation by running
 `
 cargo make open_docs
 `, which uses the custom flags set in the top-level Makefile.toml file.

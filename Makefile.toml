@@ -34,34 +34,35 @@ args = ["test", "--examples", "--workspace"]
 # Uncomment following line to elevate warnings to errors here as well
 # env = { "RUSTDOCFLAGS" = "-Dwarnings"}
 # Try to get workspace index into docs using nightly toolchain
- env = { "RUSTDOCFLAGS" = "--enable-index-page -Zunstable-options"}
+env = { "RUSTDOCFLAGS" = "--enable-index-page -Zunstable-options"}
 command = "cargo"
-args = ["doc", "--no-deps", "--workspace"]
+args = ["doc", "--no-deps"]
 
 # Set alias so that the default dev flow points to member_task instead.
 [tasks.default]
-alias = "member_task"
+alias = "composite"
 
 ## Fancy flow is you need to run different commands
 ## at the workspace level than for each member crate
 ## This flow runs "member_flow" for each member crate
 ## and "workspace_flow" at root.
-#[tasks.composite]
-#workspace = false
-#dependencies = ["member_flow", "workspace_flow"]
+[tasks.composite]
+workspace = false
+dependencies = ["member_flow", "workspace_flow"]
 
 ## Tasks here run from root directory
-#[tasks.workspace_flow]
-#workspace = false
+[tasks.workspace_flow]
+workspace = false
+dependencies = ["doc"]
 
 # Build and open docs for all workspace members
 [tasks.open_docs]
 command = "cargo"
-args = ["doc", "--no-deps", "--workspace", "--open"]
+args = ["doc", "--no-deps", "--open"]
 
 ## Run member_task for each workspace member.
-#[tasks.member_flow]
-#run_task = { name = "member_task", fork = true }
+[tasks.member_flow]
+run_task = { name = "member_task", fork = true }
 
 # Tasks to be run in each workspace member
 [tasks.member_task]
@@ -72,6 +73,5 @@ dependencies = [
     "build",
     "test",
     "examples",
-    "doc"
 ]
 
