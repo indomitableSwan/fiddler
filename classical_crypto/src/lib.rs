@@ -38,7 +38,7 @@ use std::{
 
 pub mod shift;
 
-/// This trait represents a cipher.
+/// This trait represents a deterministic cipher.
 pub trait Cipher {
     /// The message space (plaintext space) of the cipher.
     type Message;
@@ -70,6 +70,11 @@ pub trait Cipher {
     fn decrypt(ciphertxt: &Self::Ciphertext, key: &Self::Key) -> Self::Message;
 }
 
+/// A trait for cryptographic keys.
+pub trait Key {
+    /// Pick a new key from the key space uniformly at random.
+    fn new<R: Rng + CryptoRng>(rng: &mut R) -> Self;
+}
 /// This trait represents an encoding of the characters of an alphabet.
 trait AlphabetEncoding: Sized {
     /// The associated error type.
@@ -283,15 +288,6 @@ pub struct Message(Vec<RingElement>);
 #[derive(Clone, Debug, Default, Eq, Hash, PartialEq)]
 pub struct Ciphertext(Vec<RingElement>);
 
-// TODO: Should key be a trait too?
-/// A cryptographic key.
-// Crypto TODO: Keys should always contain context.
-// We *could* implement `Copy` and `Clone` here.
-// We do not because we want to discourage making copies of secrets.
-// However there is a lot more to best practices for handling keys than this.
-#[derive(Debug, Eq, PartialEq)]
-pub struct Key(RingElement);
-
 // TODO: refactor
 impl Message {
     /// Create a new message from a string.
@@ -405,65 +401,6 @@ impl FromIterator<RingElement> for Ciphertext {
         }
 
         Ciphertext(c)
-    }
-}
-
-// TODO: refactor, prep for Substitution Cipher
-/// Parse a key from a string.
-///
-/// # Errors
-/// This implementation will produce an error if the input string does not
-/// represent an integer in the key space, i.e., an integer between 0 and 25,
-/// inclusive. While it would be a simple matter to accept _any_ integer as
-/// input and map to the ring of integers, we chose not to do so for clarity of
-/// use.
-impl FromStr for Key {
-    type Err = EncodingError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let key = match i8::from_str(s) {
-            Ok(num) => num,
-            Err(_) => return Err(EncodingError),
-        };
-
-        match key {
-            x if (0..=25).contains(&x) => Ok(Key::from(RingElement::from_i8(key))),
-            _ => Err(EncodingError),
-        }
-    }
-}
-
-impl Key {
-    /// Export the key
-    ///
-    /// # Examples
-    /// ```
-    /// # use classical_crypto::{Ciphertext, Key, Message};
-    /// # // Don't forget to include the `rand` crate!
-    /// # use rand::thread_rng;
-    /// # //
-    /// # // Initialize a cryptographic rng.
-    /// # let mut rng = thread_rng();
-    /// # //
-    /// # // Generate a key
-    /// # let key = Key::new(&mut rng);
-    /// //
-    /// // We can export a key for external storage or other uses.
-    /// // This method does not do anything special for secure key
-    /// // handling, which is another, more complicated
-    /// // and error-prone topic.
-    /// // Use caution.
-    /// println!("Here is our key value: {}", key.insecure_export());
-    /// ```
-    pub fn insecure_export(&self) -> String {
-        self.0.into_inner().to_string()
-    }
-}
-
-// TODO: refactor, prep for Substitution Cipher
-impl From<RingElement> for Key {
-    fn from(item: RingElement) -> Self {
-        Key(item)
     }
 }
 

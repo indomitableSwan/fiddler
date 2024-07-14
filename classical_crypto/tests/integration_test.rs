@@ -1,6 +1,9 @@
 //! These integration tests exercise the public API of the crate, but they may
 //! not be entirely sensible as integration tests.
-use classical_crypto::{shift::Shift, Cipher, Ciphertext, Key, Message};
+use classical_crypto::{
+    shift::{Shift, ShiftKey},
+    Cipher, Ciphertext, Key, Message,
+};
 use rand::thread_rng;
 use std::str::FromStr;
 
@@ -60,8 +63,8 @@ fn short_msg_example() {
 
     // Set two fixed keys in order to reiterate how patterns are preserved
     // in Latin shift cipher.
-    let fixed_key_0 = Key::from_str("3");
-    let fixed_key_1 = Key::from_str("9");
+    let fixed_key_0 = ShiftKey::from_str("3");
+    let fixed_key_1 = ShiftKey::from_str("9");
 
     // Key encoding should work
     assert!(&fixed_key_0.is_ok());

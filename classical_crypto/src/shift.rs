@@ -3,17 +3,27 @@
 //! &#x2124;/26&#x2124;. As the name implies, ciphertexts are shifts (computed
 //! using modular arithmetic) of the corresponding plaintexts, so the _key
 //! space_ is &#x2124;/26&#x2124;. as well.
-use crate::{Cipher, Ciphertext, Key, Message, Ring, RingElement};
+use crate::{Cipher, Ciphertext, EncodingError, Key, Message, Ring, RingElement};
 use rand::{CryptoRng, Rng};
+use std::str::FromStr;
 
 /// The Latin Shift Cipher.
 #[derive(Copy, Clone, Debug, Default, Eq, Hash, PartialEq)]
 pub struct Shift;
 
+// TODO: Should key be a trait too?
+/// A cryptographic key.
+// Crypto TODO: Keys should always contain context.
+// We *could* implement `Copy` and `Clone` here.
+// We do not because we want to discourage making copies of secrets.
+// However there is a lot more to best practices for handling keys than this.
+#[derive(Debug, Eq, PartialEq)]
+pub struct ShiftKey(RingElement);
+
 impl Cipher for Shift {
     type Message = Message;
     type Ciphertext = Ciphertext;
-    type Key = Key;
+    type Key = ShiftKey;
 
     type EncryptionError = EncryptionError;
     type DecryptionError = DecryptionError;
@@ -93,18 +103,8 @@ impl Cipher for Shift {
     }
 }
 
-// TODO: Not implemented yet
-/// A custom error type that is returned from [`Shift::encrypt`].
-#[derive(Copy, Clone, Debug, Default, Eq, Hash, PartialEq)]
-pub struct EncryptionError;
-
-// TODO: not implemented yet
-/// A custom error type that is returned from [`Shift::decrypt`].
-#[derive(Copy, Clone, Debug, Default, Eq, Hash, PartialEq)]
-pub struct DecryptionError;
-
 // TODO: refactor, prep for Substitution Cipher
-impl Key {
+impl Key for ShiftKey {
     /// Generate a cryptographic key uniformly at random from the key space.
     ///
     /// Note that the mathematical description of the Latin Shift Cipher, as
@@ -119,7 +119,7 @@ impl Key {
     ///
     /// # Examples
     /// ```
-    /// # use classical_crypto::{Ciphertext, Key, Message};
+    /// # use classical_crypto::{Ciphertext, Key, shift::ShiftKey, Message};
     /// // Don't forget to include the `rand` crate!
     /// use rand::thread_rng;
     /// //
@@ -127,14 +127,83 @@ impl Key {
     /// let mut rng = thread_rng();
     /// //
     /// // Generate a key
-    /// let key = Key::new(&mut rng);
+    /// let key = ShiftKey::new(&mut rng);
     /// ```
     // Note: Keys must always be chosen according to a uniform distribution on the
     // underlying key space, i.e., the ring Z/26Z for the Latin Alphabet cipher.
-    pub fn new<R: Rng + CryptoRng>(rng: &mut R) -> Self {
+    fn new<R: Rng + CryptoRng>(rng: &mut R) -> Self {
         Self(RingElement::random(rng))
     }
 }
+
+impl ShiftKey {
+    /// Export the key
+    ///
+    /// # Examples
+    /// ```
+    /// # use classical_crypto::{Ciphertext, Key, shift::ShiftKey, Message};
+    /// # // Don't forget to include the `rand` crate!
+    /// # use rand::thread_rng;
+    /// # //
+    /// # // Initialize a cryptographic rng.
+    /// # let mut rng = thread_rng();
+    /// # //
+    /// # // Generate a key
+    /// # let key = ShiftKey::new(&mut rng);
+    /// //
+    /// // We can export a key for external storage or other uses.
+    /// // This method does not do anything special for secure key
+    /// // handling, which is another, more complicated
+    /// // and error-prone topic.
+    /// // Use caution.
+    /// println!("Here is our key value: {}", key.insecure_export());
+    /// ```
+    pub fn insecure_export(&self) -> String {
+        self.0.into_inner().to_string()
+    }
+}
+
+// TODO: refactor, prep for Substitution Cipher
+/// Parse a key from a string.
+///
+/// # Errors
+/// This implementation will produce an error if the input string does not
+/// represent an integer in the key space, i.e., an integer between 0 and 25,
+/// inclusive. While it would be a simple matter to accept _any_ integer as
+/// input and map to the ring of integers, we chose not to do so for clarity of
+/// use.
+impl FromStr for ShiftKey {
+    type Err = EncodingError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let key = match i8::from_str(s) {
+            Ok(num) => num,
+            Err(_) => return Err(EncodingError),
+        };
+
+        match key {
+            x if (0..=25).contains(&x) => Ok(ShiftKey::from(RingElement::from_i8(key))),
+            _ => Err(EncodingError),
+        }
+    }
+}
+
+// TODO: refactor, prep for Substitution Cipher
+impl From<RingElement> for ShiftKey {
+    fn from(item: RingElement) -> Self {
+        ShiftKey(item)
+    }
+}
+
+// TODO: Not implemented yet
+/// A custom error type that is returned from [`Shift::encrypt`].
+#[derive(Copy, Clone, Debug, Default, Eq, Hash, PartialEq)]
+pub struct EncryptionError;
+
+// TODO: not implemented yet
+/// A custom error type that is returned from [`Shift::decrypt`].
+#[derive(Copy, Clone, Debug, Default, Eq, Hash, PartialEq)]
+pub struct DecryptionError;
 
 #[cfg(test)]
 mod tests {
@@ -183,7 +252,7 @@ mod tests {
     // Example 1.1, Stinson 3rd Edition, Example 2.1 Stinson 4th Edition.
     #[test]
     fn enc_dec_basic() {
-        let key0 = Key(RingElement(11));
+        let key0 = ShiftKey(RingElement(11));
 
         let ciph0 = Shift::encrypt(&Message::new("wewillmeetatmidnight").unwrap(), &key0);
 
@@ -223,8 +292,8 @@ mod tests {
     fn enc_dec_reprod_rand() {
         let mut rng = reprod_rng();
 
-        let key1 = Key(RingElement(rng.gen_range(0..RingElement::MODULUS)));
-        let key2 = Key(RingElement(rng.gen_range(0..RingElement::MODULUS)));
+        let key1 = ShiftKey(RingElement(rng.gen_range(0..RingElement::MODULUS)));
+        let key2 = ShiftKey(RingElement(rng.gen_range(0..RingElement::MODULUS)));
 
         let msg1 = Message::new("thisisyetanothertestmessage").unwrap();
 

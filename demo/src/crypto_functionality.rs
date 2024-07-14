@@ -14,7 +14,7 @@ pub fn make_key() -> Result<(), Box<dyn Error>> {
 
     loop {
         // Generate a key
-        let key = Key::new(&mut rng);
+        let key = <Shift as Cipher>::Key::new(&mut rng);
 
         println!("\nWe generated your key successfully!.");
         println!("\nWe shouldn't export your key (or say, save it in logs), but we can!");
@@ -45,7 +45,7 @@ pub fn encrypt() -> Result<(), Box<dyn Error>> {
 
     println!("\nNow, do you have a key that was generated uniformly at random that you remember and \nwould like to use? If yes, please enter your key. Otherwise, please pick a fresh key \nuniformly at random from the ring of integers modulo 26 yourself. \n\nYou won't be as good at this as a computer, but if you understand the cryptosystem \nyou are using (something we cryptographers routinely assume about other people, while \npretending that we aren't assuming this), you will probably not pick a key of 0, \nwhich is equivalent to sending your messages \"in the clear\", i.e., unencrypted. Good \nluck! \n\nGo ahead and enter your key now:");
 
-    let key: Key = process_input(|| {
+    let key: <Shift as Cipher>::Key = process_input(|| {
         println!("{KEY_PROMPT}");
     })?;
 
@@ -82,7 +82,7 @@ pub fn decrypt(command: DecryptMenu) -> Result<(), Box<dyn Error>> {
 pub fn chosen_key(ciphertxt: &Ciphertext) -> Result<(), Box<dyn Error>> {
     loop {
         println!("\nOK. Please enter a key now:");
-        let key: Key = process_input(|| {
+        let key: <Shift as Cipher>::Key = process_input(|| {
             println!("{KEY_PROMPT}");
         })?;
         match try_decrypt(ciphertxt, key) {
@@ -98,7 +98,7 @@ pub fn computer_chosen_key(ciphertxt: &Ciphertext) -> Result<(), Box<dyn Error>>
     let mut rng = thread_rng();
 
     loop {
-        let key = Key::new(&mut rng);
+        let key = <Shift as Cipher>::Key::new(&mut rng);
         match try_decrypt(ciphertxt, key) {
             Ok(_) => break,
             Err(_) => continue, // TODO: How to handle different errors independently?
@@ -108,7 +108,7 @@ pub fn computer_chosen_key(ciphertxt: &Ciphertext) -> Result<(), Box<dyn Error>>
 }
 
 /// Decrypt with given key and ask whether to try again or not.
-pub fn try_decrypt(ciphertxt: &Ciphertext, key: Key) -> Result<(), Box<dyn Error>> {
+pub fn try_decrypt(ciphertxt: &Ciphertext, key: <Shift as Cipher>::Key) -> Result<(), Box<dyn Error>> {
     println!("\nYour computed plaintext is {}\n", Shift::decrypt(ciphertxt, &key));
     println!("\nAre you happy with this decryption?");
     ConsentMenu::print_menu();
