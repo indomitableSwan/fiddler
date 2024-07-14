@@ -46,8 +46,8 @@ pub trait Cipher {
     /// The ciphertext space of the cipher.
     type Ciphertext;
 
-    /// The keyspace of the cipher.
-    type Key;
+    /// The keyspace of the cipher, which must implement the [`Key`] trait.
+    type Key: Key;
 
     // TODO: not implemented yet
     /// The error type returned by [`Cipher::encrypt`].
