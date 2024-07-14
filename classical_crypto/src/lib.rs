@@ -38,6 +38,38 @@ use std::{
 
 pub mod shift;
 
+/// This trait represents a cipher.
+pub trait Cipher {
+    /// The message space (plaintext space) of the cipher.
+    type Message;
+
+    /// The ciphertext space of the cipher.
+    type Ciphertext;
+
+    /// The keyspace of the cipher.
+    type Key;
+
+    // TODO: not implemented yet
+    /// The error type returned by [`Cipher::encrypt`].
+    type EncryptionError;
+
+    // TODO: not implemented yet
+    /// The error type returned by [`Cipher::decrypt`].
+    type DecryptionError;
+
+    // TODO: Return a Result instead
+    /// The encryption function of the cipher.
+    /// Invariant: For each key `k` in the keyspace, we have decrypt(encrypt(m,
+    /// k), k) = m for every message `m` in the message space.
+    fn encrypt(msg: &Self::Message, key: &Self::Key) -> Self::Ciphertext;
+
+    // TODO: Return a Result instead
+    /// The decryption function of the cipher.
+    /// Invariant: For each key `k` in the keyspace, we have decrypt(encrypt(m,
+    /// k), k) = m for every message `m` in the message space.
+    fn decrypt(ciphertxt: &Self::Ciphertext, key: &Self::Key) -> Self::Message;
+}
+
 /// This trait represents an encoding of the characters of an alphabet.
 trait AlphabetEncoding: Sized {
     /// The associated error type.
@@ -249,8 +281,9 @@ pub struct Message(Vec<RingElement>);
 
 /// A ciphertext of arbitrary length.
 #[derive(Clone, Debug, Default, Eq, Hash, PartialEq)]
-pub struct CipherText(Vec<RingElement>);
+pub struct Ciphertext(Vec<RingElement>);
 
+// TODO: Should key be a trait too?
 /// A cryptographic key.
 // Crypto TODO: Keys should always contain context.
 // We *could* implement `Copy` and `Clone` here.
@@ -269,7 +302,7 @@ impl Message {
     /// // That said, humans are very quick at understanding mashed up plaintexts
     /// // without punctuation and spacing.
     /// // Computers have to check dictionaries.
-    /// # use classical_crypto::{CipherText, Key, Message};
+    /// # use classical_crypto::{Ciphertext, Key, Message};
     /// # use rand::thread_rng;
     /// let msg = Message::new("thisisanawkwardapichoice").expect("This example is hardcoded; it should work!");
     ///
@@ -288,7 +321,7 @@ impl Message {
 ///
 /// - For [`Message`]: The string included one or more characters that are not
 ///   lowercase letters from the Latin Alphabet.
-/// - For [`CipherText`]: The string included one or more characters that are
+/// - For [`Ciphertext`]: The string included one or more characters that are
 ///   not letters from the Latin Alphabet. We allow for strings containing both
 ///   capitalized and lowercase letters when parsing as string as a ciphertext.
 /// - For [`Key`]: The string does not represent a number in the appropriate
@@ -342,7 +375,7 @@ impl FromIterator<RingElement> for Message {
 /// convention that ciphertexts are represented as ALL CAPS strings, this
 /// implementation ignores case, so parsing a string that includes lowercase
 /// letters may succeed.
-impl FromStr for CipherText {
+impl FromStr for Ciphertext {
     type Err = EncodingError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -353,7 +386,7 @@ impl FromStr for CipherText {
     }
 }
 
-impl fmt::Display for CipherText {
+impl fmt::Display for Ciphertext {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let txt: String = self.0.iter().map(|i| RingElement::to_char(*i)).collect();
 
@@ -363,7 +396,7 @@ impl fmt::Display for CipherText {
     }
 }
 
-impl FromIterator<RingElement> for CipherText {
+impl FromIterator<RingElement> for Ciphertext {
     fn from_iter<I: IntoIterator<Item = RingElement>>(iter: I) -> Self {
         let mut c = Vec::new();
 
@@ -371,7 +404,7 @@ impl FromIterator<RingElement> for CipherText {
             c.push(i);
         }
 
-        CipherText(c)
+        Ciphertext(c)
     }
 }
 
@@ -405,7 +438,7 @@ impl Key {
     ///
     /// # Examples
     /// ```
-    /// # use classical_crypto::{CipherText, Key, Message};
+    /// # use classical_crypto::{Ciphertext, Key, Message};
     /// # // Don't forget to include the `rand` crate!
     /// # use rand::thread_rng;
     /// # //
@@ -451,7 +484,7 @@ mod tests {
 
     // Encrypted "wewillmeetatmidnight" message with key=11, from Example 1.1,
     // Stinson 3rd Edition, Example 2.1 Stinson 4th Edition
-    thread_local! (static CIPH0: CipherText = CipherText(vec![RingElement(7), RingElement(15), 
+    thread_local! (static CIPH0: Ciphertext = Ciphertext(vec![RingElement(7), RingElement(15), 
             RingElement(7), RingElement(19), RingElement(22), RingElement(22),
             RingElement(23), RingElement(15), RingElement(15), RingElement(4),
             RingElement(11), RingElement(4),
@@ -564,12 +597,12 @@ mod tests {
 
     #[test]
     fn ciphertxt_default() {
-        assert_eq!(CipherText::default(), CipherText(vec![]));
+        assert_eq!(Ciphertext::default(), Ciphertext(vec![]));
     }
 
     #[test]
     fn ciphertxt_encoding_basic() {
-        let ciphertxt = CipherText::from_str("HPHTWWXPPELEXTOYTRSE").unwrap();
+        let ciphertxt = Ciphertext::from_str("HPHTWWXPPELEXTOYTRSE").unwrap();
 
         assert_eq!(ciphertxt, CIPH0.with(|ciph| ciph.clone())); // Ciphertext maps from string correctly
         assert_eq!(ciphertxt.to_string(), CIPH0_STR.with(|ciph| ciph.clone())); // Ciphertext maps to string correctly
@@ -578,13 +611,13 @@ mod tests {
     #[test]
     fn ciphertxt_display() {
         assert_eq!(
-            format!("{}", CipherText::from_str("HPHTWWXPPELEXTOYTRSE").unwrap()),
+            format!("{}", Ciphertext::from_str("HPHTWWXPPELEXTOYTRSE").unwrap()),
             "HPHTWWXPPELEXTOYTRSE"
         )
     }
 
     #[test]
     fn ciphertxt_encoding_error() {
-        assert_eq!(CipherText::from_str("a;k"), Err(EncodingError))
+        assert_eq!(Ciphertext::from_str("a;k"), Err(EncodingError))
     }
 }
