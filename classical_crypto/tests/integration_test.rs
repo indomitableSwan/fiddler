@@ -1,22 +1,22 @@
 //! These integration tests exercise the public API of the crate, but they may
 //! not be entirely sensible as integration tests.
-use classical_crypto::{
-    shift::{Shift, ShiftKey},
-    Cipher, Ciphertext, Key, Message,
-};
+use classical_crypto::{shift::Shift, Cipher};
 use rand::thread_rng;
 use std::str::FromStr;
 
 #[test]
 fn generate_and_use_key() {
     let mut rng = thread_rng();
-    let key0 = Key::new(&mut rng);
-    let key1 = Key::new(&mut rng);
+    let key0 = Shift::gen_key(&mut rng);
+    let key1 = Shift::gen_key(&mut rng);
 
     // Exercise the `new` associated function.
-    let msg = Message::new("thisisanawkwardapichoice").unwrap();
+    let msg = <Shift as Cipher>::Message::new("thisisanawkwardapichoice").unwrap();
     // We could also have used the `FromStr` implementation for `Message`.
-    assert_eq!(msg, Message::from_str("thisisanawkwardapichoice").unwrap());
+    assert_eq!(
+        msg,
+        <Shift as Cipher>::Message::from_str("thisisanawkwardapichoice").unwrap()
+    );
 
     // Encrypt the test message.
     let ciphertxt = Shift::encrypt(&msg, &key0);
@@ -33,7 +33,8 @@ fn generate_and_use_key() {
     }
 
     // We can create ciphertexts from strings, too
-    let garbage_ciphertext = Ciphertext::from_str("THISISNOTGOINGTODECRYPTSENSIBLY").unwrap();
+    let garbage_ciphertext =
+        <Shift as Cipher>::Ciphertext::from_str("THISISNOTGOINGTODECRYPTSENSIBLY").unwrap();
     assert_eq!(
         garbage_ciphertext.to_string(),
         "THISISNOTGOINGTODECRYPTSENSIBLY"
@@ -50,8 +51,8 @@ fn short_msg_example() {
     // one sample, one ciphertext may not be enough to definitively
     // break the system with a brute force attack. But likely there
     // is other context available to validate possible plaintexts.
-    let small_msg_0 = Message::from_str("mom");
-    let small_msg_1 = Message::from_str("gig");
+    let small_msg_0 = <Shift as Cipher>::Message::from_str("mom");
+    let small_msg_1 = <Shift as Cipher>::Message::from_str("gig");
 
     // Message encoding should work
     assert!(small_msg_0.is_ok());
@@ -63,8 +64,8 @@ fn short_msg_example() {
 
     // Set two fixed keys in order to reiterate how patterns are preserved
     // in Latin shift cipher.
-    let fixed_key_0 = ShiftKey::from_str("3");
-    let fixed_key_1 = ShiftKey::from_str("9");
+    let fixed_key_0 = <Shift as Cipher>::Key::from_str("3");
+    let fixed_key_1 = <Shift as Cipher>::Key::from_str("9");
 
     // Key encoding should work
     assert!(&fixed_key_0.is_ok());

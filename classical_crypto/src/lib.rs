@@ -46,8 +46,8 @@ pub trait Cipher {
     /// The ciphertext space of the cipher.
     type Ciphertext;
 
-    /// The keyspace of the cipher, which must implement the [`Key`] trait.
-    type Key: Key;
+    /// The keyspace of the cipher.
+    type Key;
 
     // TODO: not implemented yet
     /// The error type returned by [`Cipher::encrypt`].
@@ -56,6 +56,9 @@ pub trait Cipher {
     // TODO: not implemented yet
     /// The error type returned by [`Cipher::decrypt`].
     type DecryptionError;
+
+    /// Pick a new key from the key space uniformly at random.
+    fn gen_key<R: Rng + CryptoRng>(rng: &mut R) -> Self::Key;
 
     // TODO: Return a Result instead
     /// The encryption function of the cipher.
@@ -70,11 +73,6 @@ pub trait Cipher {
     fn decrypt(ciphertxt: &Self::Ciphertext, key: &Self::Key) -> Self::Message;
 }
 
-/// A trait for cryptographic keys.
-pub trait Key {
-    /// Pick a new key from the key space uniformly at random.
-    fn new<R: Rng + CryptoRng>(rng: &mut R) -> Self;
-}
 /// This trait represents an encoding of the characters of an alphabet.
 trait AlphabetEncoding: Sized {
     /// The associated error type.
@@ -298,7 +296,7 @@ impl Message {
     /// // That said, humans are very quick at understanding mashed up plaintexts
     /// // without punctuation and spacing.
     /// // Computers have to check dictionaries.
-    /// # use classical_crypto::{Ciphertext, Key, Message};
+    /// # use classical_crypto::{Ciphertext, Message};
     /// # use rand::thread_rng;
     /// let msg = Message::new("thisisanawkwardapichoice").expect("This example is hardcoded; it should work!");
     ///

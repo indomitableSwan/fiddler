@@ -3,7 +3,7 @@ use crate::{
     io_helper::process_input,
     menu::{ConsentMenu, DecryptMenu, Menu},
 };
-use classical_crypto::{shift::Shift, Cipher, Ciphertext, Key, Message};
+use classical_crypto::{shift::Shift, Cipher, Ciphertext, Message};
 use rand::thread_rng;
 use std::error::Error;
 
@@ -14,7 +14,7 @@ pub fn make_key() -> Result<(), Box<dyn Error>> {
 
     loop {
         // Generate a key
-        let key = <Shift as Cipher>::Key::new(&mut rng);
+        let key = Shift::gen_key(&mut rng);
 
         println!("\nWe generated your key successfully!.");
         println!("\nWe shouldn't export your key (or say, save it in logs), but we can!");
@@ -98,7 +98,7 @@ pub fn computer_chosen_key(ciphertxt: &Ciphertext) -> Result<(), Box<dyn Error>>
     let mut rng = thread_rng();
 
     loop {
-        let key = <Shift as Cipher>::Key::new(&mut rng);
+        let key = Shift::gen_key(&mut rng);
         match try_decrypt(ciphertxt, key) {
             Ok(_) => break,
             Err(_) => continue, // TODO: How to handle different errors independently?

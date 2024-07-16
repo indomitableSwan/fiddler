@@ -3,7 +3,7 @@
 //! &#x2124;/26&#x2124;. As the name implies, ciphertexts are shifts (computed
 //! using modular arithmetic) of the corresponding plaintexts, so the _key
 //! space_ is &#x2124;/26&#x2124;. as well.
-use crate::{Cipher, Ciphertext, EncodingError, Key, Message, Ring, RingElement};
+use crate::{Cipher, Ciphertext, EncodingError, Message, Ring, RingElement};
 use rand::{CryptoRng, Rng};
 use std::str::FromStr;
 
@@ -28,84 +28,6 @@ impl Cipher for Shift {
     type EncryptionError = EncryptionError;
     type DecryptionError = DecryptionError;
 
-    /// Encrypt a message.
-    ///
-    /// # Examples
-    /// ```
-    /// # use classical_crypto::{Cipher, Key, shift::Shift};
-    /// # use rand::thread_rng;
-    /// # let mut rng = thread_rng();
-    /// # let key = Key::new(&mut rng); 
-    ///  let msg = <Shift as Cipher>::Message::new("thisisanawkwardapichoice").expect("This example is hardcoded; it should work!"); 
-    /// let ciphertxt = Shift::encrypt(&msg, &key); 
-    /// 
-    /// ```
-    fn encrypt(msg: &Self::Message, key: &Self::Key) -> Self::Ciphertext {
-        msg.0.iter().map(|&i| i + key.0).collect()
-    }
-
-    // TODO! refactor, generalize
-    /// Decrypt a ciphertext with a given key.
-    ///
-    /// # Examples
-    /// ```
-    /// # use classical_crypto::{Cipher, Key, shift::Shift};
-    /// # use rand::thread_rng;
-    /// #
-    /// # let mut rng = thread_rng();
-    /// # let key = Key::new(&mut rng);
-    /// # let msg = <Shift as Cipher>::Message::new("thisisanawkwardapichoice").expect("This example is hardcoded; it should work!");
-    /// # let ciphertxt = Shift::encrypt(&msg, &key);
-    /// let decrypted = Shift::decrypt(&ciphertxt, &key);
-    ///
-    /// println!(
-    ///    "If we decrypt using the correct key, we get our original
-    /// message back: {}", decrypted);
-    ///
-    /// let wrong_key = Key::new(&mut rng);
-    /// if key != wrong_key {
-    /// println!("If we decrypt using an incorrect key, we do not get
-    ///  our original message back: {}",
-    /// Shift::decrypt(&ciphertxt, &wrong_key));
-    /// }
-    /// ```
-    ///
-    /// ```
-    /// # use classical_crypto::{Cipher, Key, shift::Shift};
-    /// # use rand::thread_rng;
-    /// #
-    /// # let mut rng = thread_rng();
-    /// # let key = Key::new(&mut rng);
-    /// #
-    /// // With some non-negligible frequency, you won't get nonsense on
-    /// // decryption with the wrong key, but the possible message space
-    /// // is restricted beyond just the length of the message itself.
-    /// // This is because shift ciphers preserve other message patterns,
-    /// // too. Note that if the message is very short and you only have
-    /// // one sample, one ciphertext may not be enough to definitively
-    /// // break the system with a brute force attack. But likely there
-    /// // is other context available to validate possible plaintexts.
-    /// let small_msg = <Shift as Cipher>::Message::new("dad").expect("This example is hardcoded; it should work!");
-    /// let small_ciphertext = Shift::encrypt(&small_msg, &key);
-    /// // This will also decrypt the message properly with probability 1/26
-    /// // which is of course a huge probability of success.
-    /// let small_decryption = Shift::decrypt(&small_ciphertext,
-    ///  &Key::new(&mut rng));
-    ///
-    /// println!("Here is a small example, where we can more
-    /// easily see the preservation of patterns:
-    /// \n plaintext is {}, ciphertext is {},
-    ///  and decryption under a random key gives {}",
-    /// small_msg, small_ciphertext,
-    /// small_decryption)
-    /// ```
-    fn decrypt(ciphertxt: &Self::Ciphertext, key: &Self::Key) -> Self::Message {
-        ciphertxt.0.iter().map(|&i| i - key.0).collect()
-    }
-}
-
-// TODO: refactor, prep for Substitution Cipher
-impl Key for ShiftKey {
     /// Generate a cryptographic key uniformly at random from the key space.
     ///
     /// Note that the mathematical description of the Latin Shift Cipher, as
@@ -120,7 +42,7 @@ impl Key for ShiftKey {
     ///
     /// # Examples
     /// ```
-    /// # use classical_crypto::{Cipher, Key, shift::Shift};
+    /// # use classical_crypto::{Cipher, shift::Shift};
     /// // Don't forget to include the `rand` crate!
     /// use rand::thread_rng;
     /// //
@@ -128,12 +50,86 @@ impl Key for ShiftKey {
     /// let mut rng = thread_rng();
     /// //
     /// // Generate a key
-    /// let key = <Shift as Cipher>::Key::new(&mut rng);
+    /// let key = Shift::gen_key(&mut rng);
     /// ```
     // Note: Keys must always be chosen according to a uniform distribution on the
     // underlying key space, i.e., the ring Z/26Z for the Latin Alphabet cipher.
-    fn new<R: Rng + CryptoRng>(rng: &mut R) -> Self {
-        Self(RingElement::random(rng))
+    fn gen_key<R: Rng + CryptoRng>(rng: &mut R) -> Self::Key {
+        ShiftKey(RingElement::random(rng))
+    }
+
+    /// Encrypt a message.
+    ///
+    /// # Examples
+    /// ```
+    /// # use classical_crypto::{Cipher, shift::Shift};
+    /// # use rand::thread_rng;
+    /// # let mut rng = thread_rng();
+    /// # let key = Shift::gen_key(&mut rng);
+    ///  let msg = <Shift as Cipher>::Message::new("thisisanawkwardapichoice").expect("This example is hardcoded; it should work!");
+    /// let ciphertxt = Shift::encrypt(&msg, &key);
+    /// ```
+    fn encrypt(msg: &Self::Message, key: &Self::Key) -> Self::Ciphertext {
+        msg.0.iter().map(|&i| i + key.0).collect()
+    }
+
+    // TODO! refactor, generalize
+    /// Decrypt a ciphertext with a given key.
+    ///
+    /// # Examples
+    /// ```
+    /// # use classical_crypto::{Cipher, shift::Shift};
+    /// # use rand::thread_rng;
+    /// #
+    /// # let mut rng = thread_rng();
+    /// # let key = Shift::gen_key(&mut rng);
+    /// # let msg = <Shift as Cipher>::Message::new("thisisanawkwardapichoice").expect("This example is hardcoded; it should work!");
+    /// # let ciphertxt = Shift::encrypt(&msg, &key);
+    /// let decrypted = Shift::decrypt(&ciphertxt, &key);
+    ///
+    /// println!(
+    ///    "If we decrypt using the correct key, we get our original
+    /// message back: {}", decrypted);
+    ///
+    /// let wrong_key = Shift::gen_key(&mut rng);
+    /// if key != wrong_key {
+    /// println!("If we decrypt using an incorrect key, we do not get
+    ///  our original message back: {}",
+    /// Shift::decrypt(&ciphertxt, &wrong_key));
+    /// }
+    /// ```
+    ///
+    /// ```
+    /// # use classical_crypto::{Cipher, shift::Shift};
+    /// # use rand::thread_rng;
+    /// #
+    /// # let mut rng = thread_rng();
+    /// # let key = Shift::gen_key(&mut rng);
+    /// #
+    /// // With some non-negligible frequency, you won't get nonsense on
+    /// // decryption with the wrong key, but the possible message space
+    /// // is restricted beyond just the length of the message itself.
+    /// // This is because shift ciphers preserve other message patterns,
+    /// // too. Note that if the message is very short and you only have
+    /// // one sample, one ciphertext may not be enough to definitively
+    /// // break the system with a brute force attack. But likely there
+    /// // is other context available to validate possible plaintexts.
+    /// let small_msg = <Shift as Cipher>::Message::new("dad").expect("This example is hardcoded; it should work!");
+    /// let small_ciphertext = Shift::encrypt(&small_msg, &key);
+    /// // This will also decrypt the message properly with probability 1/26
+    /// // which is of course a huge probability of success.
+    /// let small_decryption = Shift::decrypt(&small_ciphertext,
+    ///  &Shift::gen_key(&mut rng));
+    ///
+    /// println!("Here is a small example, where we can more
+    /// easily see the preservation of patterns:
+    /// \n plaintext is {}, ciphertext is {},
+    ///  and decryption under a random key gives {}",
+    /// small_msg, small_ciphertext,
+    /// small_decryption)
+    /// ```
+    fn decrypt(ciphertxt: &Self::Ciphertext, key: &Self::Key) -> Self::Message {
+        ciphertxt.0.iter().map(|&i| i - key.0).collect()
     }
 }
 
@@ -142,7 +138,7 @@ impl ShiftKey {
     ///
     /// # Examples
     /// ```
-    /// # use classical_crypto::{Cipher, Key, shift::Shift};
+    /// # use classical_crypto::{Cipher, shift::Shift};
     /// # // Don't forget to include the `rand` crate!
     /// # use rand::thread_rng;
     /// # //
@@ -150,7 +146,7 @@ impl ShiftKey {
     /// # let mut rng = thread_rng();
     /// # //
     /// # // Generate a key
-    /// # let key = <Shift as Cipher>::Key::new(&mut rng);
+    /// # let key = Shift::gen_key(&mut rng);
     /// //
     /// // We can export a key for external storage or other uses.
     /// // This method does not do anything special for secure key
@@ -269,8 +265,8 @@ mod tests {
     fn enc_dec_random_keys() {
         let mut rng = rand::thread_rng();
 
-        let key1 = Key::new(&mut rng);
-        let key2 = Key::new(&mut rng);
+        let key1 = Shift::gen_key(&mut rng);
+        let key2 = Shift::gen_key(&mut rng);
 
         let msg1 = Message::new("thisisatest").unwrap();
         let msg2 = Message::new("thisisanothertest").unwrap();
