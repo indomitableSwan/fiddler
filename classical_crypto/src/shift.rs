@@ -7,12 +7,11 @@ use crate::{Cipher, Ciphertext, EncodingError, Key, Message, Ring, RingElement};
 use rand::{CryptoRng, Rng};
 use std::str::FromStr;
 
-/// The Latin Shift Cipher.
+/// An implementation of the Latin Shift Cipher.
 #[derive(Copy, Clone, Debug, Default, Eq, Hash, PartialEq)]
-pub struct Shift;
+pub struct ShiftCipher;
 
-
-/// A cryptographic key.
+/// A cryptographic key for the Latin Shift Cipher.
 // Crypto TODO: Keys should always contain context.
 // We *could* implement `Copy` and `Clone` here.
 // We do not because we want to discourage making copies of secrets.
@@ -20,7 +19,7 @@ pub struct Shift;
 #[derive(Debug, Eq, PartialEq)]
 pub struct ShiftKey(RingElement);
 
-impl Cipher for Shift {
+impl Cipher for ShiftCipher {
     type Message = Message;
     type Ciphertext = Ciphertext;
     type Key = ShiftKey;
@@ -32,12 +31,12 @@ impl Cipher for Shift {
     ///
     /// # Examples
     /// ```
-    /// # use classical_crypto::{Cipher, Key, shift::Shift};
+    /// # use classical_crypto::{Cipher, Key, ShiftCipher};
     /// # use rand::thread_rng;
     /// # let mut rng = thread_rng();
     /// # let key = Key::new(&mut rng);
-    ///  let msg = <Shift as Cipher>::Message::new("thisisanawkwardapichoice").expect("This example is hardcoded; it should work!");
-    /// let ciphertxt = Shift::encrypt(&msg, &key);
+    ///  let msg = <ShiftCipher as Cipher>::Message::new("thisisanawkwardapichoice").expect("This example is hardcoded; it should work!");
+    /// let ciphertxt = ShiftCipher::encrypt(&msg, &key);
     /// ```
     fn encrypt(msg: &Self::Message, key: &Self::Key) -> Self::Ciphertext {
         msg.0.iter().map(|&i| i + key.0).collect()
@@ -48,14 +47,14 @@ impl Cipher for Shift {
     ///
     /// # Examples
     /// ```
-    /// # use classical_crypto::{Cipher, Key, shift::Shift};
+    /// # use classical_crypto::{Cipher, Key, ShiftCipher};
     /// # use rand::thread_rng;
     /// #
     /// # let mut rng = thread_rng();
     /// # let key = Key::new(&mut rng);
-    /// # let msg = <Shift as Cipher>::Message::new("thisisanawkwardapichoice").expect("This example is hardcoded; it should work!");
-    /// # let ciphertxt = Shift::encrypt(&msg, &key);
-    /// let decrypted = Shift::decrypt(&ciphertxt, &key);
+    /// # let msg = <ShiftCipher as Cipher>::Message::new("thisisanawkwardapichoice").expect("This example is hardcoded; it should work!");
+    /// # let ciphertxt = ShiftCipher::encrypt(&msg, &key);
+    /// let decrypted = ShiftCipher::decrypt(&ciphertxt, &key);
     ///
     /// println!(
     ///    "If we decrypt using the correct key, we get our original
@@ -65,12 +64,12 @@ impl Cipher for Shift {
     /// if key != wrong_key {
     /// println!("If we decrypt using an incorrect key, we do not get
     ///  our original message back: {}",
-    /// Shift::decrypt(&ciphertxt, &wrong_key));
+    /// ShiftCipher::decrypt(&ciphertxt, &wrong_key));
     /// }
     /// ```
     ///
     /// ```
-    /// # use classical_crypto::{Cipher, Key, shift::Shift};
+    /// # use classical_crypto::{Cipher, Key, ShiftCipher};
     /// # use rand::thread_rng;
     /// #
     /// # let mut rng = thread_rng();
@@ -84,11 +83,11 @@ impl Cipher for Shift {
     /// // one sample, one ciphertext may not be enough to definitively
     /// // break the system with a brute force attack. But likely there
     /// // is other context available to validate possible plaintexts.
-    /// let small_msg = <Shift as Cipher>::Message::new("dad").expect("This example is hardcoded; it should work!");
-    /// let small_ciphertext = Shift::encrypt(&small_msg, &key);
+    /// let small_msg = <ShiftCipher as Cipher>::Message::new("dad").expect("This example is hardcoded; it should work!");
+    /// let small_ciphertext = ShiftCipher::encrypt(&small_msg, &key);
     /// // This will also decrypt the message properly with probability 1/26
     /// // which is of course a huge probability of success.
-    /// let small_decryption = Shift::decrypt(&small_ciphertext,
+    /// let small_decryption = ShiftCipher::decrypt(&small_ciphertext,
     ///  &Key::new(&mut rng));
     ///
     /// println!("Here is a small example, where we can more
@@ -107,8 +106,8 @@ impl Cipher for Shift {
 impl Key for ShiftKey {
     /// Generate a cryptographic key uniformly at random from the key space.
     ///
-    /// Note that the mathematical description of the Latin Shift Cipher, as
-    /// well as this implementation, does not disallow a key of 0, so
+    /// Note that the mathematical description of the Latin Shift Cipher,
+    /// as well as this implementation, does not disallow a key of 0, so
     /// sometimes the encryption algorithm is just the identity function.
     ///
     /// This is, after all, a cryptosystem designed for use by humans and not
@@ -119,7 +118,7 @@ impl Key for ShiftKey {
     ///
     /// # Examples
     /// ```
-    /// # use classical_crypto::{Cipher, Key, shift::Shift};
+    /// # use classical_crypto::{Cipher, Key, ShiftCipher};
     /// // Don't forget to include the `rand` crate!
     /// use rand::thread_rng;
     /// //
@@ -127,7 +126,7 @@ impl Key for ShiftKey {
     /// let mut rng = thread_rng();
     /// //
     /// // Generate a key
-    /// let key = <Shift as Cipher>::Key::new(&mut rng);
+    /// let key = <ShiftCipher as Cipher>::Key::new(&mut rng);
     /// ```
     // Note: Keys must always be chosen according to a uniform distribution on the
     // underlying key space, i.e., the ring Z/26Z for the Latin Alphabet cipher.
@@ -136,12 +135,12 @@ impl Key for ShiftKey {
     }
 }
 
-impl ShiftKey {
-    /// Export the key
+impl ShiftCipher {
+    /// Export the cryptographic key, insecurely.
     ///
     /// # Examples
     /// ```
-    /// # use classical_crypto::{Cipher, Key, shift::Shift};
+    /// # use classical_crypto::{Cipher, Key, ShiftCipher};
     /// # // Don't forget to include the `rand` crate!
     /// # use rand::thread_rng;
     /// # //
@@ -149,17 +148,17 @@ impl ShiftKey {
     /// # let mut rng = thread_rng();
     /// # //
     /// # // Generate a key
-    /// # let key = <Shift as Cipher>::Key::new(&mut rng);
+    /// # let key = <ShiftCipher as Cipher>::Key::new(&mut rng);
     /// //
     /// // We can export a key for external storage or other uses.
     /// // This method does not do anything special for secure key
     /// // handling, which is another, more complicated
     /// // and error-prone topic.
     /// // Use caution.
-    /// println!("Here is our key value: {}", key.insecure_export());
+    /// println!("Here is our key value: {}", ShiftCipher::insecure_key_export(&key));
     /// ```
-    pub fn insecure_export(&self) -> String {
-        self.0.into_inner().to_string()
+    pub fn insecure_key_export(key: &<Self as Cipher>::Key) -> String {
+        key.0.into_inner().to_string()
     }
 }
 
@@ -196,12 +195,12 @@ impl From<RingElement> for ShiftKey {
 }
 
 // TODO: Not implemented yet
-/// A custom error type that is returned from [`Shift::encrypt`].
+/// A custom error type that is returned from [`ShiftCipher::encrypt`].
 #[derive(Copy, Clone, Debug, Default, Eq, Hash, PartialEq)]
 pub struct EncryptionError;
 
 // TODO: not implemented yet
-/// A custom error type that is returned from [`Shift::decrypt`].
+/// A custom error type that is returned from [`ShiftCipher::decrypt`].
 #[derive(Copy, Clone, Debug, Default, Eq, Hash, PartialEq)]
 pub struct DecryptionError;
 
@@ -254,11 +253,11 @@ mod tests {
     fn enc_dec_basic() {
         let key0 = ShiftKey(RingElement(11));
 
-        let ciph0 = Shift::encrypt(&Message::new("wewillmeetatmidnight").unwrap(), &key0);
+        let ciph0 = ShiftCipher::encrypt(&Message::new("wewillmeetatmidnight").unwrap(), &key0);
 
         assert_eq!(ciph0, CIPH0.with(|ciph| ciph.clone())); // Ciphertext is correct
         assert_eq!(
-            Shift::decrypt(&ciph0, &key0),
+            ShiftCipher::decrypt(&ciph0, &key0),
             MSG0.with(|msg| msg.clone()) // Ciphertext decrypts correctly
         )
     }
@@ -276,14 +275,20 @@ mod tests {
 
         // If you encrypt, then decrypt with the same key used during encryption, you
         // get the same message back.
-        assert_eq!(Shift::decrypt(&Shift::encrypt(&msg1, &key1), &key1), msg1);
+        assert_eq!(
+            ShiftCipher::decrypt(&ShiftCipher::encrypt(&msg1, &key1), &key1),
+            msg1
+        );
 
         // If you encrypt, then try to decrypt with a different key than the one used
         // during encryption, you should not get the same one back. (Note this
         // test won't run if the keys collide, which they will with probability
         // 1/26, i.e., the keyspace for the Latin Shift Cipher system is *tiny*.
         if key1 != key2 {
-            assert_ne!(Shift::decrypt(&Shift::encrypt(&msg2, &key1), &key2), msg2)
+            assert_ne!(
+                ShiftCipher::decrypt(&ShiftCipher::encrypt(&msg2, &key1), &key2),
+                msg2
+            )
         }
     }
 
@@ -301,10 +306,16 @@ mod tests {
         assert_ne!(key1, key2);
 
         // Encrypted message always decrypts correctly
-        assert_eq!(Shift::decrypt(&Shift::encrypt(&msg1, &key1), &key1), msg1);
+        assert_eq!(
+            ShiftCipher::decrypt(&ShiftCipher::encrypt(&msg1, &key1), &key1),
+            msg1
+        );
         // Encrypted message won't decrypt correctly without the correct key
         // This test is OK because a manual check has been done to ensure the keys are
         // different.
-        assert_ne!(Shift::decrypt(&Shift::encrypt(&msg1, &key1), &key2), msg1)
+        assert_ne!(
+            ShiftCipher::decrypt(&ShiftCipher::encrypt(&msg1, &key1), &key2),
+            msg1
+        )
     }
 }

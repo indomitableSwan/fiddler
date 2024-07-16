@@ -29,6 +29,7 @@
 //! sequences of ring elements (i.e., plaintexts and ciphertexts, respectively).
 // (&#x2124; is Unicode for blackboard bold Z)
 
+pub use crate::shift::ShiftCipher;
 use rand::{CryptoRng, Rng};
 use std::{
     fmt,
@@ -36,7 +37,7 @@ use std::{
     str::FromStr,
 };
 
-pub mod shift;
+mod shift;
 
 /// This trait represents a deterministic cipher.
 pub trait Cipher {

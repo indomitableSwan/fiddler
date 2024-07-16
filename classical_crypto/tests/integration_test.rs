@@ -1,9 +1,6 @@
 //! These integration tests exercise the public API of the crate, but they may
 //! not be entirely sensible as integration tests.
-use classical_crypto::{
-    shift::{Shift, ShiftKey},
-    Cipher, Ciphertext, Key, Message,
-};
+use classical_crypto::{Cipher, Ciphertext, Key, Message, ShiftCipher};
 use rand::thread_rng;
 use std::str::FromStr;
 
@@ -19,17 +16,17 @@ fn generate_and_use_key() {
     assert_eq!(msg, Message::from_str("thisisanawkwardapichoice").unwrap());
 
     // Encrypt the test message.
-    let ciphertxt = Shift::encrypt(&msg, &key0);
+    let ciphertxt = ShiftCipher::encrypt(&msg, &key0);
 
     // If we decrypt our ciphertext with the correct key, we
     // get our original message back.
-    let decrypted = Shift::decrypt(&ciphertxt, &key0);
+    let decrypted = ShiftCipher::decrypt(&ciphertxt, &key0);
     assert_eq!(decrypted, msg);
 
     // If we decrypt using an incorrect key, we do not get
     //  our original message back
     if key0 != key1 {
-        assert_ne!(Shift::decrypt(&ciphertxt, &key1), msg);
+        assert_ne!(ShiftCipher::decrypt(&ciphertxt, &key1), msg);
     }
 
     // We can create ciphertexts from strings, too
@@ -63,8 +60,8 @@ fn short_msg_example() {
 
     // Set two fixed keys in order to reiterate how patterns are preserved
     // in Latin shift cipher.
-    let fixed_key_0 = ShiftKey::from_str("3");
-    let fixed_key_1 = ShiftKey::from_str("9");
+    let fixed_key_0 = <ShiftCipher as Cipher>::Key::from_str("3");
+    let fixed_key_1 = <ShiftCipher as Cipher>::Key::from_str("9");
 
     // Key encoding should work
     assert!(&fixed_key_0.is_ok());
@@ -74,8 +71,8 @@ fn short_msg_example() {
     let fixed_key_0 = fixed_key_0.unwrap();
     let fixed_key_1 = fixed_key_1.unwrap();
 
-    let small_ciphertext = Shift::encrypt(&small_msg_0, &fixed_key_0);
-    let small_decryption = Shift::decrypt(&small_ciphertext, &fixed_key_0);
+    let small_ciphertext = ShiftCipher::encrypt(&small_msg_0, &fixed_key_0);
+    let small_decryption = ShiftCipher::decrypt(&small_ciphertext, &fixed_key_0);
 
     // Encryption followed by decryption with the correct gets us back the original
     // message
@@ -84,5 +81,8 @@ fn short_msg_example() {
 
     // Encryption followed by decryption with an incorrect key gets us back a still
     // intelligible message somtimes.
-    assert_eq!(Shift::decrypt(&small_ciphertext, &fixed_key_1), small_msg_1);
+    assert_eq!(
+        ShiftCipher::decrypt(&small_ciphertext, &fixed_key_1),
+        small_msg_1
+    );
 }
