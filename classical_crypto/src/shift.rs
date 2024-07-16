@@ -32,12 +32,13 @@ impl Cipher for Shift {
     ///
     /// # Examples
     /// ```
-    /// # use classical_crypto::{Cipher, shift::Shift, Ciphertext, Key, Message};
+    /// # use classical_crypto::{Cipher, Key, shift::Shift};
     /// # use rand::thread_rng;
     /// # let mut rng = thread_rng();
-    /// # let key = Key::new(&mut rng);
-    /// # let msg = Message::new("thisisanawkwardapichoice").expect("This example is hardcoded; it should work!");
-    /// let ciphertxt = Shift::encrypt(&msg, &key);
+    /// # let key = Key::new(&mut rng); 
+    ///  let msg = <Shift as Cipher>::Message::new("thisisanawkwardapichoice").expect("This example is hardcoded; it should work!"); 
+    /// let ciphertxt = Shift::encrypt(&msg, &key); 
+    /// 
     /// ```
     fn encrypt(msg: &Self::Message, key: &Self::Key) -> Self::Ciphertext {
         msg.0.iter().map(|&i| i + key.0).collect()
@@ -48,12 +49,12 @@ impl Cipher for Shift {
     ///
     /// # Examples
     /// ```
-    /// # use classical_crypto::{Cipher, shift::Shift, Ciphertext, Key, Message};
+    /// # use classical_crypto::{Cipher, Key, shift::Shift};
     /// # use rand::thread_rng;
     /// #
     /// # let mut rng = thread_rng();
     /// # let key = Key::new(&mut rng);
-    /// # let msg = Message::new("thisisanawkwardapichoice").expect("This example is hardcoded; it should work!");
+    /// # let msg = <Shift as Cipher>::Message::new("thisisanawkwardapichoice").expect("This example is hardcoded; it should work!");
     /// # let ciphertxt = Shift::encrypt(&msg, &key);
     /// let decrypted = Shift::decrypt(&ciphertxt, &key);
     ///
@@ -70,7 +71,7 @@ impl Cipher for Shift {
     /// ```
     ///
     /// ```
-    /// # use classical_crypto::{Cipher, shift::Shift, Ciphertext, Key, Message};
+    /// # use classical_crypto::{Cipher, Key, shift::Shift};
     /// # use rand::thread_rng;
     /// #
     /// # let mut rng = thread_rng();
@@ -84,7 +85,7 @@ impl Cipher for Shift {
     /// // one sample, one ciphertext may not be enough to definitively
     /// // break the system with a brute force attack. But likely there
     /// // is other context available to validate possible plaintexts.
-    /// let small_msg = Message::new("dad").expect("This example is hardcoded; it should work!");
+    /// let small_msg = <Shift as Cipher>::Message::new("dad").expect("This example is hardcoded; it should work!");
     /// let small_ciphertext = Shift::encrypt(&small_msg, &key);
     /// // This will also decrypt the message properly with probability 1/26
     /// // which is of course a huge probability of success.
@@ -119,7 +120,7 @@ impl Key for ShiftKey {
     ///
     /// # Examples
     /// ```
-    /// # use classical_crypto::{Ciphertext, Key, shift::ShiftKey, Message};
+    /// # use classical_crypto::{Cipher, Key, shift::Shift};
     /// // Don't forget to include the `rand` crate!
     /// use rand::thread_rng;
     /// //
@@ -127,7 +128,7 @@ impl Key for ShiftKey {
     /// let mut rng = thread_rng();
     /// //
     /// // Generate a key
-    /// let key = ShiftKey::new(&mut rng);
+    /// let key = <Shift as Cipher>::Key::new(&mut rng);
     /// ```
     // Note: Keys must always be chosen according to a uniform distribution on the
     // underlying key space, i.e., the ring Z/26Z for the Latin Alphabet cipher.
@@ -141,7 +142,7 @@ impl ShiftKey {
     ///
     /// # Examples
     /// ```
-    /// # use classical_crypto::{Ciphertext, Key, shift::ShiftKey, Message};
+    /// # use classical_crypto::{Cipher, Key, shift::Shift};
     /// # // Don't forget to include the `rand` crate!
     /// # use rand::thread_rng;
     /// # //
@@ -149,7 +150,7 @@ impl ShiftKey {
     /// # let mut rng = thread_rng();
     /// # //
     /// # // Generate a key
-    /// # let key = ShiftKey::new(&mut rng);
+    /// # let key = <Shift as Cipher>::Key::new(&mut rng);
     /// //
     /// // We can export a key for external storage or other uses.
     /// // This method does not do anything special for secure key
