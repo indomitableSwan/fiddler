@@ -11,7 +11,7 @@ use std::str::FromStr;
 #[derive(Copy, Clone, Debug, Default, Eq, Hash, PartialEq)]
 pub struct Shift;
 
-// TODO: Should key be a trait too?
+
 /// A cryptographic key.
 // Crypto TODO: Keys should always contain context.
 // We *could* implement `Copy` and `Clone` here.
