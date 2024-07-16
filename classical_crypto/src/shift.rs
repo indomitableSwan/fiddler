@@ -3,7 +3,7 @@
 //! &#x2124;/26&#x2124;. As the name implies, ciphertexts are shifts (computed
 //! using modular arithmetic) of the corresponding plaintexts, so the _key
 //! space_ is &#x2124;/26&#x2124;. as well.
-use crate::{Cipher, Ciphertext, EncodingError, Message, Ring, RingElement};
+use crate::{Cipher, Ciphertext, EncodingError, Key, Message, Ring, RingElement};
 use rand::{CryptoRng, Rng};
 use std::str::FromStr;
 
@@ -28,46 +28,17 @@ impl Cipher for Shift {
     type EncryptionError = EncryptionError;
     type DecryptionError = DecryptionError;
 
-    /// Generate a cryptographic key uniformly at random from the key space.
-    ///
-    /// Note that the mathematical description of the Latin Shift Cipher, as
-    /// well as this implementation, does not disallow a key of 0, so
-    /// sometimes the encryption algorithm is just the identity function.
-    ///
-    /// This is, after all, a cryptosystem designed for use by humans and not
-    /// computers. Humans are not as good as computers at picking a value
-    /// mod 26 uniformly at random, but we tend not to pick a key of 0
-    /// and send our private messages to their recipients in plaintext. Oh wait
-    /// ... we do this all the time, in the form of emails.
-    ///
-    /// # Examples
-    /// ```
-    /// # use classical_crypto::{Cipher, shift::Shift};
-    /// // Don't forget to include the `rand` crate!
-    /// use rand::thread_rng;
-    /// //
-    /// // Initialize a cryptographic rng.
-    /// let mut rng = thread_rng();
-    /// //
-    /// // Generate a key
-    /// let key = Shift::gen_key(&mut rng);
-    /// ```
-    // Note: Keys must always be chosen according to a uniform distribution on the
-    // underlying key space, i.e., the ring Z/26Z for the Latin Alphabet cipher.
-    fn gen_key<R: Rng + CryptoRng>(rng: &mut R) -> Self::Key {
-        ShiftKey(RingElement::random(rng))
-    }
-
     /// Encrypt a message.
     ///
     /// # Examples
     /// ```
-    /// # use classical_crypto::{Cipher, shift::Shift};
+    /// # use classical_crypto::{Cipher, Key, shift::Shift};
     /// # use rand::thread_rng;
     /// # let mut rng = thread_rng();
-    /// # let key = Shift::gen_key(&mut rng);
-    ///  let msg = <Shift as Cipher>::Message::new("thisisanawkwardapichoice").expect("This example is hardcoded; it should work!");
-    /// let ciphertxt = Shift::encrypt(&msg, &key);
+    /// # let key = Key::new(&mut rng); 
+    ///  let msg = <Shift as Cipher>::Message::new("thisisanawkwardapichoice").expect("This example is hardcoded; it should work!"); 
+    /// let ciphertxt = Shift::encrypt(&msg, &key); 
+    /// 
     /// ```
     fn encrypt(msg: &Self::Message, key: &Self::Key) -> Self::Ciphertext {
         msg.0.iter().map(|&i| i + key.0).collect()
@@ -78,11 +49,11 @@ impl Cipher for Shift {
     ///
     /// # Examples
     /// ```
-    /// # use classical_crypto::{Cipher, shift::Shift};
+    /// # use classical_crypto::{Cipher, Key, shift::Shift};
     /// # use rand::thread_rng;
     /// #
     /// # let mut rng = thread_rng();
-    /// # let key = Shift::gen_key(&mut rng);
+    /// # let key = Key::new(&mut rng);
     /// # let msg = <Shift as Cipher>::Message::new("thisisanawkwardapichoice").expect("This example is hardcoded; it should work!");
     /// # let ciphertxt = Shift::encrypt(&msg, &key);
     /// let decrypted = Shift::decrypt(&ciphertxt, &key);
@@ -91,7 +62,7 @@ impl Cipher for Shift {
     ///    "If we decrypt using the correct key, we get our original
     /// message back: {}", decrypted);
     ///
-    /// let wrong_key = Shift::gen_key(&mut rng);
+    /// let wrong_key = Key::new(&mut rng);
     /// if key != wrong_key {
     /// println!("If we decrypt using an incorrect key, we do not get
     ///  our original message back: {}",
@@ -100,11 +71,11 @@ impl Cipher for Shift {
     /// ```
     ///
     /// ```
-    /// # use classical_crypto::{Cipher, shift::Shift};
+    /// # use classical_crypto::{Cipher, Key, shift::Shift};
     /// # use rand::thread_rng;
     /// #
     /// # let mut rng = thread_rng();
-    /// # let key = Shift::gen_key(&mut rng);
+    /// # let key = Key::new(&mut rng);
     /// #
     /// // With some non-negligible frequency, you won't get nonsense on
     /// // decryption with the wrong key, but the possible message space
@@ -119,7 +90,7 @@ impl Cipher for Shift {
     /// // This will also decrypt the message properly with probability 1/26
     /// // which is of course a huge probability of success.
     /// let small_decryption = Shift::decrypt(&small_ciphertext,
-    ///  &Shift::gen_key(&mut rng));
+    ///  &Key::new(&mut rng));
     ///
     /// println!("Here is a small example, where we can more
     /// easily see the preservation of patterns:
@@ -133,12 +104,45 @@ impl Cipher for Shift {
     }
 }
 
+// TODO: refactor, prep for Substitution Cipher
+impl Key for ShiftKey {
+    /// Generate a cryptographic key uniformly at random from the key space.
+    ///
+    /// Note that the mathematical description of the Latin Shift Cipher, as
+    /// well as this implementation, does not disallow a key of 0, so
+    /// sometimes the encryption algorithm is just the identity function.
+    ///
+    /// This is, after all, a cryptosystem designed for use by humans and not
+    /// computers. Humans are not as good as computers at picking a value
+    /// mod 26 uniformly at random, but we tend not to pick a key of 0
+    /// and send our private messages to their recipients in plaintext. Oh wait
+    /// ... we do this all the time, in the form of emails.
+    ///
+    /// # Examples
+    /// ```
+    /// # use classical_crypto::{Cipher, Key, shift::Shift};
+    /// // Don't forget to include the `rand` crate!
+    /// use rand::thread_rng;
+    /// //
+    /// // Initialize a cryptographic rng.
+    /// let mut rng = thread_rng();
+    /// //
+    /// // Generate a key
+    /// let key = <Shift as Cipher>::Key::new(&mut rng);
+    /// ```
+    // Note: Keys must always be chosen according to a uniform distribution on the
+    // underlying key space, i.e., the ring Z/26Z for the Latin Alphabet cipher.
+    fn new<R: Rng + CryptoRng>(rng: &mut R) -> Self {
+        Self(RingElement::random(rng))
+    }
+}
+
 impl ShiftKey {
     /// Export the key
     ///
     /// # Examples
     /// ```
-    /// # use classical_crypto::{Cipher, shift::Shift};
+    /// # use classical_crypto::{Cipher, Key, shift::Shift};
     /// # // Don't forget to include the `rand` crate!
     /// # use rand::thread_rng;
     /// # //
@@ -146,7 +150,7 @@ impl ShiftKey {
     /// # let mut rng = thread_rng();
     /// # //
     /// # // Generate a key
-    /// # let key = Shift::gen_key(&mut rng);
+    /// # let key = <Shift as Cipher>::Key::new(&mut rng);
     /// //
     /// // We can export a key for external storage or other uses.
     /// // This method does not do anything special for secure key
@@ -265,8 +269,8 @@ mod tests {
     fn enc_dec_random_keys() {
         let mut rng = rand::thread_rng();
 
-        let key1 = Shift::gen_key(&mut rng);
-        let key2 = Shift::gen_key(&mut rng);
+        let key1 = Key::new(&mut rng);
+        let key2 = Key::new(&mut rng);
 
         let msg1 = Message::new("thisisatest").unwrap();
         let msg2 = Message::new("thisisanothertest").unwrap();
