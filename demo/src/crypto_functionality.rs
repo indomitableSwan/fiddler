@@ -1,5 +1,8 @@
 use crate::menu::decryption_menu;
-use crate::{print_key_instr, process_input, ConsentMenu, Menu};
+use crate::{
+    menu::{ConsentMenu, Menu},
+    print_key_instr, process_input,
+};
 use classical_crypto::{CipherText, Key, Message};
 use rand::thread_rng;
 use std::error::Error;
