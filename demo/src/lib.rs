@@ -1,17 +1,15 @@
 //! The demo libary crate, containing functionality supporting the demo CLI.
 use std::{error::Error, io, str::FromStr};
 
-mod crypto_functionality;
-mod menu;
-
-pub use menu::menu;
+pub mod crypto_functionality;
+pub mod menu;
 
 // TODO: this loop and match statment plus a return line is probably not
 // idiomatic
 //
-// Processes command line input and converts to type `T` as specified
-// by caller. If successful, returns conversion. If not, prints clarifying
-// instructions so that the person can try again
+/// Processes command line input and converts to type `T` as specified
+/// by caller. If successful, returns conversion. If not, prints clarifying
+/// instructions so that the person can try again.
 fn process_input<T, F>(instr: F) -> Result<T, Box<dyn Error>>
 where
     T: FromStr,

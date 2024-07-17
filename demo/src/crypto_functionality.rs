@@ -1,3 +1,4 @@
+//! Cryptography-related functionality.
 use crate::menu::decryption_menu;
 use crate::{
     menu::{ConsentMenu, Menu},
@@ -7,8 +8,8 @@ use classical_crypto::{CipherText, Key, Message};
 use rand::thread_rng;
 use std::error::Error;
 
-// Creates keys and prints the key to standard output.
-pub(crate) fn make_key() -> Result<(), Box<dyn Error>> {
+/// Creates keys and prints the key to standard output.
+pub fn make_key() -> Result<(), Box<dyn Error>> {
     // Set up an rng.
     let mut rng = thread_rng();
 
@@ -34,9 +35,9 @@ pub(crate) fn make_key() -> Result<(), Box<dyn Error>> {
     }
 }
 
-// Takes in a key and a message and encrypts, then prints
-// the result.
-pub(crate) fn encrypt() -> Result<(), Box<dyn Error>> {
+/// Takes in a key and a message and encrypts, then prints
+/// the result.
+pub fn encrypt() -> Result<(), Box<dyn Error>> {
     println!("\nPlease enter the message you want to encrypt:");
 
     let msg: Message = process_input(print_msg_instr)?;
@@ -56,9 +57,9 @@ pub(crate) fn encrypt() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-// Takes in a ciphertext and attempts to decrypt and
-// print result.
-pub(crate) fn decrypt() -> Result<(), Box<dyn Error>> {
+/// Takes in a ciphertext and attempts to decrypt and
+/// print result.
+pub fn decrypt() -> Result<(), Box<dyn Error>> {
     println!("\nEnter your ciphertext. Ciphertexts use characters only from the Latin Alphabet:");
 
     let ciphertxt: CipherText = process_input(print_ciphertxt_instr)?;
@@ -81,8 +82,8 @@ pub(crate) fn decrypt() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-// Gets key from stdin and attempts to decrypt
-pub(crate) fn chosen_key(ciphertxt: &CipherText) -> Result<(), Box<dyn Error>> {
+/// Gets key from stdin and attempts to decrypt.
+pub fn chosen_key(ciphertxt: &CipherText) -> Result<(), Box<dyn Error>> {
     loop {
         println!("\nOK. Please enter a key now:");
         let key: Key = process_input(print_key_instr)?;
@@ -94,8 +95,8 @@ pub(crate) fn chosen_key(ciphertxt: &CipherText) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-// Has computer choose key uniformly at random and attempts to decrypt
-pub(crate) fn computer_chosen_key(ciphertxt: &CipherText) -> Result<(), Box<dyn Error>> {
+/// Has computer choose key uniformly at random and attempts to decrypt.
+pub fn computer_chosen_key(ciphertxt: &CipherText) -> Result<(), Box<dyn Error>> {
     let mut rng = thread_rng();
 
     loop {
@@ -108,8 +109,8 @@ pub(crate) fn computer_chosen_key(ciphertxt: &CipherText) -> Result<(), Box<dyn 
     Ok(())
 }
 
-// Decrypt with given key and ask whether to try again or not
-pub(crate) fn try_decrypt(ciphertxt: &CipherText, key: Key) -> Result<(), Box<dyn Error>> {
+/// Decrypt with given key and ask whether to try again or not.
+pub fn try_decrypt(ciphertxt: &CipherText, key: Key) -> Result<(), Box<dyn Error>> {
     println!("\nYour computed plaintext is {}\n", ciphertxt.decrypt(&key));
     println!("\nAre you happy with this decryption?");
     ConsentMenu::print_menu()?;
@@ -122,7 +123,8 @@ pub(crate) fn try_decrypt(ciphertxt: &CipherText, key: Key) -> Result<(), Box<dy
     }
 }
 
-fn print_key_instr() -> Result<(), Box<dyn Error>> {
+/// Prints instructions for user on valid key values.
+pub fn print_key_instr() -> Result<(), Box<dyn Error>> {
     println!("\nA key is a number between 0 and 25 inclusive.");
     Ok(())
 }

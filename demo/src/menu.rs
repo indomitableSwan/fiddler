@@ -4,8 +4,11 @@ use crate::process_input;
 use classical_crypto::CipherText;
 use std::{error::Error, str::FromStr};
 
-// Prints menu of user options and matches on user input to do one of:
-// Generate a key, encrypt a message, decrypt a message, quit program
+/// Prints menu of user options and matches on user input to do one of:
+/// - Generate a key;
+/// - Encrypt a message;
+/// - Decrypt a message;
+/// - Quit the CLI application.
 pub fn menu() -> Result<(), Box<dyn Error>> {
     loop {
         MainMenu::print_menu()?;
@@ -21,10 +24,11 @@ pub fn menu() -> Result<(), Box<dyn Error>> {
     }
 }
 
-// Prints menu of user options and matches on user input to do one of:
-// Decrypt using a known key, computer-aided brute force attack, return
-// to main menu
-pub(crate) fn decryption_menu(ciphertxt: &CipherText) -> Result<(), Box<dyn Error>> {
+/// Prints menu of user options and matches on user input to do one of:
+/// - Decrypt using a known key; 
+/// - Computer-aided brute force attack;
+/// - Quit decryption menu.
+pub fn decryption_menu(ciphertxt: &CipherText) -> Result<(), Box<dyn Error>> {
     DecryptMenu::print_menu()?;
 
     let command: DecryptMenu = process_input(DecryptMenu::print_menu)?;
@@ -42,7 +46,8 @@ pub(crate) fn decryption_menu(ciphertxt: &CipherText) -> Result<(), Box<dyn Erro
     }
 }
 
-pub(crate) trait Menu<const N: usize> {
+/// Represents menu functionality.
+pub trait Menu<const N: usize> {
     fn menu_array() -> MenuArray<N>;
 
     fn print_menu() -> Result<(), Box<dyn Error>> {
@@ -54,14 +59,18 @@ pub(crate) trait Menu<const N: usize> {
     }
 }
 
-// A struct that represents a set of possible user actions
-pub(crate) struct MenuArray<const N: usize>([Command<'static>; N]);
+/// Represents a set of possible user actions.
+pub struct MenuArray<const N: usize>([Command<'static>; N]);
 
-// Represents the program's main menu
-enum MainMenu {
+/// Represents the program's main menu options.
+pub enum MainMenu {
+    /// User wants to generate a key.
     GenKE,
+    /// User wants to encrypt a message.
     EncryptKE,
+    /// User wants to decrypt a message.
     DecryptKE,
+    /// User wants to quit the CLI application.
     QuitKE,
 }
 
@@ -118,9 +127,11 @@ impl FromStr for MainMenu {
     }
 }
 
-// Represents user assent or dissent
-pub(crate) enum ConsentMenu {
+/// Represents user assent or dissent.
+pub enum ConsentMenu {
+    /// User assents.
     YesKE,
+    /// User dissents.
     NoKE,
 }
 
@@ -156,9 +167,13 @@ impl FromStr for ConsentMenu {
     }
 }
 
-enum DecryptMenu {
+/// Represents the decryption menu.
+pub enum DecryptMenu {
+    /// User knows the key.
     KnownKey,
+    /// User does not know the key.
     Bruteforce,
+    /// User does not want to decrypt.
     Quit,
 }
 
@@ -205,12 +220,12 @@ impl FromStr for DecryptMenu {
     }
 }
 
-// A struct that represents a possible user action
+/// Represents a possible user action.
 #[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]
-struct Command<'a> {
+pub struct Command<'a> {
     key: &'a str,
     menu_msg: &'a str,
 }
 
-// A struct that represents an error parsing a command from a string
-pub(crate) struct CommandError;
+/// The error returned upon failure to parse a [`Command`] from a string.
+pub struct CommandError;
