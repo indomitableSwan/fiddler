@@ -1,1 +1,7 @@
 /target
+.DS_Store
+Cargo.lock
+classical_crypto/.DS_Store
+classical_crypto/src/.DS_Store
+demo/.DS_Store
+rustfmt.toml
