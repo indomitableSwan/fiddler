@@ -1,7 +1,7 @@
 use crate::menu::decryption_menu;
 use crate::{
     menu::{ConsentMenu, Menu},
-    print_key_instr, process_input,
+    process_input,
 };
 use classical_crypto::{CipherText, Key, Message};
 use rand::thread_rng;
@@ -120,4 +120,9 @@ pub(crate) fn try_decrypt(ciphertxt: &CipherText, key: Key) -> Result<(), Box<dy
         ConsentMenu::NoKE => Err("try again".into()),
         ConsentMenu::YesKE => Ok(()),
     }
+}
+
+fn print_key_instr() -> Result<(), Box<dyn Error>> {
+    println!("\nA key is a number between 0 and 25 inclusive.");
+    Ok(())
 }

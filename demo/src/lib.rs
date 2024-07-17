@@ -34,8 +34,3 @@ where
         return Ok(result);
     }
 }
-
-fn print_key_instr() -> Result<(), Box<dyn Error>> {
-    println!("\nA key is a number between 0 and 25 inclusive.");
-    Ok(())
-}
