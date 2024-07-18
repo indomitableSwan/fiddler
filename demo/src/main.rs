@@ -2,7 +2,7 @@
 //! allows key generation, message encryption, and ciphertext decryption
 //! (including a computer-aided brute force attack) using the Latin Shift
 //! Cipher.
-use demo::menu::menu;
+use demo::menu;
 use std::error::Error;
 
 fn main() -> Result<(), Box<dyn Error>> {

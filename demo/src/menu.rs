@@ -1,61 +1,15 @@
-//! Menu related functionality.
-use crate::crypto_functionality::{chosen_key, computer_chosen_key, decrypt, encrypt, make_key};
-use crate::process_input;
-use classical_crypto::CipherText;
-use std::{error::Error, str::FromStr};
-
-/// Prints menu of user options and matches on user input to do one of:
-/// - Generate a key;
-/// - Encrypt a message;
-/// - Decrypt a message;
-/// - Quit the CLI application.
-pub fn menu() -> Result<(), Box<dyn Error>> {
-    loop {
-        MainMenu::print_menu()?;
-
-        let command: MainMenu = process_input(MainMenu::print_menu)?;
-
-        match command {
-            MainMenu::GenKE => make_key()?,
-            MainMenu::EncryptKE => encrypt()?,
-            MainMenu::DecryptKE => decrypt()?,
-            MainMenu::QuitKE => break Ok(()),
-        };
-    }
-}
-
-/// Prints menu of user options and matches on user input to do one of:
-/// - Decrypt using a known key; 
-/// - Computer-aided brute force attack;
-/// - Quit decryption menu.
-pub fn decryption_menu(ciphertxt: &CipherText) -> Result<(), Box<dyn Error>> {
-    DecryptMenu::print_menu()?;
-
-    let command: DecryptMenu = process_input(DecryptMenu::print_menu)?;
-
-    match command {
-        DecryptMenu::Bruteforce => {
-            computer_chosen_key(ciphertxt)?;
-            Ok(())
-        }
-        DecryptMenu::KnownKey => {
-            chosen_key(ciphertxt)?;
-            Ok(())
-        }
-        DecryptMenu::Quit => Ok(()),
-    }
-}
+//! Menus.
+use std::str::FromStr;
 
 /// Represents menu functionality.
 pub trait Menu<const N: usize> {
     fn menu_array() -> MenuArray<N>;
 
-    fn print_menu() -> Result<(), Box<dyn Error>> {
+    fn print_menu() {
         println!("\nPlease enter one of the following options:");
         for item in Self::menu_array().0 {
             println!("{}: {}", item.key, item.menu_msg)
         }
-        Ok(())
     }
 }
 

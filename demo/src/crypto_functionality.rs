@@ -1,8 +1,7 @@
-//! Cryptography-related functionality.
-use crate::menu::decryption_menu;
+//! Cryptography-related I/O functionality.
 use crate::{
-    menu::{ConsentMenu, Menu},
-    process_input,
+    io_helper::process_input,
+    menu::{ConsentMenu, DecryptMenu, Menu},
 };
 use classical_crypto::{CipherText, Key, Message};
 use rand::thread_rng;
@@ -21,7 +20,7 @@ pub fn make_key() -> Result<(), Box<dyn Error>> {
         println!("\nWe shouldn't export your key (or say, save it in logs), but we can!");
         println!("Here it is: {}", key.insecure_export());
         println!("\nAre you happy with your key?");
-        ConsentMenu::print_menu()?;
+        ConsentMenu::print_menu();
 
         let command: ConsentMenu = process_input(ConsentMenu::print_menu)?;
 
@@ -40,53 +39,52 @@ pub fn make_key() -> Result<(), Box<dyn Error>> {
 pub fn encrypt() -> Result<(), Box<dyn Error>> {
     println!("\nPlease enter the message you want to encrypt:");
 
-    let msg: Message = process_input(print_msg_instr)?;
+    let msg: Message = process_input(|| {
+        println!("\nWe only accept lowercase letters from the Latin Alphabet, in one of the most awkward \nAPI decisions ever.");
+    })?;
 
     println!("\nNow, do you have a key that was generated uniformly at random that you remember and \nwould like to use? If yes, please enter your key. Otherwise, please pick a fresh key \nuniformly at random from the ring of integers modulo 26 yourself. \n\nYou won't be as good at this as a computer, but if you understand the cryptosystem \nyou are using (something we cryptographers routinely assume about other people, while \npretending that we aren't assuming this), you will probably not pick a key of 0, \nwhich is equivalent to sending your messages \"in the clear\", i.e., unencrypted. Good \nluck! \n\nGo ahead and enter your key now:");
 
-    let key: Key = process_input(print_key_instr)?;
+    let key: Key = process_input(|| {
+        println!("{KEY_PROMPT}");
+    })?;
 
     println!("\nYour ciphertext is {}", msg.encrypt(&key));
     println!("\nLook for patterns in your ciphertext. Could you definitively figure out the key and \noriginal plaintext message if you didn't already know it?");
-
-    fn print_msg_instr() -> Result<(), Box<dyn Error>> {
-        println!("\nWe only accept lowercase letters from the Latin Alphabet, in one of the most awkward \nAPI decisions ever.");
-        Ok(())
-    }
 
     Ok(())
 }
 
 /// Takes in a ciphertext and attempts to decrypt and
 /// print result.
-pub fn decrypt() -> Result<(), Box<dyn Error>> {
+pub fn decrypt(command: DecryptMenu) -> Result<(), Box<dyn Error>> {
     println!("\nEnter your ciphertext. Ciphertexts use characters only from the Latin Alphabet:");
 
-    let ciphertxt: CipherText = process_input(print_ciphertxt_instr)?;
-
-    println!("\nGreat, let's work on decrypting your ciphertext.");
-    println!(
-        "If you know what key was used to encrypt this message, this should only take one try."
-    );
-    println!(
-    "If not, don't despair. Just guess! On average, you can expect success using this \nsimple brute force attack method after trying 13 keys chosen uniformly at random."
-    );
-
-    decryption_menu(&ciphertxt)?;
-
-    fn print_ciphertxt_instr() -> Result<(), Box<dyn Error>> {
+    let ciphertxt: CipherText = process_input(|| {
         println!("\nCiphertext must contain characters from the Latin Alphabet only.");
-        Ok(())
-    }
+    })?;
 
-    Ok(())
+    // Attempt decryption or stop trying
+    match command {
+        DecryptMenu::Bruteforce => {
+            computer_chosen_key(&ciphertxt)?;
+            Ok(())
+        }
+        DecryptMenu::KnownKey => {
+            chosen_key(&ciphertxt)?;
+            Ok(())
+        }
+        DecryptMenu::Quit => Ok(()),
+    }
 }
 
 /// Gets key from stdin and attempts to decrypt.
 pub fn chosen_key(ciphertxt: &CipherText) -> Result<(), Box<dyn Error>> {
     loop {
         println!("\nOK. Please enter a key now:");
-        let key: Key = process_input(print_key_instr)?;
+        let key: Key = process_input(|| {
+            println!("{KEY_PROMPT}");
+        })?;
         match try_decrypt(ciphertxt, key) {
             Ok(_) => break,
             Err(_) => continue,
@@ -113,7 +111,7 @@ pub fn computer_chosen_key(ciphertxt: &CipherText) -> Result<(), Box<dyn Error>>
 pub fn try_decrypt(ciphertxt: &CipherText, key: Key) -> Result<(), Box<dyn Error>> {
     println!("\nYour computed plaintext is {}\n", ciphertxt.decrypt(&key));
     println!("\nAre you happy with this decryption?");
-    ConsentMenu::print_menu()?;
+    ConsentMenu::print_menu();
 
     let command: ConsentMenu = process_input(ConsentMenu::print_menu)?;
 
@@ -123,8 +121,4 @@ pub fn try_decrypt(ciphertxt: &CipherText, key: Key) -> Result<(), Box<dyn Error
     }
 }
 
-/// Prints instructions for user on valid key values.
-pub fn print_key_instr() -> Result<(), Box<dyn Error>> {
-    println!("\nA key is a number between 0 and 25 inclusive.");
-    Ok(())
-}
+const KEY_PROMPT: &str = "\nA key is a number between 0 and 25 inclusive.";
