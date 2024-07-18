@@ -35,7 +35,7 @@ impl Cipher for ShiftCipher {
     /// # use rand::thread_rng;
     /// # let mut rng = thread_rng();
     /// # let key = Key::new(&mut rng);
-    ///  let msg = <ShiftCipher as Cipher>::Message::new("thisisanawkwardapichoice").expect("This example is hardcoded; it should work!");
+    /// # let msg = <ShiftCipher as Cipher>::Message::new("thisisanawkwardapichoice").expect("This example is hardcoded; it should work!");
     /// let ciphertxt = ShiftCipher::encrypt(&msg, &key);
     /// ```
     fn encrypt(msg: &Self::Message, key: &Self::Key) -> Self::Ciphertext {

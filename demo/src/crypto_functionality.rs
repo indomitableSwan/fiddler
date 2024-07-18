@@ -3,7 +3,7 @@ use crate::{
     io_helper::process_input,
     menu::{ConsentMenu, DecryptMenu, Menu},
 };
-use classical_crypto::{ShiftCipher, Cipher, Key, Ciphertext, Message};
+use classical_crypto::{Cipher, Ciphertext, Key, Message, ShiftCipher};
 use rand::thread_rng;
 use std::error::Error;
 
@@ -108,8 +108,14 @@ pub fn computer_chosen_key(ciphertxt: &Ciphertext) -> Result<(), Box<dyn Error>>
 }
 
 /// Decrypt with given key and ask whether to try again or not.
-pub fn try_decrypt(ciphertxt: &Ciphertext, key: <ShiftCipher as Cipher>::Key) -> Result<(), Box<dyn Error>> {
-    println!("\nYour computed plaintext is {}\n", ShiftCipher::decrypt(ciphertxt, &key));
+pub fn try_decrypt(
+    ciphertxt: &Ciphertext,
+    key: <ShiftCipher as Cipher>::Key,
+) -> Result<(), Box<dyn Error>> {
+    println!(
+        "\nYour computed plaintext is {}\n",
+        ShiftCipher::decrypt(ciphertxt, &key)
+    );
     println!("\nAre you happy with this decryption?");
     ConsentMenu::print_menu();
 
