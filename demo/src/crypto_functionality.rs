@@ -3,7 +3,7 @@ use crate::{
     io_helper::process_input,
     menu::{ConsentMenu, DecryptMenu, Menu},
 };
-use classical_crypto::{Cipher, Ciphertext, Key, Message, ShiftCipher};
+use classical_crypto::{Cipher, Key, Message, ShiftCipher};
 use rand::thread_rng;
 use std::error::Error;
 
