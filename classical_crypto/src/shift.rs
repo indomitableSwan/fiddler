@@ -3,9 +3,27 @@
 //! &#x2124;/26&#x2124;. As the name implies, ciphertexts are shifts (computed
 //! using modular arithmetic) of the corresponding plaintexts, so the _key
 //! space_ is &#x2124;/26&#x2124;. as well.
-use crate::{Cipher, Ciphertext, EncodingError, Key, Message, Ring, RingElement};
+use crate::{Cipher, Ciphertext as Ciphtxt, EncodingError, Key, Message, Ring, RingElement};
 use rand::{CryptoRng, Rng};
-use std::str::FromStr;
+use std::{ops::Deref, str::FromStr};
+
+#[derive(Clone, Debug, Default, Eq, Hash, PartialEq)]
+pub struct Ciphertext(Ciphtxt);
+
+impl Deref for Ciphertext {
+    type Target = Ciphtxt;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl FromStr for Ciphertext {
+    type Err = EncodingError;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(Ciphertext(Ciphtxt::from_str(s)?))
+    }
+}
 
 /// An implementation of the Latin Shift Cipher.
 #[derive(Copy, Clone, Debug, Default, Eq, Hash, PartialEq)]
@@ -39,7 +57,7 @@ impl Cipher for ShiftCipher {
     /// let ciphertxt = ShiftCipher::encrypt(&msg, &key);
     /// ```
     fn encrypt(msg: &Self::Message, key: &Self::Key) -> Self::Ciphertext {
-        msg.0.iter().map(|&i| i + key.0).collect()
+        Ciphertext(msg.0.iter().map(|&i| i + key.0).collect())
     }
 
     // TODO! refactor, generalize
@@ -94,11 +112,11 @@ impl Cipher for ShiftCipher {
     /// easily see the preservation of patterns:
     /// \n plaintext is {}, ciphertext is {},
     ///  and decryption under a random key gives {}",
-    /// small_msg, small_ciphertext,
+    /// small_msg, *small_ciphertext,
     /// small_decryption)
     /// ```
     fn decrypt(ciphertxt: &Self::Ciphertext, key: &Self::Key) -> Self::Message {
-        ciphertxt.0.iter().map(|&i| i - key.0).collect()
+        ciphertxt.0 .0.iter().map(|&i| i - key.0).collect()
     }
 }
 
@@ -238,11 +256,11 @@ mod tests {
 
     // Encrypted "wewillmeetatmidnight" message with key=11, from Example 1.1,
     // Stinson 3rd Edition, Example 2.1 Stinson 4th Edition
-    thread_local! (static CIPH0: Ciphertext = Ciphertext(vec![RingElement(7), RingElement(15), 
+    thread_local! (static CIPH0: Ciphertext = Ciphertext(Ciphtxt(vec![RingElement(7), RingElement(15), 
             RingElement(7), RingElement(19), RingElement(22), RingElement(22),
             RingElement(23), RingElement(15), RingElement(15), RingElement(4),
             RingElement(11), RingElement(4),
-            RingElement(23), RingElement(19), RingElement(14), RingElement(24), RingElement(19), RingElement(17), RingElement(18), RingElement(4)]));
+            RingElement(23), RingElement(19), RingElement(14), RingElement(24), RingElement(19), RingElement(17), RingElement(18), RingElement(4)])));
 
     // Encrypted "wewillmeetatmidnight" as a string, from Example 1.1 Stinson 3rd
     // Edition, Example 2.1 Stinson 4th Edition
