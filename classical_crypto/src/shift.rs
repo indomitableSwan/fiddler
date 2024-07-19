@@ -77,10 +77,6 @@ impl FromIterator<RingElement> for Message {
     }
 }
 
-/// An implementation of the Latin Shift Cipher.
-#[derive(Copy, Clone, Debug, Default, Eq, Hash, PartialEq)]
-pub struct ShiftCipher;
-
 /// A cryptographic key for the Latin Shift Cipher.
 // Crypto TODO: Keys should always contain context.
 // We *could* implement `Copy` and `Clone` here.
@@ -153,6 +149,10 @@ impl From<RingElement> for Key {
         Key(item)
     }
 }
+
+/// An implementation of the Latin Shift Cipher.
+#[derive(Copy, Clone, Debug, Default, Eq, Hash, PartialEq)]
+pub struct ShiftCipher;
 
 impl CipherTrait for ShiftCipher {
     type Message = Message;
