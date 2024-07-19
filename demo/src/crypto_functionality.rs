@@ -3,7 +3,10 @@ use crate::{
     io_helper::process_input,
     menu::{ConsentMenu, DecryptMenu, Menu},
 };
-use classical_crypto::{Cipher, Key, ShiftCipher};
+use classical_crypto::{
+    shift::{Ciphertext, ShiftCipher},
+    Cipher, Key,
+};
 use rand::thread_rng;
 use std::error::Error;
 
@@ -60,7 +63,7 @@ pub fn encrypt() -> Result<(), Box<dyn Error>> {
 pub fn decrypt(command: DecryptMenu) -> Result<(), Box<dyn Error>> {
     println!("\nEnter your ciphertext. Ciphertexts use characters only from the Latin Alphabet:");
 
-    let ciphertxt: <ShiftCipher as Cipher>::Ciphertext = process_input(|| {
+    let ciphertxt: Ciphertext = process_input(|| {
         println!("\nCiphertext must contain characters from the Latin Alphabet only.");
     })?;
 
@@ -79,7 +82,7 @@ pub fn decrypt(command: DecryptMenu) -> Result<(), Box<dyn Error>> {
 }
 
 /// Gets key from stdin and attempts to decrypt.
-pub fn chosen_key(ciphertxt: &<ShiftCipher as Cipher>::Ciphertext) -> Result<(), Box<dyn Error>> {
+pub fn chosen_key(ciphertxt: &Ciphertext) -> Result<(), Box<dyn Error>> {
     loop {
         println!("\nOK. Please enter a key now:");
         let key: <ShiftCipher as Cipher>::Key = process_input(|| {
@@ -94,9 +97,7 @@ pub fn chosen_key(ciphertxt: &<ShiftCipher as Cipher>::Ciphertext) -> Result<(),
 }
 
 /// Has computer choose key uniformly at random and attempts to decrypt.
-pub fn computer_chosen_key(
-    ciphertxt: &<ShiftCipher as Cipher>::Ciphertext,
-) -> Result<(), Box<dyn Error>> {
+pub fn computer_chosen_key(ciphertxt: &Ciphertext) -> Result<(), Box<dyn Error>> {
     let mut rng = thread_rng();
 
     loop {
@@ -111,7 +112,7 @@ pub fn computer_chosen_key(
 
 /// Decrypt with given key and ask whether to try again or not.
 pub fn try_decrypt(
-    ciphertxt: &<ShiftCipher as Cipher>::Ciphertext,
+    ciphertxt: &Ciphertext,
     key: <ShiftCipher as Cipher>::Key,
 ) -> Result<(), Box<dyn Error>> {
     println!(

@@ -47,7 +47,7 @@ impl Cipher for ShiftCipher {
     ///
     /// # Examples
     /// ```
-    /// # use classical_crypto::{Cipher, Key, ShiftCipher};
+    /// # use classical_crypto::{Cipher, Key, shift::ShiftCipher};
     /// # use rand::thread_rng;
     /// # let mut rng = thread_rng();
     /// # let key = Key::new(&mut rng);
@@ -63,7 +63,7 @@ impl Cipher for ShiftCipher {
     ///
     /// # Examples
     /// ```
-    /// # use classical_crypto::{Cipher, Key, ShiftCipher};
+    /// # use classical_crypto::{Cipher, Key, shift::ShiftCipher};
     /// # use rand::thread_rng;
     /// #
     /// # let mut rng = thread_rng();
@@ -85,7 +85,7 @@ impl Cipher for ShiftCipher {
     /// ```
     ///
     /// ```
-    /// # use classical_crypto::{Cipher, Key, ShiftCipher};
+    /// # use classical_crypto::{Cipher, Key, shift::ShiftCipher};
     /// # use rand::thread_rng;
     /// #
     /// # let mut rng = thread_rng();
@@ -134,7 +134,7 @@ impl Key for ShiftKey {
     ///
     /// # Examples
     /// ```
-    /// # use classical_crypto::{Cipher, Key, ShiftCipher};
+    /// # use classical_crypto::{Cipher, Key, shift::ShiftCipher};
     /// // Don't forget to include the `rand` crate!
     /// use rand::thread_rng;
     /// //
@@ -156,7 +156,7 @@ impl ShiftCipher {
     ///
     /// # Examples
     /// ```
-    /// # use classical_crypto::{Cipher, Key, ShiftCipher};
+    /// # use classical_crypto::{Cipher, Key, shift::ShiftCipher};
     /// # // Don't forget to include the `rand` crate!
     /// # use rand::thread_rng;
     /// # //

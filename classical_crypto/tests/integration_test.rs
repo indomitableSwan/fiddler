@@ -1,6 +1,9 @@
 //! These integration tests exercise the public API of the crate, but they may
 //! not be entirely sensible as integration tests.
-use classical_crypto::{Cipher, Key, ShiftCipher};
+use classical_crypto::{
+    shift::{Ciphertext, ShiftCipher},
+    Cipher, Key,
+};
 use rand::thread_rng;
 use std::str::FromStr;
 
@@ -33,8 +36,7 @@ fn generate_and_use_key() {
     }
 
     // We can create ciphertexts from strings, too
-    let garbage_ciphertext =
-        <ShiftCipher as Cipher>::Ciphertext::from_str("THISISNOTGOINGTODECRYPTSENSIBLY").unwrap();
+    let garbage_ciphertext = Ciphertext::from_str("THISISNOTGOINGTODECRYPTSENSIBLY").unwrap();
     assert_eq!(
         garbage_ciphertext.to_string(),
         "THISISNOTGOINGTODECRYPTSENSIBLY"
