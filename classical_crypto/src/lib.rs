@@ -282,30 +282,15 @@ impl fmt::Display for RingElement {
 
 /// A plaintext of arbitrary length.
 #[derive(Clone, Debug, Default, Eq, Hash, PartialEq)]
-pub struct Message(Vec<RingElement>);
+struct Message(Vec<RingElement>);
 
 /// A ciphertext of arbitrary length.
 #[derive(Clone, Debug, Default, Eq, Hash, PartialEq)]
 struct Ciphertext(Vec<RingElement>);
 
-// TODO: refactor
 impl Message {
     /// Create a new message from a string.
-    /// # Examples
-    /// ```
-    /// // Creating this example shows how awkward our API is.
-    /// // We can't use spaces, punctuation, or capital letters.
-    /// // That said, humans are very quick at understanding mashed up plaintexts
-    /// // without punctuation and spacing.
-    /// // Computers have to check dictionaries.
-    /// # use classical_crypto::{Key, Message};
-    /// # use rand::thread_rng;
-    /// let msg = Message::new("thisisanawkwardapichoice").expect("This example is hardcoded; it should work!");
-    ///
-    /// // We can also print our message as a string:
-    /// println!("Our message is {msg}");
-    /// ```
-    pub fn new(str: &str) -> Result<Message, EncodingError> {
+    fn new(str: &str) -> Result<Message, EncodingError> {
         Message::from_str(str)
     }
 }

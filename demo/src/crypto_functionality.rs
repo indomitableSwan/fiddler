@@ -4,7 +4,7 @@ use crate::{
     menu::{ConsentMenu, DecryptMenu, Menu},
 };
 use classical_crypto::{
-    shift::{Ciphertext, ShiftCipher},
+    shift::{Message, Ciphertext, ShiftCipher},
     Cipher, Key,
 };
 use rand::thread_rng;
@@ -42,7 +42,7 @@ pub fn make_key() -> Result<(), Box<dyn Error>> {
 pub fn encrypt() -> Result<(), Box<dyn Error>> {
     println!("\nPlease enter the message you want to encrypt:");
 
-    let msg: <ShiftCipher as Cipher>::Message = process_input(|| {
+    let msg: Message = process_input(|| {
         println!("\nWe only accept lowercase letters from the Latin Alphabet, in one of the most awkward \nAPI decisions ever.");
     })?;
 

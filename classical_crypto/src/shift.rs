@@ -3,10 +3,11 @@
 //! &#x2124;/26&#x2124;. As the name implies, ciphertexts are shifts (computed
 //! using modular arithmetic) of the corresponding plaintexts, so the _key
 //! space_ is &#x2124;/26&#x2124;. as well.
-use crate::{Cipher, Ciphertext as Ciphtxt, EncodingError, Key, Message, Ring, RingElement};
+use crate::{Cipher, Ciphertext as Ciphtxt, EncodingError, Key, Message as Msg, Ring, RingElement};
 use rand::{CryptoRng, Rng};
 use std::{fmt::Display, str::FromStr};
 
+/// The ciphertext space for the Latin Shift Cipher.
 #[derive(Clone, Debug, Default, Eq, Hash, PartialEq)]
 pub struct Ciphertext(Ciphtxt);
 
@@ -20,6 +21,57 @@ impl FromStr for Ciphertext {
 impl Display for Ciphertext {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         Ciphtxt::fmt(&self.0, f)
+    }
+}
+
+impl FromIterator<RingElement> for Ciphertext {
+    fn from_iter<I: IntoIterator<Item = RingElement>>(iter: I) -> Self {
+        Ciphertext(Ciphtxt::from_iter(iter))
+    }
+}
+
+/// The message space of the Latin Shift Cipher.
+#[derive(Clone, Debug, Default, Eq, Hash, PartialEq)]
+pub struct Message(Msg);
+
+impl Message {
+    /// Create a new message from a string.
+    /// # Examples
+    /// ```
+    /// // Creating this example shows how awkward our API is.
+    /// // We can't use spaces, punctuation, or capital letters.
+    /// // That said, humans are very quick at understanding mashed up plaintexts
+    /// // without punctuation and spacing.
+    /// // Computers have to check dictionaries.
+    /// # use classical_crypto::shift::Message;
+    /// # use rand::thread_rng;
+    /// let msg = Message::new("thisisanawkwardapichoice").expect("This example is hardcoded; it should work!");
+    ///
+    /// // We can also print our message as a string:
+    /// println!("Our message is {msg}");
+    /// ```
+    pub fn new(str: &str) -> Result<Message, EncodingError> {
+        Ok(Message(Msg::new(str)?))
+    }
+}
+
+impl FromStr for Message {
+    type Err = EncodingError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(Message(Msg::from_str(s)?))
+    }
+}
+
+impl Display for Message {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        Msg::fmt(&self.0, f)
+    }
+}
+
+impl FromIterator<RingElement> for Message {
+    fn from_iter<I: IntoIterator<Item = RingElement>>(iter: I) -> Self {
+        Message(Msg::from_iter(iter))
     }
 }
 
@@ -55,7 +107,7 @@ impl Cipher for ShiftCipher {
     /// let ciphertxt = ShiftCipher::encrypt(&msg, &key);
     /// ```
     fn encrypt(msg: &Self::Message, key: &Self::Key) -> Self::Ciphertext {
-        Ciphertext(msg.0.iter().map(|&i| i + key.0).collect())
+        Ciphertext(msg.0 .0.iter().map(|&i| i + key.0).collect())
     }
 
     // TODO! refactor, generalize
@@ -246,11 +298,11 @@ mod tests {
     // better to use std::cell::OnceCell, I'm not sure I understand how to do
     // that properly. Encoded "wewillmeetatmidnight" message from Example 1.1,
     // Stinson 3rd Edition, Example 2.1 Stinson 4th Edition
-    thread_local! (static MSG0: Message = Message(vec![RingElement(22), RingElement(4),
+    thread_local! (static MSG0: Message = Message(Msg(vec![RingElement(22), RingElement(4),
             RingElement(22), RingElement(8), RingElement(11), RingElement(11),
             RingElement(12), RingElement(4), RingElement(4), RingElement(19),
             RingElement(0), RingElement(19),
-            RingElement(12), RingElement(8), RingElement(3), RingElement(13), RingElement(8), RingElement(6), RingElement(7), RingElement(19)]));
+            RingElement(12), RingElement(8), RingElement(3), RingElement(13), RingElement(8), RingElement(6), RingElement(7), RingElement(19)])));
 
     // Encrypted "wewillmeetatmidnight" message with key=11, from Example 1.1,
     // Stinson 3rd Edition, Example 2.1 Stinson 4th Edition

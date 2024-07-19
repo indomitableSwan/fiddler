@@ -1,7 +1,7 @@
 //! These integration tests exercise the public API of the crate, but they may
 //! not be entirely sensible as integration tests.
 use classical_crypto::{
-    shift::{Ciphertext, ShiftCipher},
+    shift::{Message, Ciphertext, ShiftCipher},
     Cipher, Key,
 };
 use rand::thread_rng;
@@ -14,11 +14,11 @@ fn generate_and_use_key() {
     let key1 = Key::new(&mut rng);
 
     // Exercise the `new` associated function.
-    let msg = <ShiftCipher as Cipher>::Message::new("thisisanawkwardapichoice").unwrap();
+    let msg = Message::new("thisisanawkwardapichoice").unwrap();
     // We could also have used the `FromStr` implementation for `Message`.
     assert_eq!(
         msg,
-        <ShiftCipher as Cipher>::Message::from_str("thisisanawkwardapichoice").unwrap()
+        Message::from_str("thisisanawkwardapichoice").unwrap()
     );
 
     // Encrypt the test message.
@@ -53,8 +53,8 @@ fn short_msg_example() {
     // one sample, one ciphertext may not be enough to definitively
     // break the system with a brute force attack. But likely there
     // is other context available to validate possible plaintexts.
-    let small_msg_0 = <ShiftCipher as Cipher>::Message::from_str("mom");
-    let small_msg_1 = <ShiftCipher as Cipher>::Message::from_str("gig");
+    let small_msg_0 = Message::from_str("mom");
+    let small_msg_1 = Message::from_str("gig");
 
     // Message encoding should work
     assert!(small_msg_0.is_ok());
