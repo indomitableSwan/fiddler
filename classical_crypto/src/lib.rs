@@ -287,7 +287,7 @@ pub struct Message(Vec<RingElement>);
 
 /// A ciphertext of arbitrary length.
 #[derive(Clone, Debug, Default, Eq, Hash, PartialEq)]
-pub struct Ciphertext(Vec<RingElement>);
+struct Ciphertext(Vec<RingElement>);
 
 // TODO: refactor
 impl Message {
@@ -299,7 +299,7 @@ impl Message {
     /// // That said, humans are very quick at understanding mashed up plaintexts
     /// // without punctuation and spacing.
     /// // Computers have to check dictionaries.
-    /// # use classical_crypto::{Ciphertext, Key, Message};
+    /// # use classical_crypto::{Key, Message};
     /// # use rand::thread_rng;
     /// let msg = Message::new("thisisanawkwardapichoice").expect("This example is hardcoded; it should work!");
     ///

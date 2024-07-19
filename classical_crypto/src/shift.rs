@@ -5,18 +5,10 @@
 //! space_ is &#x2124;/26&#x2124;. as well.
 use crate::{Cipher, Ciphertext as Ciphtxt, EncodingError, Key, Message, Ring, RingElement};
 use rand::{CryptoRng, Rng};
-use std::{fmt::Display, ops::Deref, str::FromStr};
+use std::{fmt::Display, str::FromStr};
 
 #[derive(Clone, Debug, Default, Eq, Hash, PartialEq)]
 pub struct Ciphertext(Ciphtxt);
-
-impl Deref for Ciphertext {
-    type Target = Ciphtxt;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
 
 impl FromStr for Ciphertext {
     type Err = EncodingError;
@@ -27,7 +19,7 @@ impl FromStr for Ciphertext {
 
 impl Display for Ciphertext {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        Ciphtxt::fmt(self, f)
+        Ciphtxt::fmt(&self.0, f)
     }
 }
 
