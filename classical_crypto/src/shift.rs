@@ -89,6 +89,71 @@ pub struct ShiftCipher;
 #[derive(Debug, Eq, PartialEq)]
 pub struct Key(RingElement);
 
+// TODO: refactor, prep for Substitution Cipher
+impl KeyTrait for Key {
+    /// Generate a cryptographic key uniformly at random from the key space.
+    ///
+    /// Note that the mathematical description of the Latin Shift Cipher,
+    /// as well as this implementation, does not disallow a key of 0, so
+    /// sometimes the encryption algorithm is just the identity function.
+    ///
+    /// This is, after all, a cryptosystem designed for use by humans and not
+    /// computers. Humans are not as good as computers at picking a value
+    /// mod 26 uniformly at random, but we tend not to pick a key of 0
+    /// and send our private messages to their recipients in plaintext. Oh wait
+    /// ... we do this all the time, in the form of emails.
+    ///
+    /// # Examples
+    /// ```
+    /// # use classical_crypto::{CipherTrait, KeyTrait, shift::{ShiftCipher, Key, Message, Ciphertext}};
+    /// // Don't forget to include the `rand` crate!
+    /// use rand::thread_rng;
+    /// //
+    /// // Initialize a cryptographic rng.
+    /// let mut rng = thread_rng();
+    /// //
+    /// // Generate a key
+    /// let key = Key::new(&mut rng);
+    /// ```
+    // Note: Keys must always be chosen according to a uniform distribution on the
+    // underlying key space, i.e., the ring Z/26Z for the Latin Alphabet cipher.
+    fn new<R: Rng + CryptoRng>(rng: &mut R) -> Self {
+        Self(RingElement::random(rng))
+    }
+}
+
+// TODO: refactor, prep for Substitution Cipher
+/// Parse a key from a string.
+///
+/// # Errors
+/// This implementation will produce an error if the input string does not
+/// represent an integer in the key space, i.e., an integer between 0 and 25,
+/// inclusive. While it would be a simple matter to accept _any_ integer as
+/// input and map to the ring of integers, we chose not to do so for clarity of
+/// use.
+impl FromStr for Key {
+    type Err = EncodingError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let key = match i8::from_str(s) {
+            Ok(num) => num,
+            Err(_) => return Err(EncodingError),
+        };
+
+        match key {
+            x if (0..=25).contains(&x) => Ok(Key::from(RingElement::from_i8(key))),
+            _ => Err(EncodingError),
+        }
+    }
+}
+
+// TODO: refactor, prep for Substitution Cipher
+impl From<RingElement> for Key {
+    fn from(item: RingElement) -> Self {
+        Key(item)
+    }
+}
+
 impl CipherTrait for ShiftCipher {
     type Message = Message;
     type Ciphertext = Ciphertext;
@@ -172,39 +237,6 @@ impl CipherTrait for ShiftCipher {
     }
 }
 
-// TODO: refactor, prep for Substitution Cipher
-impl KeyTrait for Key {
-    /// Generate a cryptographic key uniformly at random from the key space.
-    ///
-    /// Note that the mathematical description of the Latin Shift Cipher,
-    /// as well as this implementation, does not disallow a key of 0, so
-    /// sometimes the encryption algorithm is just the identity function.
-    ///
-    /// This is, after all, a cryptosystem designed for use by humans and not
-    /// computers. Humans are not as good as computers at picking a value
-    /// mod 26 uniformly at random, but we tend not to pick a key of 0
-    /// and send our private messages to their recipients in plaintext. Oh wait
-    /// ... we do this all the time, in the form of emails.
-    ///
-    /// # Examples
-    /// ```
-    /// # use classical_crypto::{CipherTrait, KeyTrait, shift::{ShiftCipher, Key, Message, Ciphertext}};
-    /// // Don't forget to include the `rand` crate!
-    /// use rand::thread_rng;
-    /// //
-    /// // Initialize a cryptographic rng.
-    /// let mut rng = thread_rng();
-    /// //
-    /// // Generate a key
-    /// let key = Key::new(&mut rng);
-    /// ```
-    // Note: Keys must always be chosen according to a uniform distribution on the
-    // underlying key space, i.e., the ring Z/26Z for the Latin Alphabet cipher.
-    fn new<R: Rng + CryptoRng>(rng: &mut R) -> Self {
-        Self(RingElement::random(rng))
-    }
-}
-
 impl ShiftCipher {
     /// Export the cryptographic key, insecurely.
     ///
@@ -229,38 +261,6 @@ impl ShiftCipher {
     /// ```
     pub fn insecure_key_export(key: &<Self as CipherTrait>::Key) -> String {
         key.0.into_inner().to_string()
-    }
-}
-
-// TODO: refactor, prep for Substitution Cipher
-/// Parse a key from a string.
-///
-/// # Errors
-/// This implementation will produce an error if the input string does not
-/// represent an integer in the key space, i.e., an integer between 0 and 25,
-/// inclusive. While it would be a simple matter to accept _any_ integer as
-/// input and map to the ring of integers, we chose not to do so for clarity of
-/// use.
-impl FromStr for Key {
-    type Err = EncodingError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let key = match i8::from_str(s) {
-            Ok(num) => num,
-            Err(_) => return Err(EncodingError),
-        };
-
-        match key {
-            x if (0..=25).contains(&x) => Ok(Key::from(RingElement::from_i8(key))),
-            _ => Err(EncodingError),
-        }
-    }
-}
-
-// TODO: refactor, prep for Substitution Cipher
-impl From<RingElement> for Key {
-    fn from(item: RingElement) -> Self {
-        Key(item)
     }
 }
 
