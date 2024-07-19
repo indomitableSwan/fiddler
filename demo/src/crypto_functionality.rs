@@ -3,7 +3,7 @@ use crate::{
     io_helper::process_input,
     menu::{ConsentMenu, DecryptMenu, Menu},
 };
-use classical_crypto::{Cipher, Key, Message, ShiftCipher};
+use classical_crypto::{Cipher, Key, ShiftCipher};
 use rand::thread_rng;
 use std::error::Error;
 
@@ -39,7 +39,7 @@ pub fn make_key() -> Result<(), Box<dyn Error>> {
 pub fn encrypt() -> Result<(), Box<dyn Error>> {
     println!("\nPlease enter the message you want to encrypt:");
 
-    let msg: Message = process_input(|| {
+    let msg: <ShiftCipher as Cipher>::Message = process_input(|| {
         println!("\nWe only accept lowercase letters from the Latin Alphabet, in one of the most awkward \nAPI decisions ever.");
     })?;
 
