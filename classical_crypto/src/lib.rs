@@ -39,22 +39,22 @@ use std::{
 pub mod shift;
 
 /// This trait represents a deterministic cipher.
-pub trait Cipher {
+pub trait CipherTrait {
     /// The message space (plaintext space) of the cipher.
     type Message;
 
     /// The ciphertext space of the cipher.
     type Ciphertext;
 
-    /// The keyspace of the cipher, which must implement the [`Key`] trait.
-    type Key: Key;
+    /// The keyspace of the cipher, which must implement the [`KeyTrait`] trait.
+    type Key: KeyTrait;
 
     // TODO: not implemented yet
-    /// The error type returned by [`Cipher::encrypt`].
+    /// The error type returned by [`CipherTrait::encrypt`].
     type EncryptionError;
 
     // TODO: not implemented yet
-    /// The error type returned by [`Cipher::decrypt`].
+    /// The error type returned by [`CipherTrait::decrypt`].
     type DecryptionError;
 
     // TODO: Return a Result instead
@@ -71,7 +71,7 @@ pub trait Cipher {
 }
 
 /// A trait for cryptographic keys.
-pub trait Key {
+pub trait KeyTrait {
     /// Pick a new key from the key space uniformly at random.
     fn new<R: Rng + CryptoRng>(rng: &mut R) -> Self;
 }
@@ -300,12 +300,12 @@ impl Message {
 /// This is likely because the string violates one of the constraints
 /// for the desired value type. That is:
 ///
-/// - For [`Message`]: The string included one or more characters that are not
+/// - For messages: The string included one or more characters that are not
 ///   lowercase letters from the Latin Alphabet.
-/// - For [`Ciphertext`]: The string included one or more characters that are
-///   not letters from the Latin Alphabet. We allow for strings containing both
+/// - For ciphertexts: The string included one or more characters that are not
+///   letters from the Latin Alphabet. We allow for strings containing both
 ///   capitalized and lowercase letters when parsing as string as a ciphertext.
-/// - For [`Key`]: The string does not represent a number in the appropriate
+/// - For key values: The string does not represent a number in the appropriate
 ///   range. For the Latin Alphabet, this range is 0 to 25, inclusive.
 #[derive(Copy, Clone, Debug, Default, Eq, Hash, PartialEq)]
 pub struct EncodingError;
