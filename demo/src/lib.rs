@@ -8,7 +8,9 @@ use crate::crypto_functionality::{decrypt, encrypt, make_key};
 use crate::io_helper::process_input;
 use crate::menu::{DecryptMenu, MainMenu, Menu};
 
-/// Prints menu of user options and matches on user input to do one of:
+/// Presents main menu and runs user selection.
+/// 
+/// Prints main menu of user options and matches on user input to do one of:
 /// - Generate a key;
 /// - Encrypt a message;
 /// - Decrypt a message;
@@ -40,6 +42,8 @@ pub fn menu() -> Result<(), Box<dyn Error>> {
     }
 }
 
+/// Presents decryption menu and runs user selection.
+/// 
 /// Prints menu of user decryption options and matches on user input to do one
 /// of:
 /// - Decrypt using a known key;
