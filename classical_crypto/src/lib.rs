@@ -38,6 +38,43 @@ use std::{
 
 pub mod shift;
 
+/// This trait represents a deterministic cipher.
+pub trait CipherTrait {
+    /// The message space (plaintext space) of the cipher.
+    type Message;
+
+    /// The ciphertext space of the cipher.
+    type Ciphertext;
+
+    /// The keyspace of the cipher, which must implement the [`KeyTrait`] trait.
+    type Key: KeyTrait;
+
+    // TODO: not implemented yet
+    /// The error type returned by [`CipherTrait::encrypt`].
+    type EncryptionError;
+
+    // TODO: not implemented yet
+    /// The error type returned by [`CipherTrait::decrypt`].
+    type DecryptionError;
+
+    // TODO: Return a Result instead
+    /// The encryption function of the cipher.
+    /// Invariant: For each key `k` in the keyspace, we have decrypt(encrypt(m,
+    /// k), k) = m for every message `m` in the message space.
+    fn encrypt(msg: &Self::Message, key: &Self::Key) -> Self::Ciphertext;
+
+    // TODO: Return a Result instead
+    /// The decryption function of the cipher.
+    /// Invariant: For each key `k` in the keyspace, we have decrypt(encrypt(m,
+    /// k), k) = m for every message `m` in the message space.
+    fn decrypt(ciphertxt: &Self::Ciphertext, key: &Self::Key) -> Self::Message;
+}
+
+/// A trait for cryptographic keys.
+pub trait KeyTrait {
+    /// Pick a new key from the key space uniformly at random.
+    fn new<R: Rng + CryptoRng>(rng: &mut R) -> Self;
+}
 /// This trait represents an encoding of the characters of an alphabet.
 trait AlphabetEncoding: Sized {
     /// The associated error type.
@@ -245,38 +282,15 @@ impl fmt::Display for RingElement {
 
 /// A plaintext of arbitrary length.
 #[derive(Clone, Debug, Default, Eq, Hash, PartialEq)]
-pub struct Message(Vec<RingElement>);
+struct Message(Vec<RingElement>);
 
 /// A ciphertext of arbitrary length.
 #[derive(Clone, Debug, Default, Eq, Hash, PartialEq)]
-pub struct CipherText(Vec<RingElement>);
+struct Ciphertext(Vec<RingElement>);
 
-/// A cryptographic key.
-// Crypto TODO: Keys should always contain context.
-// We *could* implement `Copy` and `Clone` here.
-// We do not because we want to discourage making copies of secrets.
-// However there is a lot more to best practices for handling keys than this.
-#[derive(Debug, Eq, PartialEq)]
-pub struct Key(RingElement);
-
-// TODO: refactor
 impl Message {
     /// Create a new message from a string.
-    /// # Examples
-    /// ```
-    /// // Creating this example shows how awkward our API is.
-    /// // We can't use spaces, punctuation, or capital letters.
-    /// // That said, humans are very quick at understanding mashed up plaintexts
-    /// // without punctuation and spacing.
-    /// // Computers have to check dictionaries.
-    /// # use classical_crypto::{CipherText, Key, Message};
-    /// # use rand::thread_rng;
-    /// let msg = Message::new("thisisanawkwardapichoice").expect("This example is hardcoded; it should work!");
-    ///
-    /// // We can also print our message as a string:
-    /// println!("Our message is {msg}");
-    /// ```
-    pub fn new(str: &str) -> Result<Message, EncodingError> {
+    fn new(str: &str) -> Result<Message, EncodingError> {
         Message::from_str(str)
     }
 }
@@ -286,12 +300,12 @@ impl Message {
 /// This is likely because the string violates one of the constraints
 /// for the desired value type. That is:
 ///
-/// - For [`Message`]: The string included one or more characters that are not
+/// - For messages: The string included one or more characters that are not
 ///   lowercase letters from the Latin Alphabet.
-/// - For [`CipherText`]: The string included one or more characters that are
-///   not letters from the Latin Alphabet. We allow for strings containing both
+/// - For ciphertexts: The string included one or more characters that are not
+///   letters from the Latin Alphabet. We allow for strings containing both
 ///   capitalized and lowercase letters when parsing as string as a ciphertext.
-/// - For [`Key`]: The string does not represent a number in the appropriate
+/// - For key values: The string does not represent a number in the appropriate
 ///   range. For the Latin Alphabet, this range is 0 to 25, inclusive.
 #[derive(Copy, Clone, Debug, Default, Eq, Hash, PartialEq)]
 pub struct EncodingError;
@@ -342,7 +356,7 @@ impl FromIterator<RingElement> for Message {
 /// convention that ciphertexts are represented as ALL CAPS strings, this
 /// implementation ignores case, so parsing a string that includes lowercase
 /// letters may succeed.
-impl FromStr for CipherText {
+impl FromStr for Ciphertext {
     type Err = EncodingError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -353,7 +367,7 @@ impl FromStr for CipherText {
     }
 }
 
-impl fmt::Display for CipherText {
+impl fmt::Display for Ciphertext {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let txt: String = self.0.iter().map(|i| RingElement::to_char(*i)).collect();
 
@@ -363,7 +377,7 @@ impl fmt::Display for CipherText {
     }
 }
 
-impl FromIterator<RingElement> for CipherText {
+impl FromIterator<RingElement> for Ciphertext {
     fn from_iter<I: IntoIterator<Item = RingElement>>(iter: I) -> Self {
         let mut c = Vec::new();
 
@@ -371,66 +385,7 @@ impl FromIterator<RingElement> for CipherText {
             c.push(i);
         }
 
-        CipherText(c)
-    }
-}
-
-// TODO: refactor, prep for Substitution Cipher
-/// Parse a key from a string.
-///
-/// # Errors
-/// This implementation will produce an error if the input string does not
-/// represent an integer in the key space, i.e., an integer between 0 and 25,
-/// inclusive. While it would be a simple matter to accept _any_ integer as
-/// input and map to the ring of integers, we chose not to do so for clarity of
-/// use.
-impl FromStr for Key {
-    type Err = EncodingError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let key = match i8::from_str(s) {
-            Ok(num) => num,
-            Err(_) => return Err(EncodingError),
-        };
-
-        match key {
-            x if (0..=25).contains(&x) => Ok(Key::from(RingElement::from_i8(key))),
-            _ => Err(EncodingError),
-        }
-    }
-}
-
-impl Key {
-    /// Export the key
-    ///
-    /// # Examples
-    /// ```
-    /// # use classical_crypto::{CipherText, Key, Message};
-    /// # // Don't forget to include the `rand` crate!
-    /// # use rand::thread_rng;
-    /// # //
-    /// # // Initialize a cryptographic rng.
-    /// # let mut rng = thread_rng();
-    /// # //
-    /// # // Generate a key
-    /// # let key = Key::new(&mut rng);
-    /// //
-    /// // We can export a key for external storage or other uses.
-    /// // This method does not do anything special for secure key
-    /// // handling, which is another, more complicated
-    /// // and error-prone topic.
-    /// // Use caution.
-    /// println!("Here is our key value: {}", key.insecure_export());
-    /// ```
-    pub fn insecure_export(&self) -> String {
-        self.0.into_inner().to_string()
-    }
-}
-
-// TODO: refactor, prep for Substitution Cipher
-impl From<RingElement> for Key {
-    fn from(item: RingElement) -> Self {
-        Key(item)
+        Ciphertext(c)
     }
 }
 
@@ -451,7 +406,7 @@ mod tests {
 
     // Encrypted "wewillmeetatmidnight" message with key=11, from Example 1.1,
     // Stinson 3rd Edition, Example 2.1 Stinson 4th Edition
-    thread_local! (static CIPH0: CipherText = CipherText(vec![RingElement(7), RingElement(15), 
+    thread_local! (static CIPH0: Ciphertext = Ciphertext(vec![RingElement(7), RingElement(15), 
             RingElement(7), RingElement(19), RingElement(22), RingElement(22),
             RingElement(23), RingElement(15), RingElement(15), RingElement(4),
             RingElement(11), RingElement(4),
@@ -564,12 +519,12 @@ mod tests {
 
     #[test]
     fn ciphertxt_default() {
-        assert_eq!(CipherText::default(), CipherText(vec![]));
+        assert_eq!(Ciphertext::default(), Ciphertext(vec![]));
     }
 
     #[test]
     fn ciphertxt_encoding_basic() {
-        let ciphertxt = CipherText::from_str("HPHTWWXPPELEXTOYTRSE").unwrap();
+        let ciphertxt = Ciphertext::from_str("HPHTWWXPPELEXTOYTRSE").unwrap();
 
         assert_eq!(ciphertxt, CIPH0.with(|ciph| ciph.clone())); // Ciphertext maps from string correctly
         assert_eq!(ciphertxt.to_string(), CIPH0_STR.with(|ciph| ciph.clone())); // Ciphertext maps to string correctly
@@ -578,13 +533,13 @@ mod tests {
     #[test]
     fn ciphertxt_display() {
         assert_eq!(
-            format!("{}", CipherText::from_str("HPHTWWXPPELEXTOYTRSE").unwrap()),
+            format!("{}", Ciphertext::from_str("HPHTWWXPPELEXTOYTRSE").unwrap()),
             "HPHTWWXPPELEXTOYTRSE"
         )
     }
 
     #[test]
     fn ciphertxt_encoding_error() {
-        assert_eq!(CipherText::from_str("a;k"), Err(EncodingError))
+        assert_eq!(Ciphertext::from_str("a;k"), Err(EncodingError))
     }
 }
