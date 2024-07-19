@@ -5,7 +5,7 @@
 //! space_ is &#x2124;/26&#x2124;. as well.
 use crate::{Cipher, Ciphertext as Ciphtxt, EncodingError, Key, Message, Ring, RingElement};
 use rand::{CryptoRng, Rng};
-use std::{ops::Deref, str::FromStr};
+use std::{fmt::Display, ops::Deref, str::FromStr};
 
 #[derive(Clone, Debug, Default, Eq, Hash, PartialEq)]
 pub struct Ciphertext(Ciphtxt);
@@ -22,6 +22,12 @@ impl FromStr for Ciphertext {
     type Err = EncodingError;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(Ciphertext(Ciphtxt::from_str(s)?))
+    }
+}
+
+impl Display for Ciphertext {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        Ciphtxt::fmt(self, f)
     }
 }
 
@@ -112,7 +118,7 @@ impl Cipher for ShiftCipher {
     /// easily see the preservation of patterns:
     /// \n plaintext is {}, ciphertext is {},
     ///  and decryption under a random key gives {}",
-    /// small_msg, *small_ciphertext,
+    /// small_msg, small_ciphertext,
     /// small_decryption)
     /// ```
     fn decrypt(ciphertxt: &Self::Ciphertext, key: &Self::Key) -> Self::Message {

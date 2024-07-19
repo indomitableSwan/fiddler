@@ -49,7 +49,7 @@ pub fn encrypt() -> Result<(), Box<dyn Error>> {
         println!("{KEY_PROMPT}");
     })?;
 
-    println!("\nYour ciphertext is {}", *ShiftCipher::encrypt(&msg, &key));
+    println!("\nYour ciphertext is {}", ShiftCipher::encrypt(&msg, &key));
     println!("\nLook for patterns in your ciphertext. Could you definitively figure out the key and \noriginal plaintext message if you didn't already know it?");
 
     Ok(())
