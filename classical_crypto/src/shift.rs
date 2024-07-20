@@ -337,6 +337,15 @@ mod tests {
         )
     }
 
+    #[test]
+    fn unchecked_dec_panic(){
+        let ciph = Ciphertext(Ciphtxt(vec!(RingElement(65))));
+
+        let key = Key(RingElement(0));
+        println!("{}", ShiftCipher::decrypt(&ciph, &key));
+
+    }
+
     // Tests with randomly generated keys.
     #[test]
     fn enc_dec_random_keys() {
