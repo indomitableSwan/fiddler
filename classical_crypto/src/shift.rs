@@ -338,6 +338,7 @@ mod tests {
     }
 
     #[test]
+    #[should_panic] // Panics because the library developer constructed an invalid RingElement
     fn unchecked_dec_panic(){
         let ciph = Ciphertext(Ciphtxt(vec!(RingElement(65))));
 
