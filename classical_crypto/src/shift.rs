@@ -347,6 +347,15 @@ mod tests {
 
     }
 
+    #[test]
+    // Won't panic because appropriate constructor used for RingElement, but result may surprise the library developer
+    fn unchecked_dec_nopanic(){
+        let ciph = Ciphertext(Ciphtxt(vec!(RingElement::from_i8(65))));
+
+        let key = Key(RingElement(0));
+        assert_eq!(ShiftCipher::decrypt(&ciph, &key), Message::from_str("n").expect("Test writer should ensure this example does not panic"));
+    }
+
     // Tests with randomly generated keys.
     #[test]
     fn enc_dec_random_keys() {
