@@ -17,9 +17,6 @@ use crate::menu::{DecryptMenu, MainMenu, Menu};
 /// - Quit the CLI application.
 pub fn menu() -> Result<(), Box<dyn Error>> {
     loop {
-        // Print the main menu
-        MainMenu::print_menu();
-
         // Get menu selection from user
         let command: MainMenu = process_input(MainMenu::print_menu)?;
 
@@ -57,10 +54,7 @@ pub fn decryption_menu() -> Result<DecryptMenu, Box<dyn Error>> {
     println!(
     "If not, don't despair. Just guess! On average, you can expect success using this \nsimple brute force attack method after trying 13 keys chosen uniformly at random."
     );
-    println!("Pick one of the following options:");
-
-    DecryptMenu::print_menu();
-
+   
     let command: DecryptMenu = process_input(DecryptMenu::print_menu)?;
     Ok(command)
 }
@@ -80,6 +74,9 @@ mod io_helper {
         F: Fn(),
     {
         loop {
+             // Print the instructions
+            instr();
+
             let mut input = String::new();
 
             io::stdin().read_line(&mut input)?;
@@ -87,9 +84,7 @@ mod io_helper {
             let result: T = match input.trim().parse::<T>() {
                 Ok(txt) => txt,
                 Err(e) => {
-                    instr();
                     println!("Error: {}", e);
-                    println!("\nPlease try again:");
                     continue;
                 }
             };
