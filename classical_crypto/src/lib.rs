@@ -296,19 +296,36 @@ impl Message {
 }
 
 /// An error type that indicates a failure to parse a string.
-///
-/// This is likely because the string violates one of the constraints
-/// for the desired value type. That is:
-///
-/// - For messages: The string included one or more characters that are not
-///   lowercase letters from the Latin Alphabet.
-/// - For ciphertexts: The string included one or more characters that are not
-///   letters from the Latin Alphabet. We allow for strings containing both
-///   capitalized and lowercase letters when parsing as string as a ciphertext.
-/// - For key values: The string does not represent a number in the appropriate
-///   range. For the Latin Alphabet, this range is 0 to 25, inclusive.
-#[derive(Copy, Clone, Debug, Default, Eq, Hash, PartialEq)]
-pub struct EncodingError;
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum EncodingError {
+    /// The string included one or more characters that are not
+    /// lowercase letters from the Latin Alphabet.
+    InvalidMessage,
+    /// The string included one or more characters that are not
+    /// letters from the Latin Alphabet. We allow for strings containing both
+    /// capitalized and lowercase letters when parsing as string as a
+    /// ciphertext.
+    InvalidCiphertext,
+    /// The string does not represent a number in the appropriate
+    /// range. e.g., for the Latin Shift Cipher, keys are in the range 0 to 25,
+    /// inclusive.
+    InvalidKey,
+}
+
+impl fmt::Display for EncodingError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match *self {
+            EncodingError::InvalidMessage => write!(
+                f,
+                "Please use lowercase characters from the Latin alphabet only"
+            ),
+            EncodingError::InvalidCiphertext => {
+                write!(f, "Please use characters from the Latin alphabet only")
+            }
+            EncodingError::InvalidKey => write!(f, "The string does not represent a valid key"),
+        }
+    }
+}
 
 /// Parse a message from a string.
 ///
@@ -321,7 +338,7 @@ impl FromStr for Message {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         s.chars()
-            .map(|i| RingElement::from_char(i).or(Err(EncodingError)))
+            .map(|i| RingElement::from_char(i).or(Err(EncodingError::InvalidMessage)))
             .collect()
     }
 }
@@ -362,7 +379,7 @@ impl FromStr for Ciphertext {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         s.to_lowercase()
             .chars()
-            .map(|i| RingElement::from_char(i).or(Err(EncodingError)))
+            .map(|i| RingElement::from_char(i).or(Err(EncodingError::InvalidCiphertext)))
             .collect()
     }
 }
@@ -406,7 +423,7 @@ mod tests {
 
     // Encrypted "wewillmeetatmidnight" message with key=11, from Example 1.1,
     // Stinson 3rd Edition, Example 2.1 Stinson 4th Edition
-    thread_local! (static CIPH0: Ciphertext = Ciphertext(vec![RingElement(7), RingElement(15), 
+    thread_local! (static CIPH0: Ciphertext = Ciphertext(vec![RingElement(7), RingElement(15),
             RingElement(7), RingElement(19), RingElement(22), RingElement(22),
             RingElement(23), RingElement(15), RingElement(15), RingElement(4),
             RingElement(11), RingElement(4),
@@ -506,7 +523,10 @@ mod tests {
     #[test]
     // Malformed message errors.
     fn msg_encoding_error() {
-        assert_eq!(Message::new("we will meet at midnight"), Err(EncodingError))
+        assert_eq!(
+            Message::new("we will meet at midnight"),
+            Err(EncodingError::InvalidMessage)
+        )
     }
 
     #[test]
@@ -540,6 +560,9 @@ mod tests {
 
     #[test]
     fn ciphertxt_encoding_error() {
-        assert_eq!(Ciphertext::from_str("a;k"), Err(EncodingError))
+        assert_eq!(
+            Ciphertext::from_str("a;k"),
+            Err(EncodingError::InvalidCiphertext)
+        )
     }
 }

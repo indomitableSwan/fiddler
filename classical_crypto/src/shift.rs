@@ -138,12 +138,12 @@ impl FromStr for Key {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let key = match i8::from_str(s) {
             Ok(num) => num,
-            Err(_) => return Err(EncodingError),
+            Err(_) => return Err(EncodingError::InvalidKey),
         };
 
         match key {
             x if (0..=25).contains(&x) => Ok(Key::from(RingElement::from_i8(key))),
-            _ => Err(EncodingError),
+            _ => Err(EncodingError::InvalidKey),
         }
     }
 }
@@ -339,21 +339,24 @@ mod tests {
 
     #[test]
     #[should_panic] // Panics because the library developer constructed an invalid RingElement
-    fn unchecked_dec_panic(){
-        let ciph = Ciphertext(Ciphtxt(vec!(RingElement(65))));
+    fn unchecked_dec_panic() {
+        let ciph = Ciphertext(Ciphtxt(vec![RingElement(65)]));
 
         let key = Key(RingElement(0));
         println!("{}", ShiftCipher::decrypt(&ciph, &key));
-
     }
 
     #[test]
-    // Won't panic because appropriate constructor used for RingElement, but result may surprise the library developer
-    fn unchecked_dec_nopanic(){
-        let ciph = Ciphertext(Ciphtxt(vec!(RingElement::from_i8(65))));
+    // Won't panic because appropriate constructor used for RingElement, but result
+    // may surprise the library developer
+    fn unchecked_dec_nopanic() {
+        let ciph = Ciphertext(Ciphtxt(vec![RingElement::from_i8(65)]));
 
         let key = Key(RingElement(0));
-        assert_eq!(ShiftCipher::decrypt(&ciph, &key), Message::from_str("n").expect("Test writer should ensure this example does not panic"));
+        assert_eq!(
+            ShiftCipher::decrypt(&ciph, &key),
+            Message::from_str("n").expect("Test writer should ensure this example does not panic")
+        );
     }
 
     // Tests with randomly generated keys.
