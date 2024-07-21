@@ -54,7 +54,7 @@ pub fn decryption_menu() -> Result<DecryptMenu, Box<dyn Error>> {
     println!(
     "If not, don't despair. Just guess! On average, you can expect success using this \nsimple brute force attack method after trying 13 keys chosen uniformly at random."
     );
-   
+
     let command: DecryptMenu = process_input(DecryptMenu::print_menu)?;
     Ok(command)
 }
@@ -74,7 +74,7 @@ mod io_helper {
         F: Fn(),
     {
         loop {
-             // Print the instructions
+            // Print the instructions
             instr();
 
             let mut input = String::new();

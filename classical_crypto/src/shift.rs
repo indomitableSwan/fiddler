@@ -338,8 +338,14 @@ mod tests {
     }
 
     #[test]
-    #[should_panic] // Panics because the library developer constructed an invalid RingElement
+    #[should_panic(
+        expected = "Could not map to `char`: The definition of `RingElement::ALPH_ENCODING` must have an error or there is an invalid `RingElement`."
+    )]
     fn unchecked_dec_panic() {
+        // Sometimes you google to find out how to prevent things like backtraces
+        // appearing in your output for tests that should panic
+        let f = |_: &std::panic::PanicInfo| {};
+        std::panic::set_hook(Box::new(f));
         let ciph = Ciphertext(Ciphtxt(vec![RingElement(65)]));
 
         let key = Key(RingElement(0));

@@ -1,5 +1,5 @@
-# This is a makefile that can be run using `cargo make`. 
-# See https://sagiegurari.github.io/cargo-make/ for documentation. 
+# This is a makefile that can be# See https://sagiegurari.github.io/cargo-make/ for documentation. 
+# run using `cargo make`. 
 # There is a lot more functionality than what is used here, including 
 # testing multiple platforms, running benchmarks, security checks, etc.
 
@@ -18,14 +18,10 @@ args = ["clippy", "--all-targets", "--workspace"]
 [tasks.build]
 dependencies = ["clean"]
 
-# Since examples are not specifed as test code, you have to pass
-# the option "--examples" to make sure that the dev flow builds
-# and runs all the associated examples for the crate. This helps
-# catch problems early that might otherwise impact projects
-# dependent on the library.
-[tasks.examples]
+# Make sure every to test everything
+[tasks.test]
 command = "cargo"
-args = ["test", "--examples", "--workspace"]
+args = ["test", "--workspace", "--all-targets"]
 
 # Potentially useful options to add include:
 # - "--document-private-items", since this is a tutorial-style library.
@@ -74,6 +70,5 @@ dependencies = [
     "clippy", 
     "build",
     "test",
-    "examples",
 ]
 

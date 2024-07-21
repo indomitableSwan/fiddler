@@ -22,11 +22,11 @@ pub fn make_key() -> Result<(), Box<dyn Error>> {
         println!("\nWe generated your key successfully!.");
         println!("\nWe shouldn't export your key (or say, save it in logs), but we can!");
         println!("Here it is: {}\n", ShiftCipher::insecure_key_export(&key));
-                
+
         let command: ConsentMenu = process_input(|| {
             println!("\nAre you happy with your key?");
             ConsentMenu::print_menu()
-    })?;
+        })?;
 
         match command {
             ConsentMenu::NoKE => continue,
@@ -41,8 +41,8 @@ pub fn make_key() -> Result<(), Box<dyn Error>> {
 /// Takes in a key and a message and encrypts, then prints
 /// the result.
 pub fn encrypt() -> Result<(), Box<dyn Error>> {
-    
-    let msg: Message = process_input(|| println!("\nPlease enter the message you want to encrypt:"))?;
+    let msg: Message =
+        process_input(|| println!("\nPlease enter the message you want to encrypt:"))?;
 
     println!("\nNow, do you have a key that was generated uniformly at random that you remember and \nwould like to use? If yes, please enter your key. Otherwise, please pick a fresh key \nuniformly at random from the ring of integers modulo 26 yourself. \n\nYou won't be as good at this as a computer, but if you understand the cryptosystem \nyou are using (something we cryptographers routinely assume about other people, while \npretending that we aren't assuming this), you will probably not pick a key of 0, \nwhich is equivalent to sending your messages \"in the clear\", i.e., unencrypted. Good \nluck! \n");
 
@@ -57,7 +57,11 @@ pub fn encrypt() -> Result<(), Box<dyn Error>> {
 /// Takes in a ciphertext and attempts to decrypt and
 /// print result.
 pub fn decrypt(command: DecryptMenu) -> Result<(), Box<dyn Error>> {
-    let ciphertxt: Ciphertext = process_input(|| println!("\nEnter your ciphertext. Ciphertexts use characters only from the Latin Alphabet:"))?;
+    let ciphertxt: Ciphertext = process_input(|| {
+        println!(
+            "\nEnter your ciphertext. Ciphertexts use characters only from the Latin Alphabet:"
+        )
+    })?;
 
     // Attempt decryption or stop trying
     match command {
@@ -76,7 +80,9 @@ pub fn decrypt(command: DecryptMenu) -> Result<(), Box<dyn Error>> {
 /// Gets key from stdin and attempts to decrypt.
 pub fn chosen_key(ciphertxt: &Ciphertext) -> Result<(), Box<dyn Error>> {
     loop {
-        let key: Key = process_input(|| println!("\nPlease enter a key now. Keys are numbers between 0 and 25 inclusive."))?;
+        let key: Key = process_input(|| {
+            println!("\nPlease enter a key now. Keys are numbers between 0 and 25 inclusive.")
+        })?;
         match try_decrypt(ciphertxt, key) {
             Ok(_) => break,
             Err(_) => continue,
@@ -105,9 +111,10 @@ pub fn try_decrypt(ciphertxt: &Ciphertext, key: Key) -> Result<(), Box<dyn Error
         "\nYour computed plaintext is {}\n",
         ShiftCipher::decrypt(ciphertxt, &key)
     );
-      
+
     let command: ConsentMenu = process_input(|| {
-        println!("\nAre you happy with this decryption?");ConsentMenu::print_menu()
+        println!("\nAre you happy with this decryption?");
+        ConsentMenu::print_menu()
     })?;
 
     match command {

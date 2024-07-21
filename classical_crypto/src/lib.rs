@@ -116,6 +116,14 @@ struct RingElement(i8);
 #[derive(Copy, Clone, Debug, Default, Eq, Hash, PartialEq)]
 struct RingElementEncodingError;
 
+impl fmt::Display for RingElementEncodingError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Failed to encode char as ring element")
+    }
+}
+
+impl std::error::Error for RingElementEncodingError {}
+
 impl RingElement {
     /// The default alphabet encoding for the Latin Shift Cipher.
     const ALPH_ENCODING: [(char, i8); 26] = [
@@ -317,15 +325,17 @@ impl fmt::Display for EncodingError {
         match *self {
             EncodingError::InvalidMessage => write!(
                 f,
-                "Please forgive our awkward API decision and use only lowercase characters from the Latin alphabet"
+                "Forgive our awkward API decision; use only lowercase characters from the Latin alphabet"
             ),
             EncodingError::InvalidCiphertext => {
-                write!(f, "Please forgive our awkward API decision and use only characters from the Latin alphabet")
+                write!(f, "Forgive our awkward API decision; use only characters from the Latin alphabet")
             }
-            EncodingError::InvalidKey => write!(f, "The string does not represent a valid key"),
+            EncodingError::InvalidKey => write!(f, "Input does not represent a valid key"),
         }
     }
 }
+
+impl std::error::Error for EncodingError {}
 
 /// Parse a message from a string.
 ///
@@ -494,6 +504,10 @@ mod tests {
         expected = "Could not map to `char`: The definition of `RingElement::ALPH_ENCODING` must have an error or there is an invalid `RingElement`."
     )]
     fn ring_elmt_encoding_panic() {
+        // Sometimes you google to find out how to prevent things like backtraces
+        // appearing in your output for tests that should panic
+        let f = |_: &std::panic::PanicInfo| {};
+        std::panic::set_hook(Box::new(f));
         let _fail = RingElement(26).to_char();
     }
 
