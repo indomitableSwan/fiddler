@@ -76,6 +76,7 @@ mod io_helper {
     pub fn process_input<T, F>(instr: F) -> Result<T, Box<dyn Error>>
     where
         T: FromStr,
+        <T as std::str::FromStr>::Err: std::fmt::Display,
         F: Fn(),
     {
         loop {
@@ -85,8 +86,9 @@ mod io_helper {
 
             let result: T = match input.trim().parse::<T>() {
                 Ok(txt) => txt,
-                Err(_) => {
+                Err(e) => {
                     instr();
+                    println!("Error: {}", e);
                     println!("\nPlease try again:");
                     continue;
                 }

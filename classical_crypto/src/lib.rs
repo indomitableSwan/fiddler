@@ -317,10 +317,10 @@ impl fmt::Display for EncodingError {
         match *self {
             EncodingError::InvalidMessage => write!(
                 f,
-                "Please use lowercase characters from the Latin alphabet only"
+                "Please forgive our awkward API decision and use only lowercase characters from the Latin alphabet"
             ),
             EncodingError::InvalidCiphertext => {
-                write!(f, "Please use characters from the Latin alphabet only")
+                write!(f, "Please forgive our awkward API decision and use only characters from the Latin alphabet")
             }
             EncodingError::InvalidKey => write!(f, "The string does not represent a valid key"),
         }
