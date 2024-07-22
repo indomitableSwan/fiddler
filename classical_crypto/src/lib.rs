@@ -114,11 +114,11 @@ struct RingElement(i8);
 ///   [`RingElement::ALPH_ENCODING`];
 /// - The input was not a lowercase letter from the Latin Alphabet.
 #[derive(Copy, Clone, Debug, Default, Eq, Hash, PartialEq)]
-struct RingElementEncodingError;
+struct RingElementEncodingError(char);
 
 impl fmt::Display for RingElementEncodingError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "Failed to encode char as ring element")
+        write!(f, "Failed to encode char {} as ring element", self.0)
     }
 }
 
@@ -201,7 +201,7 @@ impl AlphabetEncoding for RingElement {
         RingElement::ALPH_ENCODING
             .into_iter()
             .find_map(|(x, y)| if x == ltr { Some(RingElement(y)) } else { None })
-            .ok_or(RingElementEncodingError)
+            .ok_or(RingElementEncodingError(ltr))
     }
 
     /// Convert from a ring element to a character.
@@ -353,7 +353,7 @@ impl FromStr for Message {
             .partition(Result::is_ok);
 
         if !errors.is_empty() {
-            return Err(EncodingError::InvalidMessage)
+            return Err(EncodingError::InvalidMessage);
         }
         msg.into_iter().collect()
     }
@@ -501,8 +501,14 @@ mod tests {
 
     #[test]
     fn ring_elmt_encoding_error() {
-        assert_eq!(RingElement::from_char('_'), Err(RingElementEncodingError));
-        assert_eq!(RingElement::from_char('A'), Err(RingElementEncodingError));
+        assert_eq!(
+            RingElement::from_char('_'),
+            Err(RingElementEncodingError('_'))
+        );
+        assert_eq!(
+            RingElement::from_char('A'),
+            Err(RingElementEncodingError('A'))
+        );
     }
 
     #[test]

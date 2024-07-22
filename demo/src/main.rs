@@ -9,4 +9,3 @@ fn main() -> Result<(), Box<dyn Error>> {
     println!("\nWelcome to the Latin Shift Cipher Demo!");
     menu().inspect_err(|e| eprintln!("Application error: {e}"))
 }
-
