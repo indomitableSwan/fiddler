@@ -387,7 +387,8 @@ impl FromStr for Message {
             .map(|i| RingElement::from_char(i).or(Err(EncodingError::InvalidMessage)))
             .partition(Result::is_ok);
 
-        if !errors.is_empty() {
+        // Return high level error if msg is empty or s contained invalid chars
+        if !errors.is_empty()||msg.is_empty() {
             return Err(EncodingError::InvalidMessage);
         }
 
@@ -589,6 +590,10 @@ mod tests {
     fn msg_encoding_error() {
         assert_eq!(
             Message::new("we will meet at midnight;"),
+            Err(EncodingError::InvalidMessage)
+        );
+        assert_eq!(
+            Message::new(""),
             Err(EncodingError::InvalidMessage)
         )
     }
