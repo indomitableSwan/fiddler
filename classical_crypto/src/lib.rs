@@ -31,6 +31,7 @@
 
 use rand::{CryptoRng, Rng};
 use std::{
+    char::ParseCharError,
     fmt,
     ops::{Add, Sub},
     str::FromStr,
@@ -113,16 +114,39 @@ struct RingElement(i8);
 /// - There is a mistake in the definition of the constant
 ///   [`RingElement::ALPH_ENCODING`];
 /// - The input was not a lowercase letter from the Latin Alphabet.
-#[derive(Copy, Clone, Debug, Default, Eq, Hash, PartialEq)]
-struct RingElementEncodingError(char);
+#[derive(Clone, Debug, Eq, PartialEq)]
+enum RingElementEncodingError {
+    InvalidChar(char),
+    ParseFailure(ParseCharError),
+}
 
 impl fmt::Display for RingElementEncodingError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "Failed to encode char {} as ring element", self.0)
+        match self {
+            RingElementEncodingError::InvalidChar(c) => {
+                write!(f, "Failed to encode char {} as ring element", c)
+            }
+            RingElementEncodingError::ParseFailure(e) => {
+                write!(f, "Failed to encode ring element: { }", e)
+            }
+        }
     }
 }
 
-impl std::error::Error for RingElementEncodingError {}
+impl std::error::Error for RingElementEncodingError {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        match *self {
+            RingElementEncodingError::InvalidChar(_) => None,
+            RingElementEncodingError::ParseFailure(ref e) => Some(e),
+        }
+    }
+}
+
+impl From<ParseCharError> for RingElementEncodingError {
+    fn from(err: ParseCharError) -> Self {
+        RingElementEncodingError::ParseFailure(err)
+    }
+}
 
 impl RingElement {
     /// The default alphabet encoding for the Latin Shift Cipher.
@@ -201,7 +225,7 @@ impl AlphabetEncoding for RingElement {
         RingElement::ALPH_ENCODING
             .into_iter()
             .find_map(|(x, y)| if x == ltr { Some(RingElement(y)) } else { None })
-            .ok_or(RingElementEncodingError(ltr))
+            .ok_or(RingElementEncodingError::InvalidChar(ltr))
     }
 
     /// Convert from a ring element to a character.
@@ -285,6 +309,17 @@ impl Sub for RingElement {
 impl fmt::Display for RingElement {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.0)
+    }
+}
+
+impl FromStr for RingElement {
+    type Err = RingElementEncodingError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.parse::<char>() {
+            Ok(c) => RingElement::from_char(c),
+            Err(e) => Err(RingElementEncodingError::ParseFailure(e)),
+        }
     }
 }
 
@@ -489,15 +524,29 @@ mod tests {
     }
 
     #[test]
-    fn ring_elmt_encoding_error() {
+    fn ring_elmt_encoding_errors() {
         assert_eq!(
             RingElement::from_char('_'),
-            Err(RingElementEncodingError('_'))
+            Err(RingElementEncodingError::InvalidChar('_'))
         );
         assert_eq!(
             RingElement::from_char('A'),
-            Err(RingElementEncodingError('A'))
+            Err(RingElementEncodingError::InvalidChar('A'))
         );
+
+        let err0 = RingElement::from_str("ab").unwrap_err();
+        assert_eq!(
+            err0.to_string(),
+            "Failed to encode ring element: too many characters in string"
+        );
+        assert!(matches!(err0, RingElementEncodingError::ParseFailure(..)));
+
+        let err1 = RingElement::from_str("").unwrap_err();
+        assert_eq!(
+            err1.to_string(),
+            "Failed to encode ring element: cannot parse char from empty string"
+        );
+        assert!(matches!(err1, RingElementEncodingError::ParseFailure(..)))
     }
 
     #[test]
