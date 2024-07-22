@@ -355,6 +355,7 @@ impl FromStr for Message {
         if !errors.is_empty() {
             return Err(EncodingError::InvalidMessage);
         }
+
         msg.into_iter().collect()
     }
 }
@@ -370,13 +371,7 @@ impl fmt::Display for Message {
 // Ciphertext?
 impl FromIterator<RingElement> for Message {
     fn from_iter<I: IntoIterator<Item = RingElement>>(iter: I) -> Self {
-        let mut c = Vec::new();
-
-        for i in iter {
-            c.push(i);
-        }
-
-        Message(c)
+        Message(iter.into_iter().collect())
     }
 }
 
@@ -412,13 +407,7 @@ impl fmt::Display for Ciphertext {
 
 impl FromIterator<RingElement> for Ciphertext {
     fn from_iter<I: IntoIterator<Item = RingElement>>(iter: I) -> Self {
-        let mut c = Vec::new();
-
-        for i in iter {
-            c.push(i);
-        }
-
-        Ciphertext(c)
+        Ciphertext(iter.into_iter().collect())
     }
 }
 
