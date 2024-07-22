@@ -347,9 +347,15 @@ impl FromStr for Message {
     type Err = EncodingError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        s.chars()
+        let (msg, errors): (Vec<_>, Vec<_>) = s
+            .chars()
             .map(|i| RingElement::from_char(i).or(Err(EncodingError::InvalidMessage)))
-            .collect()
+            .partition(Result::is_ok);
+
+        if !errors.is_empty() {
+            return Err(EncodingError::InvalidMessage)
+        }
+        msg.into_iter().collect()
     }
 }
 
@@ -538,7 +544,7 @@ mod tests {
     // Malformed message errors.
     fn msg_encoding_error() {
         assert_eq!(
-            Message::new("we will meet at midnight"),
+            Message::new("we will meet at midnight;"),
             Err(EncodingError::InvalidMessage)
         )
     }
