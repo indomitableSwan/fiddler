@@ -31,7 +31,6 @@
 
 use rand::{CryptoRng, Rng};
 use std::{
-    char::ParseCharError,
     fmt,
     ops::{Add, Sub},
     str::FromStr,
@@ -117,7 +116,6 @@ struct RingElement(i8);
 #[derive(Clone, Debug, Eq, PartialEq)]
 enum RingElementEncodingError {
     InvalidChar(char),
-    ParseFailure(ParseCharError),
 }
 
 impl fmt::Display for RingElementEncodingError {
@@ -126,25 +124,7 @@ impl fmt::Display for RingElementEncodingError {
             RingElementEncodingError::InvalidChar(c) => {
                 write!(f, "Failed to encode char {} as ring element", c)
             }
-            RingElementEncodingError::ParseFailure(e) => {
-                write!(f, "Failed to encode ring element: { }", e)
-            }
         }
-    }
-}
-
-impl std::error::Error for RingElementEncodingError {
-    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-        match *self {
-            RingElementEncodingError::InvalidChar(_) => None,
-            RingElementEncodingError::ParseFailure(ref e) => Some(e),
-        }
-    }
-}
-
-impl From<ParseCharError> for RingElementEncodingError {
-    fn from(err: ParseCharError) -> Self {
-        RingElementEncodingError::ParseFailure(err)
     }
 }
 
