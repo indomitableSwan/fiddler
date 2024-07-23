@@ -312,6 +312,7 @@ impl fmt::Display for RingElement {
     }
 }
 
+/// This is a bit strange, since we are only reading single chars from the lowercase Latin Alphabet, whereas one might expect to be able to read "25" from a string into RingElement here.
 impl FromStr for RingElement {
     type Err = RingElementEncodingError;
 
