@@ -312,7 +312,7 @@ impl Message {
 pub enum EncodingError {
     /// The string included one or more characters that are not
     /// lowercase letters from the Latin Alphabet.
-    InvalidMessage(Vec<RingElementEncodingError>),
+    InvalidMessage(String),
     /// The string included one or more characters that are not
     /// letters from the Latin Alphabet. We allow for strings containing both
     /// capitalized and lowercase letters when parsing as string as a
@@ -328,9 +328,7 @@ impl fmt::Display for EncodingError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             EncodingError::InvalidMessage(e) => {
-                write!(
-                f,
-                "Forgive our awkward API decision; use only lowercase characters from the Latin alphabet, {:#?}", e)
+                write!(f, "Invalid Message: {}", e)
             }
             EncodingError::InvalidCiphertext => {
                 write!(
@@ -340,6 +338,28 @@ impl fmt::Display for EncodingError {
             }
             EncodingError::InvalidKey => write!(f, "Input does not represent a valid key"),
         }
+    }
+}
+
+impl RingElementEncodingError {
+    fn describe(errors: Vec<RingElementEncodingError>) -> String {
+        let mut description: String = "Forgive our awkward API decision; use only lowercase characters from the Latin alphabet.".to_string();
+
+        if errors.is_empty() {
+            description = "Empty string not allowed".to_string();
+            return description;
+        }
+
+        description.push_str("\nInvalid characters used: ");
+
+        for err in errors.into_iter() {
+            let RingElementEncodingError::InvalidChar(char) = err;
+
+            description.push(char);
+            description.push(' ')
+        }
+
+        description
     }
 }
 
@@ -362,11 +382,13 @@ impl FromStr for Message {
 
         // Return high level error if msg is empty or s contained invalid chars
         if !errors.is_empty() || msg.is_empty() {
-            let errors = errors
+            let errors: Vec<RingElementEncodingError> = errors
                 .into_iter()
                 .map(|i| i.unwrap_err())
                 .filter(|i| *i != RingElementEncodingError::InvalidChar(' '))
                 .collect();
+
+            let errors = RingElementEncodingError::describe(errors);
 
             return Err(EncodingError::InvalidMessage(errors));
         }
@@ -557,11 +579,19 @@ mod tests {
     fn msg_encoding_error() {
         assert_eq!(
             Message::new("we will meet at midnight;"),
-            Err(EncodingError::InvalidMessage(vec![
-                RingElementEncodingError::InvalidChar(';')
-            ]))
+            Err(EncodingError::InvalidMessage(
+                RingElementEncodingError::describe(vec![RingElementEncodingError::InvalidChar(
+                    ';'
+                )])
+            ))
         );
-        assert_eq!(Message::new(""), Err(EncodingError::InvalidMessage(vec![])))
+
+        assert_eq!(
+            Message::new(""),
+            Err(EncodingError::InvalidMessage(
+                RingElementEncodingError::describe(vec![])
+            ))
+        )
     }
 
     #[test]
