@@ -312,18 +312,6 @@ impl fmt::Display for RingElement {
     }
 }
 
-/// This is a bit strange, since we are only reading single chars from the lowercase Latin Alphabet, whereas one might expect to be able to read "25" from a string into RingElement here.
-impl FromStr for RingElement {
-    type Err = RingElementEncodingError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s.parse::<char>() {
-            Ok(c) => RingElement::from_char(c),
-            Err(e) => Err(RingElementEncodingError::ParseFailure(e)),
-        }
-    }
-}
-
 /// A plaintext of arbitrary length.
 #[derive(Clone, Debug, Default, Eq, Hash, PartialEq)]
 struct Message(Vec<RingElement>);
@@ -547,20 +535,6 @@ mod tests {
             RingElement::from_char('A'),
             Err(RingElementEncodingError::InvalidChar('A'))
         );
-
-        let err0 = RingElement::from_str("ab").unwrap_err();
-        assert_eq!(
-            err0.to_string(),
-            "Failed to encode ring element: too many characters in string"
-        );
-        assert!(matches!(err0, RingElementEncodingError::ParseFailure(..)));
-
-        let err1 = RingElement::from_str("").unwrap_err();
-        assert_eq!(
-            err1.to_string(),
-            "Failed to encode ring element: cannot parse char from empty string"
-        );
-        assert!(matches!(err1, RingElementEncodingError::ParseFailure(..)))
     }
 
     #[test]
