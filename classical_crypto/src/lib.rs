@@ -339,11 +339,11 @@ impl Message {
 }
 
 /// An error type that indicates a failure to parse a string.
-#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub enum EncodingError {
     /// The string included one or more characters that are not
     /// lowercase letters from the Latin Alphabet.
-    InvalidMessage,
+    InvalidMessage(Vec<RingElementEncodingError>),
     /// The string included one or more characters that are not
     /// letters from the Latin Alphabet. We allow for strings containing both
     /// capitalized and lowercase letters when parsing as string as a
@@ -357,13 +357,17 @@ pub enum EncodingError {
 
 impl fmt::Display for EncodingError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match *self {
-            EncodingError::InvalidMessage => write!(
+        match self {
+            EncodingError::InvalidMessage(e) => {
+                write!(
                 f,
-                "Forgive our awkward API decision; use only lowercase characters from the Latin alphabet"
-            ),
+                "Forgive our awkward API decision; use only lowercase characters from the Latin alphabet, {:#?}", e)
+            }
             EncodingError::InvalidCiphertext => {
-                write!(f, "Forgive our awkward API decision; use only characters from the Latin alphabet")
+                write!(
+                    f,
+                    "Forgive our awkward API decision; use only characters from the Latin alphabet"
+                )
             }
             EncodingError::InvalidKey => write!(f, "Input does not represent a valid key"),
         }
@@ -384,15 +388,23 @@ impl FromStr for Message {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let (msg, errors): (Vec<_>, Vec<_>) = s
             .chars()
-            .map(|i| RingElement::from_char(i).or(Err(EncodingError::InvalidMessage)))
+            .map(|i: char| RingElement::from_char(i))
             .partition(Result::is_ok);
 
         // Return high level error if msg is empty or s contained invalid chars
-        if !errors.is_empty()||msg.is_empty() {
-            return Err(EncodingError::InvalidMessage);
+        if !errors.is_empty() || msg.is_empty() {
+            let errors = errors
+                .into_iter()
+                .map(|i| i.unwrap_err())
+                .filter(|i| *i != RingElementEncodingError::InvalidChar(' '))
+                .collect();
+
+            return Err(EncodingError::InvalidMessage(errors));
         }
 
-        msg.into_iter().collect()
+        let msg: Message = msg.into_iter().map(|i| i.unwrap()).collect();
+
+        Ok(msg)
     }
 }
 
@@ -590,12 +602,11 @@ mod tests {
     fn msg_encoding_error() {
         assert_eq!(
             Message::new("we will meet at midnight;"),
-            Err(EncodingError::InvalidMessage)
+            Err(EncodingError::InvalidMessage(vec![
+                RingElementEncodingError::InvalidChar(';')
+            ]))
         );
-        assert_eq!(
-            Message::new(""),
-            Err(EncodingError::InvalidMessage)
-        )
+        assert_eq!(Message::new(""), Err(EncodingError::InvalidMessage(vec![])))
     }
 
     #[test]
