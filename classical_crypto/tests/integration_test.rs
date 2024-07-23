@@ -2,7 +2,7 @@
 //! not be entirely sensible as integration tests.
 use classical_crypto::{
     shift::{Ciphertext, Key, Message, ShiftCipher},
-    CipherTrait, KeyTrait,
+    CipherTrait, EncodingError, KeyTrait
 };
 use rand::thread_rng;
 use std::str::FromStr;
@@ -87,5 +87,48 @@ fn short_msg_example() {
     assert_eq!(
         ShiftCipher::decrypt(&small_ciphertext, &fixed_key_1),
         small_msg_1
+    );
+}
+
+#[test]
+fn new_msg_err() {
+    assert_eq!(
+        Message::new("this;crazy;world").unwrap_err(),
+        EncodingError::InvalidMessage("Awkward API: use only lowercase characters from the Latin alphabet. Invalid characters used: ; ; ".to_string()));
+}
+
+#[test]
+fn new_ciphtxt_err() {
+    assert_eq!(
+        Ciphertext::from_str("this;crazy;world").unwrap_err(),
+        EncodingError::InvalidCiphertext
+    )
+}
+
+#[test]
+fn new_key_err(){
+    assert_eq!(
+        Key::from_str("65").unwrap_err(),
+        EncodingError::InvalidKey
+    );
+    assert_eq!(
+        Key::from_str("").unwrap_err(),
+        EncodingError::InvalidKey
+    );
+    assert_eq!(
+        Key::from_str("-5").unwrap_err(),
+        EncodingError::InvalidKey
+    );
+    assert_eq!(
+        Key::from_str("26").unwrap_err(),
+        EncodingError::InvalidKey
+    );
+    assert_eq!(
+        Key::from_str("asdfas").unwrap_err(),
+        EncodingError::InvalidKey
+    );
+    assert_eq!(
+        Key::from_str("4s").unwrap_err(),
+        EncodingError::InvalidKey
     );
 }

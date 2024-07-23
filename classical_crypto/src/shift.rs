@@ -164,9 +164,6 @@ impl CipherTrait for ShiftCipher {
     type Ciphertext = Ciphertext;
     type Key = Key;
 
-    type EncryptionError = EncryptionError;
-    type DecryptionError = DecryptionError;
-
     /// Encrypt a message.
     ///
     /// # Examples

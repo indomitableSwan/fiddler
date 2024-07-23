@@ -49,21 +49,11 @@ pub trait CipherTrait {
     /// The keyspace of the cipher, which must implement the [`KeyTrait`] trait.
     type Key: KeyTrait;
 
-    // TODO: not implemented yet
-    /// The error type returned by [`CipherTrait::encrypt`].
-    type EncryptionError;
-
-    // TODO: not implemented yet
-    /// The error type returned by [`CipherTrait::decrypt`].
-    type DecryptionError;
-
-    // TODO: Return a Result instead
     /// The encryption function of the cipher.
     /// Invariant: For each key `k` in the keyspace, we have decrypt(encrypt(m,
     /// k), k) = m for every message `m` in the message space.
     fn encrypt(msg: &Self::Message, key: &Self::Key) -> Self::Ciphertext;
 
-    // TODO: Return a Result instead
     /// The decryption function of the cipher.
     /// Invariant: For each key `k` in the keyspace, we have decrypt(encrypt(m,
     /// k), k) = m for every message `m` in the message space.
@@ -333,7 +323,7 @@ impl fmt::Display for EncodingError {
             EncodingError::InvalidCiphertext => {
                 write!(
                     f,
-                    "Forgive our awkward API decision; use only characters from the Latin alphabet"
+                    "Awkward API: use only characters from the Latin alphabet"
                 )
             }
             EncodingError::InvalidKey => write!(f, "Input does not represent a valid key"),
@@ -343,14 +333,15 @@ impl fmt::Display for EncodingError {
 
 impl RingElementEncodingError {
     fn describe(errors: Vec<RingElementEncodingError>) -> String {
-        let mut description: String = "Forgive our awkward API decision; use only lowercase characters from the Latin alphabet.".to_string();
+        let mut description: String =
+            "Awkward API: use only lowercase characters from the Latin alphabet. ".to_string();
 
         if errors.is_empty() {
             description = "Empty string not allowed".to_string();
             return description;
         }
 
-        description.push_str("\nInvalid characters used: ");
+        description.push_str("Invalid characters used: ");
 
         for err in errors.into_iter() {
             let RingElementEncodingError::InvalidChar(char) = err;
@@ -406,8 +397,7 @@ impl fmt::Display for Message {
         write!(f, "{txt}")
     }
 }
-// Question: Can I do something generic here that covers both Message and
-// Ciphertext?
+
 impl FromIterator<RingElement> for Message {
     fn from_iter<I: IntoIterator<Item = RingElement>>(iter: I) -> Self {
         Message(iter.into_iter().collect())
