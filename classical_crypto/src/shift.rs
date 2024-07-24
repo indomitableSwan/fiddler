@@ -10,8 +10,11 @@ use rand::{CryptoRng, Rng};
 use std::{fmt::Display, str::FromStr};
 
 /// The ciphertext space for the Latin Shift Cipher.
-// Notes: 
-// This is a wrapper type around the library's private  representation of a ciphertext using the ring of integers mod 26. We do this because we want to force library users to use types specific to the Latin Shift cipher when using the Latin Shift Cipher, even though other ciphers may also (mathematically and under the hood in the implementation) operate on the same underlying types
+// Notes:
+// This is a wrapper type around the library's private  representation of a ciphertext using the
+// ring of integers mod 26. We do this because we want to force library users to use types specific
+// to the Latin Shift cipher when using the Latin Shift Cipher, even though other ciphers may also
+// (mathematically and under the hood in the implementation) operate on the same underlying types
 #[derive(Clone, Debug, Default, Eq, Hash, PartialEq)]
 pub struct Ciphertext(Ciphtxt);
 
@@ -35,8 +38,12 @@ impl FromIterator<RingElement> for Ciphertext {
 }
 
 /// The message space of the Latin Shift Cipher.
-// Notes: 
-// 1. This is a wrapper type around the library's private  representation of a ciphertext using the ring of integers mod 26. We do this because we want to force library users to use types specific to the Latin Shift cipher when using the Latin Shift Cipher, even though other ciphers may also (mathematically and under the hood in the implementation) operate on the same underlying types
+// Notes:
+// 1. This is a wrapper type around the library's private  representation of a ciphertext using the
+//    ring of integers mod 26. We do this because we want to force library users to use types
+//    specific to the Latin Shift cipher when using the Latin Shift Cipher, even though other
+//    ciphers may also (mathematically and under the hood in the implementation) operate on the same
+//    underlying types
 // 2. The Rust Book (19.3) offers guidance on using the `Deref` trait in the newtype pattern to automatically implement all methods defined on the inner type for the wrapper type. We do not do this because doing so makes for surprises in the API. Also note that this trick does not give you trait implementations defined on the inner type for the wrapper. See also discussion [`here`](https://rust-unofficial.github.io/patterns/anti_patterns/deref.html)
 #[derive(Clone, Debug, Default, Eq, Hash, PartialEq)]
 pub struct Message(Msg);
