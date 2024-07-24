@@ -145,12 +145,12 @@ impl FromStr for Key {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let key = match i8::from_str(s) {
             Ok(num) => num,
-            Err(_) => return Err(EncodingError::InvalidKey),
+            Err(_) => return Err(EncodingError::InvalidKey(s.to_string())),
         };
 
         match key {
             x if (0..=25).contains(&x) => Ok(Key::from(RingElement::from_i8(key))),
-            _ => Err(EncodingError::InvalidKey),
+            _ => Err(EncodingError::InvalidKey(s.to_string())),
         }
     }
 }
@@ -424,5 +424,33 @@ mod tests {
             ShiftCipher::decrypt(&ShiftCipher::encrypt(&msg1, &key1), &key2),
             msg1
         )
+    }
+
+    #[test]
+    fn new_key_err() {
+        assert_eq!(
+            Key::from_str("65").unwrap_err(),
+            EncodingError::InvalidKey("65".to_string())
+        );
+        assert_eq!(
+            Key::from_str("").unwrap_err(),
+            EncodingError::InvalidKey("".to_string())
+        );
+        assert_eq!(
+            Key::from_str("-5").unwrap_err(),
+            EncodingError::InvalidKey("-5".to_string())
+        );
+        assert_eq!(
+            Key::from_str("26").unwrap_err(),
+            EncodingError::InvalidKey("26".to_string())
+        );
+        assert_eq!(
+            Key::from_str("asdfas").unwrap_err(),
+            EncodingError::InvalidKey("asdfas".to_string())
+        );
+        assert_eq!(
+            Key::from_str("4s").unwrap_err(),
+            EncodingError::InvalidKey("4s".to_string())
+        );
     }
 }

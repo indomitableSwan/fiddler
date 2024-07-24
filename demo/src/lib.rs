@@ -84,7 +84,7 @@ mod io_helper {
             let result: T = match input.trim().parse::<T>() {
                 Ok(txt) => txt,
                 Err(e) => {
-                    println!("Error: {}", e);
+                    //println!("Error. {}", e);
                     continue;
                 }
             };
