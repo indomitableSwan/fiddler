@@ -46,7 +46,9 @@ pub fn encrypt() -> Result<(), Box<dyn Error>> {
 
     println!("\nNow, do you have a key that was generated uniformly at random that you remember and \nwould like to use? If yes, please enter your key. Otherwise, please pick a fresh key \nuniformly at random from the ring of integers modulo 26 yourself. \n\nYou won't be as good at this as a computer, but if you understand the cryptosystem \nyou are using (something we cryptographers routinely assume about other people, while \npretending that we aren't assuming this), you will probably not pick a key of 0, \nwhich is equivalent to sending your messages \"in the clear\", i.e., unencrypted. Good \nluck! \n");
 
-    let key: Key = process_input(|| println!("\nPlease enter a key now. Keys are numbers between 0 and 25 inclusive."))?;
+    let key: Key = process_input(|| {
+        println!("\nPlease enter a key now. Keys are numbers between 0 and 25 inclusive.")
+    })?;
 
     println!("\nYour ciphertext is {}", ShiftCipher::encrypt(&msg, &key));
     println!("\nLook for patterns in your ciphertext. Could you definitively figure out the key and \noriginal plaintext message if you didn't already know it?");

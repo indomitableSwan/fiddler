@@ -12,7 +12,7 @@ pub struct InternalError(#[from] ErrorRepr);
 
 /// Internal errors.
 #[derive(Clone, Debug, PartialEq, Error)]
-pub(crate) enum ErrorRepr {
+pub(super) enum ErrorRepr {
     /// Thrown when a conversion between the Latin
     /// Alphabet and the ring of integers modulo [`RingElement::MODULUS`] fails.
     ///

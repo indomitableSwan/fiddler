@@ -167,7 +167,7 @@ impl AlphabetEncoding for RingElement {
     /// Convert from a character.
     ///
     /// # Errors
-    /// This method will return a custom pub(crate) error if the constant
+    /// This method will return a custom internal error if the constant
     /// [`RingElement::ALPH_ENCODING`] does not specify a mapping to the ring of
     /// integers for the given input. This happens if the input is not from the
     /// lowercase Latin Alphabet. For crate users, this error type will get
