@@ -288,32 +288,10 @@ impl FromStr for Message {
     type Err = EncodingError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match encoder_helper(s) {
+        match from_str(s) {
             Ok(msg) => Ok(Message(msg)),
             Err(e) => Err(EncodingError::InvalidMessage(e.into())),
         }
-    }
-}
-
-fn encoder_helper(s: &str) -> Result<Vec<RingElement>, ErrorRepr> {
-    let (msg, errors): (Vec<_>, Vec<_>) = s
-        .chars()
-        .map(|i: char| RingElement::from_char(i))
-        .partition(Result::is_ok);
-
-    let msg: Vec<RingElement> = msg.into_iter().map(|i| i.unwrap()).collect();
-
-    let errors: String = errors
-        .into_iter()
-        .map(|i| i.unwrap_err())
-        .map(|ErrorRepr::RingElementEncodingError(i)| i)
-        .filter(|i| i != " ")
-        .collect();
-
-    if errors.is_empty() && !msg.is_empty() {
-        Ok(msg)
-    } else {
-        Err(ErrorRepr::RingElementEncodingError(errors))
     }
 }
 
@@ -344,7 +322,7 @@ impl FromStr for Ciphertext {
     type Err = EncodingError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match encoder_helper(&s.to_lowercase()) {
+        match from_str(&s.to_lowercase()) {
             Ok(msg) => Ok(Ciphertext(msg)),
             Err(e) => Err(EncodingError::InvalidCiphertext(e.into())),
         }
@@ -364,6 +342,33 @@ impl fmt::Display for Ciphertext {
 impl FromIterator<RingElement> for Ciphertext {
     fn from_iter<I: IntoIterator<Item = RingElement>>(iter: I) -> Self {
         Ciphertext(iter.into_iter().collect())
+    }
+}
+
+// Parse a string as a `Vec<RingElement>`
+// We cannot implement `FromStr` for `Vec<RingElement>` (since both `FromStr`
+// and `Vec` are external to our crate), but we need similar functionality in
+// order to avoid code duplication when converting from Strings to Wrapper types
+// around `Vec<RingElement>``
+fn from_str(s: &str) -> Result<Vec<RingElement>, ErrorRepr> {
+    let (msg, errors): (Vec<_>, Vec<_>) = s
+        .chars()
+        .map(|i: char| RingElement::from_char(i))
+        .partition(Result::is_ok);
+
+    let msg: Vec<RingElement> = msg.into_iter().map(|i| i.unwrap()).collect();
+
+    let errors: String = errors
+        .into_iter()
+        .map(|i| i.unwrap_err())
+        .map(|ErrorRepr::RingElementEncodingError(i)| i)
+        .filter(|i| i != " ")
+        .collect();
+
+    if errors.is_empty() && !msg.is_empty() {
+        Ok(msg)
+    } else {
+        Err(ErrorRepr::RingElementEncodingError(errors))
     }
 }
 
@@ -456,7 +461,7 @@ mod tests {
         );
 
         assert_eq!(
-            encoder_helper("asd;lkasdfEnk0").unwrap_err(),
+            from_str("asd;lkasdfEnk0").unwrap_err(),
             ErrorRepr::RingElementEncodingError(";E0".to_string())
         )
     }
