@@ -39,9 +39,7 @@ use std::{
 pub mod errors;
 pub mod shift;
 
-pub use crate::errors::{EncodingError, InternalError};
-
-use crate::errors::ErrorRepr;
+use crate::errors::{EncodingError, ErrorRepr};
 
 /// This trait represents a deterministic cipher.
 pub trait CipherTrait {

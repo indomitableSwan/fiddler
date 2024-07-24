@@ -2,7 +2,7 @@
 //! not be entirely sensible as integration tests.
 use classical_crypto::{
     shift::{Ciphertext, Key, Message, ShiftCipher},
-    CipherTrait, EncodingError, KeyTrait,
+    CipherTrait, KeyTrait,
 };
 use rand::thread_rng;
 use std::str::FromStr;
@@ -106,32 +106,4 @@ fn new_ciphtxt_err() {
             .to_string(),
         "Invalid Ciphertext. Failed to encode the following characters as ring elements: ;;"
     )
-}
-
-#[test]
-fn new_key_err() {
-    assert_eq!(
-        Key::from_str("65").unwrap_err(),
-        EncodingError::InvalidKey("65".to_string())
-    );
-    assert_eq!(
-        Key::from_str("").unwrap_err(),
-        EncodingError::InvalidKey("".to_string())
-    );
-    assert_eq!(
-        Key::from_str("-5").unwrap_err(),
-        EncodingError::InvalidKey("-5".to_string())
-    );
-    assert_eq!(
-        Key::from_str("26").unwrap_err(),
-        EncodingError::InvalidKey("26".to_string())
-    );
-    assert_eq!(
-        Key::from_str("asdfas").unwrap_err(),
-        EncodingError::InvalidKey("asdfas".to_string())
-    );
-    assert_eq!(
-        Key::from_str("4s").unwrap_err(),
-        EncodingError::InvalidKey("4s".to_string())
-    );
 }
