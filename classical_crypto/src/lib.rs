@@ -36,7 +36,12 @@ use std::{
     str::FromStr,
 };
 
+pub mod errors;
 pub mod shift;
+
+pub use crate::errors::{EncodingError, InternalError};
+
+use crate::errors::ErrorRepr;
 
 /// This trait represents a deterministic cipher.
 pub trait CipherTrait {
@@ -95,28 +100,6 @@ trait Ring:
 /// An implementation of the ring &#x2124;/_m_&#x2124; for modulus _m_.
 #[derive(Copy, Clone, Debug, Eq, Hash, PartialEq, PartialOrd, Ord)]
 struct RingElement(i8);
-
-/// A custom error type that is thrown when a conversion between the Latin
-/// Alphabet and the ring of integers modulo [`RingElement::MODULUS`] fails.
-///
-/// This error should only be thrown if:
-/// - There is a mistake in the definition of the constant
-///   [`RingElement::ALPH_ENCODING`];
-/// - The input was not a lowercase letter from the Latin Alphabet.
-#[derive(Clone, Debug, Eq, PartialEq)]
-enum RingElementEncodingError {
-    InvalidChar(char),
-}
-
-impl fmt::Display for RingElementEncodingError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            RingElementEncodingError::InvalidChar(c) => {
-                write!(f, "Failed to encode char {} as ring element", c)
-            }
-        }
-    }
-}
 
 impl RingElement {
     /// The default alphabet encoding for the Latin Shift Cipher.
@@ -179,7 +162,7 @@ impl RingElement {
 }
 
 impl AlphabetEncoding for RingElement {
-    type Error = RingElementEncodingError;
+    type Error = ErrorRepr;
 
     /// Convert from a character.
     ///
@@ -190,12 +173,12 @@ impl AlphabetEncoding for RingElement {
     /// lowercase Latin Alphabet. For crate users, this error type will get
     /// "lifted" to the public error type [`EncodingError`] by the caller, e.g.,
     /// when parsing a [`Message`] from a string.
-    fn from_char(ltr: char) -> Result<Self, RingElementEncodingError> {
+    fn from_char(ltr: char) -> Result<Self, ErrorRepr> {
         // This constructor uses the encoding defined in `RingElement::ALPH_ENCODING`.
         RingElement::ALPH_ENCODING
             .into_iter()
             .find_map(|(x, y)| if x == ltr { Some(RingElement(y)) } else { None })
-            .ok_or(RingElementEncodingError::InvalidChar(ltr))
+            .ok_or(ErrorRepr::RingElementEncodingError(ltr.to_string()))
     }
 
     /// Convert from a ring element to a character.
@@ -297,65 +280,6 @@ impl Message {
     }
 }
 
-/// An error type that indicates a failure to parse a string.
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub enum EncodingError {
-    /// The string included one or more characters that are not
-    /// lowercase letters from the Latin Alphabet.
-    InvalidMessage(String),
-    /// The string included one or more characters that are not
-    /// letters from the Latin Alphabet. We allow for strings containing both
-    /// capitalized and lowercase letters when parsing as string as a
-    /// ciphertext.
-    InvalidCiphertext,
-    /// The string does not represent a number in the appropriate
-    /// range. e.g., for the Latin Shift Cipher, keys are in the range 0 to 25,
-    /// inclusive.
-    InvalidKey,
-}
-
-impl fmt::Display for EncodingError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            EncodingError::InvalidMessage(e) => {
-                write!(f, "Invalid Message: {}", e)
-            }
-            EncodingError::InvalidCiphertext => {
-                write!(
-                    f,
-                    "Awkward API: use only characters from the Latin alphabet"
-                )
-            }
-            EncodingError::InvalidKey => write!(f, "Input does not represent a valid key"),
-        }
-    }
-}
-
-impl RingElementEncodingError {
-    fn describe(errors: Vec<RingElementEncodingError>) -> String {
-        let mut description: String =
-            "Awkward API: use only lowercase characters from the Latin alphabet. ".to_string();
-
-        if errors.is_empty() {
-            description = "Empty string not allowed".to_string();
-            return description;
-        }
-
-        description.push_str("Invalid characters used: ");
-
-        for err in errors.into_iter() {
-            let RingElementEncodingError::InvalidChar(char) = err;
-
-            description.push(char);
-            description.push(' ')
-        }
-
-        description
-    }
-}
-
-impl std::error::Error for EncodingError {}
-
 /// Parse a message from a string.
 ///
 /// # Errors
@@ -366,27 +290,32 @@ impl FromStr for Message {
     type Err = EncodingError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let (msg, errors): (Vec<_>, Vec<_>) = s
-            .chars()
-            .map(|i: char| RingElement::from_char(i))
-            .partition(Result::is_ok);
-
-        // Return high level error if msg is empty or s contained invalid chars
-        if !errors.is_empty() || msg.is_empty() {
-            let errors: Vec<RingElementEncodingError> = errors
-                .into_iter()
-                .map(|i| i.unwrap_err())
-                .filter(|i| *i != RingElementEncodingError::InvalidChar(' '))
-                .collect();
-
-            let errors = RingElementEncodingError::describe(errors);
-
-            return Err(EncodingError::InvalidMessage(errors));
+        match encoder_helper(s) {
+            Ok(msg) => Ok(Message(msg)),
+            Err(e) => Err(EncodingError::InvalidMessage(e.into())),
         }
+    }
+}
 
-        let msg: Message = msg.into_iter().map(|i| i.unwrap()).collect();
+fn encoder_helper(s: &str) -> Result<Vec<RingElement>, ErrorRepr> {
+    let (msg, errors): (Vec<_>, Vec<_>) = s
+        .chars()
+        .map(|i: char| RingElement::from_char(i))
+        .partition(Result::is_ok);
 
+    let msg: Vec<RingElement> = msg.into_iter().map(|i| i.unwrap()).collect();
+
+    let errors: String = errors
+        .into_iter()
+        .map(|i| i.unwrap_err())
+        .map(|ErrorRepr::RingElementEncodingError(i)| i)
+        .filter(|i| i != " ")
+        .collect();
+
+    if errors.is_empty() && !msg.is_empty() {
         Ok(msg)
+    } else {
+        Err(ErrorRepr::RingElementEncodingError(errors))
     }
 }
 
@@ -417,10 +346,10 @@ impl FromStr for Ciphertext {
     type Err = EncodingError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        s.to_lowercase()
-            .chars()
-            .map(|i| RingElement::from_char(i).or(Err(EncodingError::InvalidCiphertext)))
-            .collect()
+        match encoder_helper(&s.to_lowercase()) {
+            Ok(msg) => Ok(Ciphertext(msg)),
+            Err(e) => Err(EncodingError::InvalidCiphertext(e.into())),
+        }
     }
 }
 
@@ -521,12 +450,17 @@ mod tests {
     fn ring_elmt_encoding_errors() {
         assert_eq!(
             RingElement::from_char('_'),
-            Err(RingElementEncodingError::InvalidChar('_'))
+            Err(ErrorRepr::RingElementEncodingError('_'.to_string()))
         );
         assert_eq!(
             RingElement::from_char('A'),
-            Err(RingElementEncodingError::InvalidChar('A'))
+            Err(ErrorRepr::RingElementEncodingError('A'.to_string()))
         );
+
+        assert_eq!(
+            encoder_helper("asd;lkasdfEnk0").unwrap_err(),
+            ErrorRepr::RingElementEncodingError(";E0".to_string())
+        )
     }
 
     #[test]
@@ -567,19 +501,18 @@ mod tests {
     #[test]
     // Malformed message errors.
     fn msg_encoding_error() {
+        println!("{}", Message::new("what; on earh#A").unwrap_err());
         assert_eq!(
-            Message::new("we will meet at midnight;"),
+            Message::new("we~ will Meet at midnight;"),
             Err(EncodingError::InvalidMessage(
-                RingElementEncodingError::describe(vec![RingElementEncodingError::InvalidChar(
-                    ';'
-                )])
+                ErrorRepr::RingElementEncodingError("~M;".to_string()).into()
             ))
         );
 
         assert_eq!(
             Message::new(""),
             Err(EncodingError::InvalidMessage(
-                RingElementEncodingError::describe(vec![])
+                ErrorRepr::RingElementEncodingError("".to_string()).into()
             ))
         )
     }
@@ -617,7 +550,9 @@ mod tests {
     fn ciphertxt_encoding_error() {
         assert_eq!(
             Ciphertext::from_str("a;k"),
-            Err(EncodingError::InvalidCiphertext)
+            Err(EncodingError::InvalidCiphertext(
+                ErrorRepr::RingElementEncodingError(";".to_string()).into()
+            ))
         )
     }
 }
