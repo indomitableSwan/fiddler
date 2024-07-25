@@ -2,10 +2,10 @@
 //! allows key generation, message encryption, and ciphertext decryption
 //! (including a computer-aided brute force attack) using the Latin Shift
 //! Cipher.
+use anyhow::Result;
 use demo::menu;
-use std::error::Error;
 
-fn main() -> Result<(), Box<dyn Error>> {
+fn main() -> Result<()> {
     println!("\nWelcome to the Latin Shift Cipher Demo!");
     menu().inspect_err(|e| eprintln!("Application error: {e}"))
 }

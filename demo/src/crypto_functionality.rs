@@ -3,15 +3,15 @@ use crate::{
     io_helper::process_input,
     menu::{ConsentMenu, DecryptMenu, Menu},
 };
+use anyhow::{anyhow, Result};
 use classical_crypto::{
     shift::{Ciphertext, Key, Message, ShiftCipher},
     CipherTrait, KeyTrait,
 };
 use rand::thread_rng;
-use std::error::Error;
 
 /// Creates keys and prints the key to standard output.
-pub fn make_key() -> Result<(), Box<dyn Error>> {
+pub fn make_key() -> Result<()> {
     // Set up an rng.
     let mut rng = thread_rng();
 
@@ -40,7 +40,7 @@ pub fn make_key() -> Result<(), Box<dyn Error>> {
 
 /// Takes in a key and a message and encrypts, then prints
 /// the result.
-pub fn encrypt() -> Result<(), Box<dyn Error>> {
+pub fn encrypt() -> Result<()> {
     let msg: Message =
         process_input(|| println!("\nPlease enter the message you want to encrypt:"))?;
 
@@ -58,7 +58,7 @@ pub fn encrypt() -> Result<(), Box<dyn Error>> {
 
 /// Takes in a ciphertext and attempts to decrypt and
 /// print result.
-pub fn decrypt(command: DecryptMenu) -> Result<(), Box<dyn Error>> {
+pub fn decrypt(command: DecryptMenu) -> Result<()> {
     let ciphertxt: Ciphertext = process_input(|| {
         println!(
             "\nEnter your ciphertext. Ciphertexts use characters only from the Latin Alphabet:"
@@ -80,7 +80,7 @@ pub fn decrypt(command: DecryptMenu) -> Result<(), Box<dyn Error>> {
 }
 
 /// Gets key from stdin and attempts to decrypt.
-pub fn chosen_key(ciphertxt: &Ciphertext) -> Result<(), Box<dyn Error>> {
+pub fn chosen_key(ciphertxt: &Ciphertext) -> Result<()> {
     loop {
         let key: Key = process_input(|| {
             println!("\nPlease enter a key now. Keys are numbers between 0 and 25 inclusive.")
@@ -94,7 +94,7 @@ pub fn chosen_key(ciphertxt: &Ciphertext) -> Result<(), Box<dyn Error>> {
 }
 
 /// Has computer choose key uniformly at random and attempts to decrypt.
-pub fn computer_chosen_key(ciphertxt: &Ciphertext) -> Result<(), Box<dyn Error>> {
+pub fn computer_chosen_key(ciphertxt: &Ciphertext) -> Result<()> {
     let mut rng = thread_rng();
 
     loop {
@@ -108,7 +108,7 @@ pub fn computer_chosen_key(ciphertxt: &Ciphertext) -> Result<(), Box<dyn Error>>
 }
 
 /// Decrypt with given key and ask whether to try again or not.
-pub fn try_decrypt(ciphertxt: &Ciphertext, key: Key) -> Result<(), Box<dyn Error>> {
+pub fn try_decrypt(ciphertxt: &Ciphertext, key: Key) -> Result<()> {
     println!(
         "\nYour computed plaintext is {}\n",
         ShiftCipher::decrypt(ciphertxt, &key)
@@ -120,7 +120,7 @@ pub fn try_decrypt(ciphertxt: &Ciphertext, key: Key) -> Result<(), Box<dyn Error
     })?;
 
     match command {
-        ConsentMenu::NoKE => Err("try again".into()),
+        ConsentMenu::NoKE => Err(anyhow!("try again")),
         ConsentMenu::YesKE => Ok(()),
     }
 }
