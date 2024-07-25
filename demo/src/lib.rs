@@ -2,8 +2,8 @@
 use anyhow::Result;
 
 pub mod crypto_functionality;
-pub mod menu;
 mod io_helper;
+pub mod menu;
 
 use crate::crypto_functionality::{decrypt, encrypt, make_key};
 use crate::io_helper::process_input;
@@ -59,4 +59,3 @@ pub fn decryption_menu() -> Result<DecryptMenu> {
     let command: DecryptMenu = process_input(DecryptMenu::print_menu)?;
     Ok(command)
 }
-
