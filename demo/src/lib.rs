@@ -9,7 +9,7 @@ use crate::io_helper::process_input;
 use crate::menu::{DecryptMenu, MainMenu, Menu};
 
 /// Presents main menu and runs user selection.
-/// 
+///
 /// Prints main menu of user options and matches on user input to do one of:
 /// - Generate a key;
 /// - Encrypt a message;
@@ -17,9 +17,6 @@ use crate::menu::{DecryptMenu, MainMenu, Menu};
 /// - Quit the CLI application.
 pub fn menu() -> Result<(), Box<dyn Error>> {
     loop {
-        // Print the main menu
-        MainMenu::print_menu();
-
         // Get menu selection from user
         let command: MainMenu = process_input(MainMenu::print_menu)?;
 
@@ -43,7 +40,7 @@ pub fn menu() -> Result<(), Box<dyn Error>> {
 }
 
 /// Presents decryption menu and runs user selection.
-/// 
+///
 /// Prints menu of user decryption options and matches on user input to do one
 /// of:
 /// - Decrypt using a known key;
@@ -57,9 +54,6 @@ pub fn decryption_menu() -> Result<DecryptMenu, Box<dyn Error>> {
     println!(
     "If not, don't despair. Just guess! On average, you can expect success using this \nsimple brute force attack method after trying 13 keys chosen uniformly at random."
     );
-    println!("Pick one of the following options:");
-
-    DecryptMenu::print_menu();
 
     let command: DecryptMenu = process_input(DecryptMenu::print_menu)?;
     Ok(command)
@@ -76,18 +70,21 @@ mod io_helper {
     pub fn process_input<T, F>(instr: F) -> Result<T, Box<dyn Error>>
     where
         T: FromStr,
+        <T as std::str::FromStr>::Err: std::fmt::Display,
         F: Fn(),
     {
         loop {
+            // Print the instructions
+            instr();
+
             let mut input = String::new();
 
             io::stdin().read_line(&mut input)?;
 
             let result: T = match input.trim().parse::<T>() {
                 Ok(txt) => txt,
-                Err(_) => {
-                    instr();
-                    println!("\nPlease try again:");
+                Err(_e) => {
+                    //println!("Error. {}", e);
                     continue;
                 }
             };

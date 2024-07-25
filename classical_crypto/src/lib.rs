@@ -36,7 +36,10 @@ use std::{
     str::FromStr,
 };
 
+pub mod errors;
 pub mod shift;
+
+use crate::errors::{EncodingError, ErrorRepr};
 
 /// This trait represents a deterministic cipher.
 pub trait CipherTrait {
@@ -49,21 +52,11 @@ pub trait CipherTrait {
     /// The keyspace of the cipher, which must implement the [`KeyTrait`] trait.
     type Key: KeyTrait;
 
-    // TODO: not implemented yet
-    /// The error type returned by [`CipherTrait::encrypt`].
-    type EncryptionError;
-
-    // TODO: not implemented yet
-    /// The error type returned by [`CipherTrait::decrypt`].
-    type DecryptionError;
-
-    // TODO: Return a Result instead
     /// The encryption function of the cipher.
     /// Invariant: For each key `k` in the keyspace, we have decrypt(encrypt(m,
     /// k), k) = m for every message `m` in the message space.
     fn encrypt(msg: &Self::Message, key: &Self::Key) -> Self::Ciphertext;
 
-    // TODO: Return a Result instead
     /// The decryption function of the cipher.
     /// Invariant: For each key `k` in the keyspace, we have decrypt(encrypt(m,
     /// k), k) = m for every message `m` in the message space.
@@ -105,16 +98,6 @@ trait Ring:
 /// An implementation of the ring &#x2124;/_m_&#x2124; for modulus _m_.
 #[derive(Copy, Clone, Debug, Eq, Hash, PartialEq, PartialOrd, Ord)]
 struct RingElement(i8);
-
-/// A custom error type that is thrown when a conversion between the Latin
-/// Alphabet and the ring of integers modulo [`RingElement::MODULUS`] fails.
-///
-/// This error should only be thrown if:
-/// - There is a mistake in the definition of the constant
-///   [`RingElement::ALPH_ENCODING`];
-/// - The input was not a lowercase letter from the Latin Alphabet.
-#[derive(Copy, Clone, Debug, Default, Eq, Hash, PartialEq)]
-struct RingElementEncodingError;
 
 impl RingElement {
     /// The default alphabet encoding for the Latin Shift Cipher.
@@ -177,23 +160,23 @@ impl RingElement {
 }
 
 impl AlphabetEncoding for RingElement {
-    type Error = RingElementEncodingError;
+    type Error = ErrorRepr;
 
     /// Convert from a character.
     ///
     /// # Errors
-    /// This method will return a custom pub(crate) error if the constant
+    /// This method will return a custom internal error if the constant
     /// [`RingElement::ALPH_ENCODING`] does not specify a mapping to the ring of
     /// integers for the given input. This happens if the input is not from the
     /// lowercase Latin Alphabet. For crate users, this error type will get
     /// "lifted" to the public error type [`EncodingError`] by the caller, e.g.,
     /// when parsing a [`Message`] from a string.
-    fn from_char(ltr: char) -> Result<Self, RingElementEncodingError> {
+    fn from_char(ltr: char) -> Result<Self, ErrorRepr> {
         // This constructor uses the encoding defined in `RingElement::ALPH_ENCODING`.
         RingElement::ALPH_ENCODING
             .into_iter()
             .find_map(|(x, y)| if x == ltr { Some(RingElement(y)) } else { None })
-            .ok_or(RingElementEncodingError)
+            .ok_or(ErrorRepr::RingElementEncodingError(ltr.to_string()))
     }
 
     /// Convert from a ring element to a character.
@@ -295,21 +278,6 @@ impl Message {
     }
 }
 
-/// An error type that indicates a failure to parse a string.
-///
-/// This is likely because the string violates one of the constraints
-/// for the desired value type. That is:
-///
-/// - For messages: The string included one or more characters that are not
-///   lowercase letters from the Latin Alphabet.
-/// - For ciphertexts: The string included one or more characters that are not
-///   letters from the Latin Alphabet. We allow for strings containing both
-///   capitalized and lowercase letters when parsing as string as a ciphertext.
-/// - For key values: The string does not represent a number in the appropriate
-///   range. For the Latin Alphabet, this range is 0 to 25, inclusive.
-#[derive(Copy, Clone, Debug, Default, Eq, Hash, PartialEq)]
-pub struct EncodingError;
-
 /// Parse a message from a string.
 ///
 /// # Errors
@@ -320,9 +288,10 @@ impl FromStr for Message {
     type Err = EncodingError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        s.chars()
-            .map(|i| RingElement::from_char(i).or(Err(EncodingError)))
-            .collect()
+        match from_str(s) {
+            Ok(msg) => Ok(Message(msg)),
+            Err(e) => Err(EncodingError::InvalidMessage(e.into())),
+        }
     }
 }
 
@@ -333,17 +302,10 @@ impl fmt::Display for Message {
         write!(f, "{txt}")
     }
 }
-// Question: Can I do something generic here that covers both Message and
-// Ciphertext?
+
 impl FromIterator<RingElement> for Message {
     fn from_iter<I: IntoIterator<Item = RingElement>>(iter: I) -> Self {
-        let mut c = Vec::new();
-
-        for i in iter {
-            c.push(i);
-        }
-
-        Message(c)
+        Message(iter.into_iter().collect())
     }
 }
 
@@ -360,10 +322,10 @@ impl FromStr for Ciphertext {
     type Err = EncodingError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        s.to_lowercase()
-            .chars()
-            .map(|i| RingElement::from_char(i).or(Err(EncodingError)))
-            .collect()
+        match from_str(&s.to_lowercase()) {
+            Ok(msg) => Ok(Ciphertext(msg)),
+            Err(e) => Err(EncodingError::InvalidCiphertext(e.into())),
+        }
     }
 }
 
@@ -379,13 +341,34 @@ impl fmt::Display for Ciphertext {
 
 impl FromIterator<RingElement> for Ciphertext {
     fn from_iter<I: IntoIterator<Item = RingElement>>(iter: I) -> Self {
-        let mut c = Vec::new();
+        Ciphertext(iter.into_iter().collect())
+    }
+}
 
-        for i in iter {
-            c.push(i);
-        }
+// Parse a string as a `Vec<RingElement>`
+// We cannot implement `FromStr` for `Vec<RingElement>` (since both `FromStr`
+// and `Vec` are external to our crate), but we need similar functionality in
+// order to avoid code duplication when converting from Strings to Wrapper types
+// around `Vec<RingElement>``
+fn from_str(s: &str) -> Result<Vec<RingElement>, ErrorRepr> {
+    let (msg, errors): (Vec<_>, Vec<_>) = s
+        .chars()
+        .map(|i: char| RingElement::from_char(i))
+        .partition(Result::is_ok);
 
-        Ciphertext(c)
+    let msg: Vec<RingElement> = msg.into_iter().map(|i| i.unwrap()).collect();
+
+    let errors: String = errors
+        .into_iter()
+        .map(|i| i.unwrap_err())
+        .map(|ErrorRepr::RingElementEncodingError(i)| i)
+        .filter(|i| i != " ")
+        .collect();
+
+    if errors.is_empty() && !msg.is_empty() {
+        Ok(msg)
+    } else {
+        Err(ErrorRepr::RingElementEncodingError(errors))
     }
 }
 
@@ -406,7 +389,7 @@ mod tests {
 
     // Encrypted "wewillmeetatmidnight" message with key=11, from Example 1.1,
     // Stinson 3rd Edition, Example 2.1 Stinson 4th Edition
-    thread_local! (static CIPH0: Ciphertext = Ciphertext(vec![RingElement(7), RingElement(15), 
+    thread_local! (static CIPH0: Ciphertext = Ciphertext(vec![RingElement(7), RingElement(15),
             RingElement(7), RingElement(19), RingElement(22), RingElement(22),
             RingElement(23), RingElement(15), RingElement(15), RingElement(4),
             RingElement(11), RingElement(4),
@@ -467,9 +450,20 @@ mod tests {
     }
 
     #[test]
-    fn ring_elmt_encoding_error() {
-        assert_eq!(RingElement::from_char('_'), Err(RingElementEncodingError));
-        assert_eq!(RingElement::from_char('A'), Err(RingElementEncodingError));
+    fn ring_elmt_encoding_errors() {
+        assert_eq!(
+            RingElement::from_char('_'),
+            Err(ErrorRepr::RingElementEncodingError('_'.to_string()))
+        );
+        assert_eq!(
+            RingElement::from_char('A'),
+            Err(ErrorRepr::RingElementEncodingError('A'.to_string()))
+        );
+
+        assert_eq!(
+            from_str("asd;lkasdfEnk0").unwrap_err(),
+            ErrorRepr::RingElementEncodingError(";E0".to_string())
+        )
     }
 
     #[test]
@@ -477,6 +471,10 @@ mod tests {
         expected = "Could not map to `char`: The definition of `RingElement::ALPH_ENCODING` must have an error or there is an invalid `RingElement`."
     )]
     fn ring_elmt_encoding_panic() {
+        // Sometimes you google to find out how to prevent things like backtraces
+        // appearing in your output for tests that should panic
+        let f = |_: &std::panic::PanicInfo| {};
+        std::panic::set_hook(Box::new(f));
         let _fail = RingElement(26).to_char();
     }
 
@@ -506,7 +504,20 @@ mod tests {
     #[test]
     // Malformed message errors.
     fn msg_encoding_error() {
-        assert_eq!(Message::new("we will meet at midnight"), Err(EncodingError))
+        println!("{}", Message::new("what; on earh#A").unwrap_err());
+        assert_eq!(
+            Message::new("we~ will Meet at midnight;"),
+            Err(EncodingError::InvalidMessage(
+                ErrorRepr::RingElementEncodingError("~M;".to_string()).into()
+            ))
+        );
+
+        assert_eq!(
+            Message::new(""),
+            Err(EncodingError::InvalidMessage(
+                ErrorRepr::RingElementEncodingError("".to_string()).into()
+            ))
+        )
     }
 
     #[test]
@@ -540,6 +551,11 @@ mod tests {
 
     #[test]
     fn ciphertxt_encoding_error() {
-        assert_eq!(Ciphertext::from_str("a;k"), Err(EncodingError))
+        assert_eq!(
+            Ciphertext::from_str("a;k"),
+            Err(EncodingError::InvalidCiphertext(
+                ErrorRepr::RingElementEncodingError(";".to_string()).into()
+            ))
+        )
     }
 }

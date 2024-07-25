@@ -1,4 +1,5 @@
 //! Menus.
+use core::fmt;
 use std::str::FromStr;
 
 /// Represents menu functionality.
@@ -183,3 +184,9 @@ pub struct Command<'a> {
 
 /// The error returned upon failure to parse a [`Command`] from a string.
 pub struct CommandError;
+
+impl fmt::Display for CommandError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Invalid command")
+    }
+}

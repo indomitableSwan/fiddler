@@ -89,3 +89,21 @@ fn short_msg_example() {
         small_msg_1
     );
 }
+
+#[test]
+fn new_msg_err() {
+    assert_eq!(
+        Message::new("this;crazy;world").unwrap_err().to_string(),
+        "Invalid Message. Failed to encode the following characters as ring elements: ;;"
+    );
+}
+
+#[test]
+fn new_ciphtxt_err() {
+    assert_eq!(
+        Ciphertext::from_str("this;crazy;world")
+            .unwrap_err()
+            .to_string(),
+        "Invalid Ciphertext. Failed to encode the following characters as ring elements: ;;"
+    )
+}

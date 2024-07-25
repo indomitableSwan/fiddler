@@ -10,8 +10,11 @@ use rand::{CryptoRng, Rng};
 use std::{fmt::Display, str::FromStr};
 
 /// The ciphertext space for the Latin Shift Cipher.
-// Notes: 
-// This is a wrapper type around the library's private  representation of a ciphertext using the ring of integers mod 26. We do this because we want to force library users to use types specific to the Latin Shift cipher when using the Latin Shift Cipher, even though other ciphers may also (mathematically and under the hood in the implementation) operate on the same underlying types
+// Notes:
+// This is a wrapper type around the library's private  representation of a ciphertext using the
+// ring of integers mod 26. We do this because we want to force library users to use types specific
+// to the Latin Shift cipher when using the Latin Shift Cipher, even though other ciphers may also
+// (mathematically and under the hood in the implementation) operate on the same underlying types
 #[derive(Clone, Debug, Default, Eq, Hash, PartialEq)]
 pub struct Ciphertext(Ciphtxt);
 
@@ -35,8 +38,12 @@ impl FromIterator<RingElement> for Ciphertext {
 }
 
 /// The message space of the Latin Shift Cipher.
-// Notes: 
-// 1. This is a wrapper type around the library's private  representation of a ciphertext using the ring of integers mod 26. We do this because we want to force library users to use types specific to the Latin Shift cipher when using the Latin Shift Cipher, even though other ciphers may also (mathematically and under the hood in the implementation) operate on the same underlying types
+// Notes:
+// 1. This is a wrapper type around the library's private  representation of a ciphertext using the
+//    ring of integers mod 26. We do this because we want to force library users to use types
+//    specific to the Latin Shift cipher when using the Latin Shift Cipher, even though other
+//    ciphers may also (mathematically and under the hood in the implementation) operate on the same
+//    underlying types
 // 2. The Rust Book (19.3) offers guidance on using the `Deref` trait in the newtype pattern to automatically implement all methods defined on the inner type for the wrapper type. We do not do this because doing so makes for surprises in the API. Also note that this trick does not give you trait implementations defined on the inner type for the wrapper. See also discussion [`here`](https://rust-unofficial.github.io/patterns/anti_patterns/deref.html)
 #[derive(Clone, Debug, Default, Eq, Hash, PartialEq)]
 pub struct Message(Msg);
@@ -138,12 +145,12 @@ impl FromStr for Key {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let key = match i8::from_str(s) {
             Ok(num) => num,
-            Err(_) => return Err(EncodingError),
+            Err(_) => return Err(EncodingError::InvalidKey(s.to_string())),
         };
 
         match key {
             x if (0..=25).contains(&x) => Ok(Key::from(RingElement::from_i8(key))),
-            _ => Err(EncodingError),
+            _ => Err(EncodingError::InvalidKey(s.to_string())),
         }
     }
 }
@@ -163,9 +170,6 @@ impl CipherTrait for ShiftCipher {
     type Message = Message;
     type Ciphertext = Ciphertext;
     type Key = Key;
-
-    type EncryptionError = EncryptionError;
-    type DecryptionError = DecryptionError;
 
     /// Encrypt a message.
     ///
@@ -337,6 +341,34 @@ mod tests {
         )
     }
 
+    #[test]
+    #[should_panic(
+        expected = "Could not map to `char`: The definition of `RingElement::ALPH_ENCODING` must have an error or there is an invalid `RingElement`."
+    )]
+    fn unchecked_dec_panic() {
+        // Sometimes you google to find out how to prevent things like backtraces
+        // appearing in your output for tests that should panic
+        let f = |_: &std::panic::PanicInfo| {};
+        std::panic::set_hook(Box::new(f));
+        let ciph = Ciphertext(Ciphtxt(vec![RingElement(65)]));
+
+        let key = Key(RingElement(0));
+        println!("{}", ShiftCipher::decrypt(&ciph, &key));
+    }
+
+    #[test]
+    // Won't panic because appropriate constructor used for RingElement, but result
+    // may surprise the library developer
+    fn unchecked_dec_nopanic() {
+        let ciph = Ciphertext(Ciphtxt(vec![RingElement::from_i8(65)]));
+
+        let key = Key(RingElement(0));
+        assert_eq!(
+            ShiftCipher::decrypt(&ciph, &key),
+            Message::from_str("n").expect("Test writer should ensure this example does not panic")
+        );
+    }
+
     // Tests with randomly generated keys.
     #[test]
     fn enc_dec_random_keys() {
@@ -392,5 +424,33 @@ mod tests {
             ShiftCipher::decrypt(&ShiftCipher::encrypt(&msg1, &key1), &key2),
             msg1
         )
+    }
+
+    #[test]
+    fn new_key_err() {
+        assert_eq!(
+            Key::from_str("65").unwrap_err(),
+            EncodingError::InvalidKey("65".to_string())
+        );
+        assert_eq!(
+            Key::from_str("").unwrap_err(),
+            EncodingError::InvalidKey("".to_string())
+        );
+        assert_eq!(
+            Key::from_str("-5").unwrap_err(),
+            EncodingError::InvalidKey("-5".to_string())
+        );
+        assert_eq!(
+            Key::from_str("26").unwrap_err(),
+            EncodingError::InvalidKey("26".to_string())
+        );
+        assert_eq!(
+            Key::from_str("asdfas").unwrap_err(),
+            EncodingError::InvalidKey("asdfas".to_string())
+        );
+        assert_eq!(
+            Key::from_str("4s").unwrap_err(),
+            EncodingError::InvalidKey("4s".to_string())
+        );
     }
 }
