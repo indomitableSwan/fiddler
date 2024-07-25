@@ -273,16 +273,6 @@ impl ShiftCipher {
     }
 }
 
-// TODO: Not implemented yet
-/// A custom error type that is returned from [`ShiftCipher::encrypt`].
-#[derive(Copy, Clone, Debug, Default, Eq, Hash, PartialEq)]
-pub struct EncryptionError;
-
-// TODO: not implemented yet
-/// A custom error type that is returned from [`ShiftCipher::decrypt`].
-#[derive(Copy, Clone, Debug, Default, Eq, Hash, PartialEq)]
-pub struct DecryptionError;
-
 #[cfg(test)]
 mod tests {
     use super::*;
