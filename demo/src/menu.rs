@@ -1,6 +1,6 @@
 //! Menus.
-use core::fmt;
 use std::str::FromStr;
+use thiserror::Error;
 
 /// Represents menu functionality.
 pub trait Menu<const N: usize> {
@@ -77,7 +77,7 @@ impl FromStr for MainMenu {
             MainMenu::ENCRYPT_KE => Ok(MainMenu::EncryptKE),
             MainMenu::DECRYPT_KE => Ok(MainMenu::DecryptKE),
             MainMenu::QUIT_KE => Ok(MainMenu::QuitKE),
-            _ => Err(CommandError),
+            _ => Err(CommandError(s.to_string())),
         }
     }
 }
@@ -117,7 +117,7 @@ impl FromStr for ConsentMenu {
         match s {
             ConsentMenu::YES_KE => Ok(ConsentMenu::YesKE),
             ConsentMenu::NO_KE => Ok(ConsentMenu::NoKE),
-            _ => Err(CommandError),
+            _ => Err(CommandError(s.to_string())),
         }
     }
 }
@@ -170,7 +170,7 @@ impl FromStr for DecryptMenu {
             DecryptMenu::KNOWN_KEY_KE => Ok(DecryptMenu::KnownKey),
             DecryptMenu::BRUTE_FORCE_KE => Ok(DecryptMenu::Bruteforce),
             DecryptMenu::QUIT_KE => Ok(DecryptMenu::Quit),
-            _ => Err(CommandError),
+            _ => Err(CommandError(s.to_string())),
         }
     }
 }
@@ -183,10 +183,6 @@ pub struct Command<'a> {
 }
 
 /// The error returned upon failure to parse a [`Command`] from a string.
-pub struct CommandError;
-
-impl fmt::Display for CommandError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "Invalid command")
-    }
-}
+#[derive(Error, Debug)]
+#[error("Invalid command: {0}")]
+pub struct CommandError(String);

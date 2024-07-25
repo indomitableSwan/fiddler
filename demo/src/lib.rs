@@ -1,8 +1,9 @@
 //! The demo libary crate, containing functionality supporting the demo CLI.
-use std::error::Error;
+use anyhow::Result;
 
 pub mod crypto_functionality;
 pub mod menu;
+mod io_helper;
 
 use crate::crypto_functionality::{decrypt, encrypt, make_key};
 use crate::io_helper::process_input;
@@ -15,7 +16,7 @@ use crate::menu::{DecryptMenu, MainMenu, Menu};
 /// - Encrypt a message;
 /// - Decrypt a message;
 /// - Quit the CLI application.
-pub fn menu() -> Result<(), Box<dyn Error>> {
+pub fn menu() -> Result<()> {
     loop {
         // Get menu selection from user
         let command: MainMenu = process_input(MainMenu::print_menu)?;
@@ -46,7 +47,7 @@ pub fn menu() -> Result<(), Box<dyn Error>> {
 /// - Decrypt using a known key;
 /// - Computer-aided brute force attack;
 /// - Quit decryption menu.
-pub fn decryption_menu() -> Result<DecryptMenu, Box<dyn Error>> {
+pub fn decryption_menu() -> Result<DecryptMenu> {
     println!("\nGreat, let's work on decrypting your ciphertext.");
     println!(
         "If you know what key was used to encrypt this message, this should only take one try."
@@ -59,37 +60,3 @@ pub fn decryption_menu() -> Result<DecryptMenu, Box<dyn Error>> {
     Ok(command)
 }
 
-mod io_helper {
-    use std::{error::Error, io, str::FromStr};
-    // TODO: this loop and match statment plus a return line is probably not
-    // idiomatic
-    //
-    /// Processes command line input and converts to type `T` as specified
-    /// by caller. If successful, returns conversion. If not, prints clarifying
-    /// instructions so that the person can try again.
-    pub fn process_input<T, F>(instr: F) -> Result<T, Box<dyn Error>>
-    where
-        T: FromStr,
-        <T as std::str::FromStr>::Err: std::fmt::Display,
-        F: Fn(),
-    {
-        loop {
-            // Print the instructions
-            instr();
-
-            let mut input = String::new();
-
-            io::stdin().read_line(&mut input)?;
-
-            let result: T = match input.trim().parse::<T>() {
-                Ok(txt) => txt,
-                Err(_e) => {
-                    //println!("Error. {}", e);
-                    continue;
-                }
-            };
-
-            return Ok(result);
-        }
-    }
-}

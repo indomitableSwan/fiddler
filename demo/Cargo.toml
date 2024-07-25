@@ -8,3 +8,5 @@ edition = "2021"
 [dependencies]
 classical_crypto = { path = "../classical_crypto"}
 rand = "0.8"
+thiserror = "1"
+anyhow = "1"
