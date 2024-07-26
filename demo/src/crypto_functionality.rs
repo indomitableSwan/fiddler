@@ -4,6 +4,7 @@ use crate::{
     menu::{ConsentMenu, DecryptMenu, Menu},
 };
 use anyhow::{anyhow, Result};
+use std::io::stdin;
 use classical_crypto::{
     shift::{Ciphertext, Key, Message, ShiftCipher},
     CipherTrait, KeyTrait,
@@ -26,7 +27,7 @@ pub fn make_key() -> Result<()> {
         let command: ConsentMenu = process_input(|| {
             println!("\nAre you happy with your key?");
             ConsentMenu::print_menu()
-        })?;
+        }, stdin().lock())?;
 
         match command {
             ConsentMenu::NoKE => continue,
@@ -42,13 +43,13 @@ pub fn make_key() -> Result<()> {
 /// the result.
 pub fn encrypt() -> Result<()> {
     let msg: Message =
-        process_input(|| println!("\nPlease enter the message you want to encrypt:"))?;
+        process_input(|| println!("\nPlease enter the message you want to encrypt:"), stdin().lock())?;
 
     println!("\nNow, do you have a key that was generated uniformly at random that you remember and \nwould like to use? If yes, please enter your key. Otherwise, please pick a fresh key \nuniformly at random from the ring of integers modulo 26 yourself. \n\nYou won't be as good at this as a computer, but if you understand the cryptosystem \nyou are using (something we cryptographers routinely assume about other people, while \npretending that we aren't assuming this), you will probably not pick a key of 0, \nwhich is equivalent to sending your messages \"in the clear\", i.e., unencrypted. Good \nluck! \n");
 
     let key: Key = process_input(|| {
         println!("\nPlease enter a key now. Keys are numbers between 0 and 25 inclusive.")
-    })?;
+    }, stdin().lock())?;
 
     println!("\nYour ciphertext is {}", ShiftCipher::encrypt(&msg, &key));
     println!("\nLook for patterns in your ciphertext. Could you definitively figure out the key and \noriginal plaintext message if you didn't already know it?");
@@ -63,7 +64,7 @@ pub fn decrypt(command: DecryptMenu) -> Result<()> {
         println!(
             "\nEnter your ciphertext. Ciphertexts use characters only from the Latin Alphabet:"
         )
-    })?;
+    }, stdin().lock())?;
 
     // Attempt decryption or stop trying
     match command {
@@ -84,7 +85,7 @@ pub fn chosen_key(ciphertxt: &Ciphertext) -> Result<()> {
     loop {
         let key: Key = process_input(|| {
             println!("\nPlease enter a key now. Keys are numbers between 0 and 25 inclusive.")
-        })?;
+        }, stdin().lock())?;
         match try_decrypt(ciphertxt, key) {
             Ok(_) => break,
             Err(_) => continue,
@@ -117,7 +118,7 @@ pub fn try_decrypt(ciphertxt: &Ciphertext, key: Key) -> Result<()> {
     let command: ConsentMenu = process_input(|| {
         println!("\nAre you happy with this decryption?");
         ConsentMenu::print_menu()
-    })?;
+    }, stdin().lock())?;
 
     match command {
         ConsentMenu::NoKE => Err(anyhow!("try again")),

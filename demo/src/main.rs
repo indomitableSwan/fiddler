@@ -7,5 +7,6 @@ use demo::menu;
 
 fn main() -> Result<()> {
     println!("\nWelcome to the Latin Shift Cipher Demo!");
-    menu().inspect_err(|e| eprintln!("Application error: {e}"))
+    menu()?;
+    Ok(())
 }

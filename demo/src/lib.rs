@@ -1,4 +1,5 @@
 //! The demo libary crate, containing functionality supporting the demo CLI.
+use std::io::stdin;
 use anyhow::Result;
 
 pub mod crypto_functionality;
@@ -19,7 +20,7 @@ use crate::menu::{DecryptMenu, MainMenu, Menu};
 pub fn menu() -> Result<()> {
     loop {
         // Get menu selection from user
-        let command: MainMenu = process_input(MainMenu::print_menu)?;
+        let command: MainMenu = process_input(MainMenu::print_menu, &mut std::io::stdin().lock())?;
 
         // Process menu selection from user
         match command {
@@ -56,6 +57,6 @@ pub fn decryption_menu() -> Result<DecryptMenu> {
     "If not, don't despair. Just guess! On average, you can expect success using this \nsimple brute force attack method after trying 13 keys chosen uniformly at random."
     );
 
-    let command: DecryptMenu = process_input(DecryptMenu::print_menu)?;
+    let command: DecryptMenu = process_input(DecryptMenu::print_menu, stdin().lock())?;
     Ok(command)
 }

@@ -82,6 +82,7 @@ impl FromStr for MainMenu {
     }
 }
 
+#[derive(Debug, PartialEq)]
 /// Represents user assent or dissent.
 pub enum ConsentMenu {
     /// User assents.
