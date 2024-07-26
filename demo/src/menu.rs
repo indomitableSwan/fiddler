@@ -184,6 +184,6 @@ pub struct Command<'a> {
 }
 
 /// The error returned upon failure to parse a [`Command`] from a string.
-#[derive(Error, Debug)]
+#[derive(Error, Debug, PartialEq)]
 #[error("Invalid command: {0}")]
-pub struct CommandError(String);
+pub struct CommandError(pub String);
