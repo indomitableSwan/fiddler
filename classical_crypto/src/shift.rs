@@ -15,6 +15,8 @@ use std::{fmt::Display, str::FromStr};
 // ring of integers mod 26. We do this because we want to force library users to use types specific
 // to the Latin Shift cipher when using the Latin Shift Cipher, even though other ciphers may also
 // (mathematically and under the hood in the implementation) operate on the same underlying types
+// It also lets us to keep more complicated logic about the internal types in one place that is easily reusable and modifiable, while
+// ensuring these simple wrappers stay the same
 #[derive(Clone, Debug, Default, Eq, Hash, PartialEq)]
 pub struct Ciphertext(Ciphtxt);
 
@@ -44,6 +46,8 @@ impl FromIterator<RingElement> for Ciphertext {
 //    specific to the Latin Shift cipher when using the Latin Shift Cipher, even though other
 //    ciphers may also (mathematically and under the hood in the implementation) operate on the same
 //    underlying types
+//    It also lets us to keep more complicated logic about the internal types in one place that is easily reusable and modifiable, while
+// ensuring these simple wrappers stay the same
 // 2. The Rust Book (19.3) offers guidance on using the `Deref` trait in the newtype pattern to automatically implement all methods defined on the inner type for the wrapper type. We do not do this because doing so makes for surprises in the API. Also note that this trick does not give you trait implementations defined on the inner type for the wrapper. See also discussion [`here`](https://rust-unofficial.github.io/patterns/anti_patterns/deref.html)
 #[derive(Clone, Debug, Default, Eq, Hash, PartialEq)]
 pub struct Message(Msg);

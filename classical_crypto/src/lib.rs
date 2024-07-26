@@ -267,10 +267,6 @@ impl fmt::Display for RingElement {
 #[derive(Clone, Debug, Default, Eq, Hash, PartialEq)]
 struct Message(Vec<RingElement>);
 
-/// A ciphertext of arbitrary length.
-#[derive(Clone, Debug, Default, Eq, Hash, PartialEq)]
-struct Ciphertext(Vec<RingElement>);
-
 impl Message {
     /// Create a new message from a string.
     fn new(str: &str) -> Result<Message, EncodingError> {
@@ -308,6 +304,10 @@ impl FromIterator<RingElement> for Message {
         Message(iter.into_iter().collect())
     }
 }
+
+/// A ciphertext of arbitrary length.
+#[derive(Clone, Debug, Default, Eq, Hash, PartialEq)]
+struct Ciphertext(Vec<RingElement>);
 
 /// Parse a ciphertext from a string.
 ///
