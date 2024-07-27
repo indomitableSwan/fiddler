@@ -116,7 +116,8 @@ mod tests {
         assert!(error.is_err());
 
         assert!(match error.unwrap_err() {
-            ProcessInputError::CryptoParseError(e) => e.to_string() == "Invalid Message. Failed to encode the following characters as ring elements: N",
+            ProcessInputError::CryptoParseError(e) => e.to_string()
+                == "Invalid Message. Failed to encode the following characters as ring elements: N",
             _ => false,
         });
     }
@@ -127,7 +128,7 @@ mod tests {
         let error: Result<Ciphertext, ProcessInputError> = process_input(|| {}, &mut mock_reader);
 
         assert!(error.is_err());
-      
+
         assert!(match error.unwrap_err() {
             ProcessInputError::CryptoParseError(e) => e.to_string() == "Invalid Ciphertext. Failed to encode the following characters as ring elements: ;",
             _ => false,
@@ -142,10 +143,12 @@ mod tests {
 
         assert!(error.is_err());
         let error = error.as_ref().unwrap_err();
-        assert_eq!(error.to_string(), "Parse error: Input \"65\" does not represent a valid key");
-        
-        assert!(matches!(error, ProcessInputError::CryptoParseError(_))
-    );
+        assert_eq!(
+            error.to_string(),
+            "Parse error: Input \"65\" does not represent a valid key"
+        );
+
+        assert!(matches!(error, ProcessInputError::CryptoParseError(_)));
     }
 
     // ConsentMenu tests

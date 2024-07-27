@@ -9,10 +9,10 @@ use classical_crypto::{
     CipherTrait, KeyTrait,
 };
 use rand::thread_rng;
-use std::io::BufReader;
+use std::io::BufRead;
 
 /// Creates keys and prints the key to standard output.
-pub fn make_key() -> Result<()> {
+pub fn make_key(mut reader: impl BufRead) -> Result<()> {
     // Set up an rng.
     let mut rng = thread_rng();
 
@@ -23,8 +23,6 @@ pub fn make_key() -> Result<()> {
         println!("\nWe generated your key successfully!.");
         println!("\nWe shouldn't export your key (or say, save it in logs), but we can!");
         println!("Here it is: {}\n", ShiftCipher::insecure_key_export(&key));
-
-        let mut reader = BufReader::new(std::io::stdin());
 
         'inner: loop {
             println!("before asking");
@@ -48,9 +46,7 @@ pub fn make_key() -> Result<()> {
 
 /// Takes in a key and a message and encrypts, then prints
 /// the result.
-pub fn encrypt() -> Result<()> {
-    let mut reader = BufReader::new(std::io::stdin());
-
+pub fn encrypt(mut reader: impl BufRead) -> Result<()> {
     let msg: Message = process_input(
         || println!("\nPlease enter the message you want to encrypt:"),
         &mut reader,
@@ -71,9 +67,7 @@ pub fn encrypt() -> Result<()> {
 
 /// Takes in a ciphertext and attempts to decrypt and
 /// print result.
-pub fn decrypt(command: DecryptMenu) -> Result<()> {
-    let mut reader = BufReader::new(std::io::stdin());
-
+pub fn decrypt(command: DecryptMenu, mut reader: impl BufRead) -> Result<()> {
     let ciphertxt: Ciphertext = process_input(
         || {
             println!(
@@ -86,11 +80,11 @@ pub fn decrypt(command: DecryptMenu) -> Result<()> {
     // Attempt decryption or stop trying
     match command {
         DecryptMenu::Bruteforce => {
-            computer_chosen_key(&ciphertxt)?;
+            computer_chosen_key(&ciphertxt, &mut reader)?;
             Ok(())
         }
         DecryptMenu::KnownKey => {
-            chosen_key(&ciphertxt)?;
+            chosen_key(&ciphertxt, &mut reader)?;
             Ok(())
         }
         DecryptMenu::Quit => Ok(()),
@@ -98,15 +92,13 @@ pub fn decrypt(command: DecryptMenu) -> Result<()> {
 }
 
 /// Gets key from stdin and attempts to decrypt.
-pub fn chosen_key(ciphertxt: &Ciphertext) -> Result<()> {
+pub fn chosen_key(ciphertxt: &Ciphertext, mut reader: impl BufRead) -> Result<()> {
     loop {
-        let mut reader = BufReader::new(std::io::stdin());
-
         let key: Key = process_input(
             || println!("\nPlease enter a key now. Keys are numbers between 0 and 25 inclusive."),
             &mut reader,
         )?;
-        match try_decrypt(ciphertxt, key) {
+        match try_decrypt(ciphertxt, key, &mut reader) {
             Ok(_) => break,
             Err(_) => continue,
         }
@@ -115,12 +107,12 @@ pub fn chosen_key(ciphertxt: &Ciphertext) -> Result<()> {
 }
 
 /// Has computer choose key uniformly at random and attempts to decrypt.
-pub fn computer_chosen_key(ciphertxt: &Ciphertext) -> Result<()> {
+pub fn computer_chosen_key(ciphertxt: &Ciphertext, mut reader: impl BufRead) -> Result<()> {
     let mut rng = thread_rng();
 
     loop {
         let key = Key::new(&mut rng);
-        match try_decrypt(ciphertxt, key) {
+        match try_decrypt(ciphertxt, key, &mut reader) {
             Ok(_) => break,
             Err(_) => continue,
         }
@@ -129,13 +121,11 @@ pub fn computer_chosen_key(ciphertxt: &Ciphertext) -> Result<()> {
 }
 
 /// Decrypt with given key and ask whether to try again or not.
-pub fn try_decrypt(ciphertxt: &Ciphertext, key: Key) -> Result<()> {
+pub fn try_decrypt(ciphertxt: &Ciphertext, key: Key, mut reader: impl BufRead) -> Result<()> {
     println!(
         "\nYour computed plaintext is {}\n",
         ShiftCipher::decrypt(ciphertxt, &key)
     );
-
-    let mut reader = BufReader::new(std::io::stdin());
 
     let command: ConsentMenu = process_input(
         || {

@@ -1,7 +1,9 @@
 //! The demo libary crate, containing functionality supporting the demo CLI.
-// TODO: handle errors properly instead of allowing panicking (partially completed, but many suboptions from main menu will still panic if user inputs something invalid)
+// TODO: handle errors properly instead of allowing panicking (partially
+// completed, but many suboptions from main menu will still panic if user inputs
+// something invalid)
 use anyhow::Result;
-use std::io::BufReader;
+use std::io::{BufRead, BufReader};
 
 pub mod crypto_functionality;
 mod io_helper;
@@ -30,15 +32,15 @@ pub fn menu() -> Result<()> {
                 // Process menu selection from user
 
                 // Generate a key
-                Ok(MainMenu::GenKE) => make_key()?,
+                Ok(MainMenu::GenKE) => make_key(&mut reader)?,
                 // Encrypt a message
-                Ok(MainMenu::EncryptKE) => encrypt()?,
+                Ok(MainMenu::EncryptKE) => encrypt(&mut reader)?,
                 // Attempt to decrypt a ciphertext
                 Ok(MainMenu::DecryptKE) => {
                     // Print decryption menu and get user selection
-                    let command = decryption_menu()?;
+                    let command = decryption_menu(&mut reader)?;
                     // Proceed with decryption as specified by user
-                    decrypt(command)?;
+                    decrypt(command, &mut reader)?;
                 }
                 // Quit the CLI application
                 Ok(MainMenu::QuitKE) => break Ok(()),
@@ -55,7 +57,7 @@ pub fn menu() -> Result<()> {
 /// - Decrypt using a known key;
 /// - Computer-aided brute force attack;
 /// - Quit decryption menu.
-pub fn decryption_menu() -> Result<DecryptMenu> {
+pub fn decryption_menu(mut reader: impl BufRead) -> Result<DecryptMenu> {
     println!("\nGreat, let's work on decrypting your ciphertext.");
     println!(
         "If you know what key was used to encrypt this message, this should only take one try."
@@ -63,8 +65,6 @@ pub fn decryption_menu() -> Result<DecryptMenu> {
     println!(
     "If not, don't despair. Just guess! On average, you can expect success using this \nsimple brute force attack method after trying 13 keys chosen uniformly at random."
     );
-
-    let mut reader = BufReader::new(std::io::stdin());
 
     let command: DecryptMenu = process_input(DecryptMenu::print_menu, &mut reader)?;
     Ok(command)
