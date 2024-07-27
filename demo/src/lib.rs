@@ -1,6 +1,6 @@
 //! The demo libary crate, containing functionality supporting the demo CLI.
 use anyhow::Result;
-use std::io::{stdin, BufReader};
+use std::io::BufReader;
 
 pub mod crypto_functionality;
 mod io_helper;

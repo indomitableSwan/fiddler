@@ -87,33 +87,27 @@ mod tests {
     #[test]
     fn assent() {
         let mut mock_reader = MockIoReader::new("y");
-        let command: ConsentMenu = process_input(
-            || {
-                println! {"test"}
-            },
-            &mut mock_reader,
-        )
-        .unwrap();
+        let command: ConsentMenu = process_input(|| {}, &mut mock_reader).unwrap();
         assert_eq!(command, ConsentMenu::YesKE)
     }
 
-    // #[test]
-    // fn dissent() {
-    //     let input: &[u8] = b"n";
-    //     let command: ConsentMenu = process_input(|| {}, input).unwrap();
-    //     assert_eq!(command, ConsentMenu::NoKE)
-    // }
+    #[test]
+    fn dissent() {
+        let mut mock_reader = MockIoReader::new("n");
+        let command: ConsentMenu = process_input(|| {}, &mut mock_reader).unwrap();
+        assert_eq!(command, ConsentMenu::NoKE)
+    }
 
-    // #[test]
-    // fn consent_error() {
-    //     let input: &[u8] = b"N";
-    //     let error: anyhow::Error =
-    //         process_input::<ConsentMenu, CommandError, _, &[u8]>(|| {},
-    // input).unwrap_err();
+    #[test]
+    fn consent_error() {
+        let mut mock_reader = MockIoReader::new("N");
+        let error: Result<ConsentMenu, ProcessInputError> = process_input(|| {}, &mut mock_reader);
 
-    //     assert_eq!(
-    //         *error.downcast_ref::<CommandError>().unwrap(),
-    //         CommandError("N".to_string())
-    //     )
-    // }
+        assert!(error.is_err());
+
+        assert!(match error.unwrap_err() {
+            ProcessInputError::CommandParseError(e) => e == *"N",
+            _ => false,
+        });
+    }
 }

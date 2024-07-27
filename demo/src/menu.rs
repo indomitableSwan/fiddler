@@ -1,7 +1,6 @@
 //! Menus.
 use crate::io_helper::ProcessInputError;
 use std::str::FromStr;
-use thiserror::Error;
 
 /// Represents menu functionality.
 pub trait Menu<const N: usize> {

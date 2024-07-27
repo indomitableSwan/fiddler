@@ -9,7 +9,7 @@ use classical_crypto::{
     CipherTrait, KeyTrait,
 };
 use rand::thread_rng;
-use std::io::{stdin, BufReader};
+use std::io::BufReader;
 
 /// Creates keys and prints the key to standard output.
 pub fn make_key() -> Result<()> {
