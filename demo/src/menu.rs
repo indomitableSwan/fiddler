@@ -18,6 +18,7 @@ pub trait Menu<const N: usize> {
 pub struct MenuArray<const N: usize>([Command<'static>; N]);
 
 /// Represents the program's main menu options.
+#[derive(Debug, PartialEq)]
 pub enum MainMenu {
     /// User wants to generate a key.
     GenKE,
@@ -124,6 +125,7 @@ impl FromStr for ConsentMenu {
 }
 
 /// Represents the decryption menu.
+#[derive(Debug, PartialEq)]
 pub enum DecryptMenu {
     /// User knows the key.
     KnownKey,
