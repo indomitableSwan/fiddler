@@ -6,23 +6,36 @@
 //!   abstract over types that implement the [`std::io::BufRead`] trait in order
 //!   to test read behavior.
 
-use crate::menu::CommandError;
-use anyhow::{anyhow, Result};
+use classical_crypto::errors::EncodingError;
 use std::{io, str::FromStr};
+use thiserror::Error;
 
-// TODO: this loop and match statment plus a return line is probably not
-// idiomatic
-//
+// use anyhow::{anyhow, Result};
+
+#[derive(Error, Debug)]
+pub enum ProcessInputError {
+    #[error("Error reading input: {0}")]
+    InputRead(#[from] io::Error),
+
+    #[error("Parse error: {0}")]
+    CryptoParseError(#[from] EncodingError),
+
+    /// The error returned upon failure to parse a [`Command`] from a string.
+    #[error("Invalid command: {0}")]
+    CommandParseError(String),
+}
+
 /// Prints instructions and then processes command line input and converts to
 /// type `T` as specified by caller. If successful, returns conversion.
 /// Otherwise, returns an error.
-pub fn process_input<T, E, F, R>(instr: F, reader: &mut R) -> Result<T>
+pub fn process_input<T, E, F, R>(instr: F, reader: &mut R) -> Result<T, ProcessInputError>
 where
     T: FromStr<Err = E>,
     // TODO: Understand this
-    E: std::error::Error + std::marker::Send + std::marker::Sync + 'static,
+    E: std::error::Error,
     F: Fn(),
-    R: io::BufRead, // TODO: or BufRead?
+    R: io::BufRead,
+    ProcessInputError: std::convert::From<E>,
 {
     // Print the instructions
     instr();
@@ -31,18 +44,15 @@ where
 
     reader.read_line(&mut input)?;
 
-    match input.trim().parse::<T>() {
-        Ok(t) => Ok(t),
-        Err(e) => Err(e.into()),
-    }
+    input.trim().parse::<T>().map_err(|e| e.into())
 }
 
 #[cfg(test)]
 mod tests {
     // TODO: Why is this giving a warning?
     use super::*;
-    use std::io::{Read, BufRead};
     use crate::menu::ConsentMenu;
+    use std::io::{BufRead, Read};
 
     struct MockIoReader {
         mock_input: String,
@@ -50,7 +60,9 @@ mod tests {
 
     impl MockIoReader {
         fn new(mock_input: &str) -> Self {
-            Self { mock_input: mock_input.to_string() }
+            Self {
+                mock_input: mock_input.to_string(),
+            }
         }
     }
 
@@ -75,7 +87,13 @@ mod tests {
     #[test]
     fn assent() {
         let mut mock_reader = MockIoReader::new("y");
-        let command: ConsentMenu = process_input(|| {println!{"test"}}, &mut mock_reader).unwrap();
+        let command: ConsentMenu = process_input(
+            || {
+                println! {"test"}
+            },
+            &mut mock_reader,
+        )
+        .unwrap();
         assert_eq!(command, ConsentMenu::YesKE)
     }
 
@@ -90,7 +108,8 @@ mod tests {
     // fn consent_error() {
     //     let input: &[u8] = b"N";
     //     let error: anyhow::Error =
-    //         process_input::<ConsentMenu, CommandError, _, &[u8]>(|| {}, input).unwrap_err();
+    //         process_input::<ConsentMenu, CommandError, _, &[u8]>(|| {},
+    // input).unwrap_err();
 
     //     assert_eq!(
     //         *error.downcast_ref::<CommandError>().unwrap(),

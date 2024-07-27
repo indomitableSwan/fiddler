@@ -18,32 +18,32 @@ use crate::menu::{DecryptMenu, MainMenu, Menu};
 /// - Decrypt a message;
 /// - Quit the CLI application.
 pub fn menu() -> Result<()> {
-   loop {
+    loop {
         {
-        let mut reader = BufReader::new(std::io::stdin());
+            let mut reader = BufReader::new(std::io::stdin());
 
-        // Get menu selection from user
-        let command = process_input(MainMenu::print_menu, &mut reader);
-        
-        match command {
-            // Process menu selection from user
+            // Get menu selection from user
+            let command = process_input(MainMenu::print_menu, &mut reader);
 
-            // Generate a key
-            Ok(MainMenu::GenKE) => make_key()?,
-            // Encrypt a message
-            Ok(MainMenu::EncryptKE) => encrypt()?,
-            // Attempt to decrypt a ciphertext
-            Ok(MainMenu::DecryptKE) => {
-                // Print decryption menu and get user selection
-                let command = decryption_menu()?;
-                // Proceed with decryption as specified by user
-                decrypt(command)?;
-            }
-            // Quit the CLI application
-            Ok(MainMenu::QuitKE) => break Ok(()),
-            Err(_) => continue,
-        };
-    }
+            match command {
+                // Process menu selection from user
+
+                // Generate a key
+                Ok(MainMenu::GenKE) => make_key()?,
+                // Encrypt a message
+                Ok(MainMenu::EncryptKE) => encrypt()?,
+                // Attempt to decrypt a ciphertext
+                Ok(MainMenu::DecryptKE) => {
+                    // Print decryption menu and get user selection
+                    let command = decryption_menu()?;
+                    // Proceed with decryption as specified by user
+                    decrypt(command)?;
+                }
+                // Quit the CLI application
+                Ok(MainMenu::QuitKE) => break Ok(()),
+                Err(_) => continue,
+            };
+        }
     }
 }
 

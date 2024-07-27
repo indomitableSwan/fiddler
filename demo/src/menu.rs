@@ -1,4 +1,5 @@
 //! Menus.
+use crate::io_helper::ProcessInputError;
 use std::str::FromStr;
 use thiserror::Error;
 
@@ -69,7 +70,7 @@ impl MainMenu {
 }
 
 impl FromStr for MainMenu {
-    type Err = CommandError;
+    type Err = ProcessInputError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
@@ -77,7 +78,7 @@ impl FromStr for MainMenu {
             MainMenu::ENCRYPT_KE => Ok(MainMenu::EncryptKE),
             MainMenu::DECRYPT_KE => Ok(MainMenu::DecryptKE),
             MainMenu::QUIT_KE => Ok(MainMenu::QuitKE),
-            _ => Err(CommandError(s.to_string())),
+            _ => Err(ProcessInputError::CommandParseError(s.to_string())),
         }
     }
 }
@@ -112,13 +113,13 @@ impl ConsentMenu {
 }
 
 impl FromStr for ConsentMenu {
-    type Err = CommandError;
+    type Err = ProcessInputError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
             ConsentMenu::YES_KE => Ok(ConsentMenu::YesKE),
             ConsentMenu::NO_KE => Ok(ConsentMenu::NoKE),
-            _ => Err(CommandError(s.to_string())),
+            _ => Err(ProcessInputError::CommandParseError(s.to_string())),
         }
     }
 }
@@ -164,14 +165,14 @@ impl DecryptMenu {
 }
 
 impl FromStr for DecryptMenu {
-    type Err = CommandError;
+    type Err = ProcessInputError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
             DecryptMenu::KNOWN_KEY_KE => Ok(DecryptMenu::KnownKey),
             DecryptMenu::BRUTE_FORCE_KE => Ok(DecryptMenu::Bruteforce),
             DecryptMenu::QUIT_KE => Ok(DecryptMenu::Quit),
-            _ => Err(CommandError(s.to_string())),
+            _ => Err(ProcessInputError::CommandParseError(s.to_string())),
         }
     }
 }
@@ -182,8 +183,3 @@ pub struct Command<'a> {
     key: &'a str,
     menu_msg: &'a str,
 }
-
-/// The error returned upon failure to parse a [`Command`] from a string.
-#[derive(Error, Debug, PartialEq)]
-#[error("Invalid command: {0}")]
-pub struct CommandError(pub String);
