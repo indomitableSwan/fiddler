@@ -5,12 +5,11 @@
 //! - Then we can test the library! This is a little tricky because we need to
 //!   abstract over types that implement the [`std::io::BufRead`] trait in order
 //!   to test read behavior.
+// TODO: Test stdout behavior
 
 use classical_crypto::errors::EncodingError;
 use std::{io, str::FromStr};
 use thiserror::Error;
-
-// use anyhow::{anyhow, Result};
 
 #[derive(Error, Debug)]
 pub enum ProcessInputError {
