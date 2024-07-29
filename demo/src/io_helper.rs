@@ -30,13 +30,14 @@ pub enum ProcessInputError {
 pub fn process_input<T, E, F, R>(instr: F, reader: &mut R) -> Result<T, ProcessInputError>
 where
     T: FromStr<Err = E>,
-    // TODO: Understand this
     E: std::error::Error,
+    // TODO: understand the `Fn` trait better
     F: Fn(),
     R: io::BufRead,
     ProcessInputError: std::convert::From<E>,
 {
     // Print the instructions
+    // TODO Note: this is uhmm, obviously more general than that
     instr();
 
     let mut input = String::new();

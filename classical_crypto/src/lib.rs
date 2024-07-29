@@ -308,7 +308,6 @@ impl FromIterator<RingElement> for Message {
 /// A ciphertext of arbitrary length.
 #[derive(Clone, Debug, Default, Eq, Hash, PartialEq)]
 struct Ciphertext(Vec<RingElement>);
-
 /// Parse a ciphertext from a string.
 ///
 /// # Errors
