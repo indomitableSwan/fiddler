@@ -3,7 +3,7 @@ use crate::io_helper::ProcessInputError;
 use std::str::FromStr;
 
 /// Represents menu functionality.
-pub trait Menu<const N: usize> {
+pub trait Menu<const N: usize>: FromStr {
     fn menu_array() -> MenuArray<N>;
 
     fn print_menu() {
