@@ -25,7 +25,6 @@ pub fn make_key(mut reader: impl BufRead) -> Result<()> {
         println!("Here it is: {}\n", ShiftCipher::insecure_key_export(&key));
 
         'inner: loop {
-            println!("before asking");
             match process_input(
                 || {
                     println!("\nAre you happy with your key?");
