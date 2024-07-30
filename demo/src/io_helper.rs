@@ -32,7 +32,7 @@ where
     T: FromStr<Err = E>,
     E: std::error::Error,
     // TODO: understand the `Fn` trait better
-    F: Fn(),
+    F: FnOnce(),
     R: io::BufRead,
     ProcessInputError: std::convert::From<E>,
 {
@@ -48,6 +48,10 @@ where
 }
 
 // TODO: Is this a good place for a macro? These tests are _very_ repetitive.
+// Test notes: these tests test `process_input`, which converts a user input to
+// a prespecified type, which are of two kinds in our demo
+// - types inherited from the classical_crypto library,
+// - commands
 #[cfg(test)]
 mod tests {
     use classical_crypto::shift::{Ciphertext, Key, Message};
