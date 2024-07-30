@@ -1,10 +1,12 @@
 //! Utility function to help obtain a command from user via CLI.
 //!
-//! Note how we test the CLI:
-//! - First we divide the crate into a library and a binary
-//! - Then we can test the library! This is a little tricky because we need to
-//!   abstract over types that implement the [`std::io::BufRead`] trait in order
-//!   to test read behavior.
+// Note how we test the CLI:
+// - First we divide the crate into a library and a binary
+// - Then we can test the library! This is a little tricky because we need to
+//   abstract over types that implement the [`std::io::BufRead`] trait in order
+//   to test read behavior.
+// 
+// This makes the code more complex and less understandable, so there is a testing tradeoff here. If we also want to test stdout behavior, we would have to remove any println! functionality in the code base and abstract over a generic that implements the [`std::io::Write`] method
 // TODO: Test stdout behavior
 
 use classical_crypto::errors::EncodingError;
@@ -32,7 +34,7 @@ where
     T: FromStr<Err = E>,
     E: std::error::Error,
     // TODO: understand the `Fn` trait better
-    F: FnOnce(),
+    F: Fn(),
     R: io::BufRead,
     ProcessInputError: std::convert::From<E>,
 {
