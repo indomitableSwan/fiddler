@@ -4,10 +4,10 @@
 // - Then we can test the library! This is a little tricky because we need to
 //   abstract over types that implement [`std::io::BufRead`] in order to test
 //   read behavior and types that implement [`std::io::Write`] to test write
-//   behavior.
+//   behavior. This decouples the code from stdin and stdout.
 //
 // This makes the code more complex and less understandable, so there is a
-// tradeoff here between readability and testability. 
+// tradeoff here between readability and testability.
 
 use anyhow::Result;
 use classical_crypto::errors::EncodingError;
@@ -60,18 +60,34 @@ mod tests {
     use classical_crypto::shift::{Ciphertext, Key, Message};
 
     use super::*;
-    use crate::menu::{ConsentMenu, DecryptMenu, MainMenu};
-    use std::io::{BufRead, Read};
+    use crate::menu::{ConsentMenu, DecryptMenu, MainMenu, Menu};
+    use core::str;
+    use std::io::{BufRead, Read, Write};
 
     // Create a mock object to test reading from `stdin`
+    #[derive(Debug)]
     struct MockIoReader {
         mock_input: String,
+    }
+
+    // Create a mock object to test writing to `stdout`
+    #[derive(Debug)]
+    struct MockIoWriter {
+        mock_output: String,
     }
 
     impl MockIoReader {
         fn new(mock_input: &str) -> Self {
             Self {
                 mock_input: mock_input.to_string(),
+            }
+        }
+    }
+
+    impl MockIoWriter {
+        fn new() -> Self {
+            Self {
+                mock_output: "".to_string(),
             }
         }
     }
@@ -94,10 +110,24 @@ mod tests {
         }
     }
 
+    impl Write for MockIoWriter {
+        fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
+            self.mock_output.push_str(str::from_utf8(buf).unwrap());
+            Ok(buf.len())
+        }
+
+        // Not using this
+        fn flush(&mut self) -> io::Result<()> {
+            Ok(())
+        }
+    }
+
     // EncodingError tests
     #[test]
     fn ciphertext() {
         let mut mock_reader = MockIoReader::new("AFDSDFE");
+        //let mut mock_stdout = Vec::new();
+
         let command: Ciphertext = process_input(|| Ok(()), &mut mock_reader).unwrap();
         assert_eq!(command, Ciphertext::from_str("AFDSDFE").unwrap())
     }
@@ -228,11 +258,19 @@ mod tests {
 
     // Test MainMenu
     //
+    // Here we have an example read and write test
     #[test]
     fn main_gen_key() {
         let mut mock_reader = MockIoReader::new("1");
-        let command: MainMenu = process_input(|| Ok(()), &mut mock_reader).unwrap();
-        assert_eq!(command, MainMenu::GenKE)
+        let mut mock_writer = MockIoWriter::new();
+        dbg!(&mock_writer);
+
+        let command: MainMenu =
+            process_input(|| MainMenu::print_menu(&mut mock_writer), &mut mock_reader).unwrap();
+        // Test reads
+        assert_eq!(command, MainMenu::GenKE);
+        // Test writes
+        assert_eq!(mock_writer.mock_output, "\nPlease enter one of the following options:\n1: Generate a key.\n2: Encrypt a message.\n3: Decrypt a ciphertext.\n4: Quit\n")
     }
     //
     #[test]
