@@ -472,7 +472,7 @@ mod tests {
     fn ring_elmt_encoding_panic() {
         // Sometimes you google to find out how to prevent things like backtraces
         // appearing in your output for tests that should panic
-        let f = |_: &std::panic::PanicInfo| {};
+        let f = |_: &std::panic::PanicHookInfo| {};
         std::panic::set_hook(Box::new(f));
         let _fail = RingElement(26).to_char();
     }
