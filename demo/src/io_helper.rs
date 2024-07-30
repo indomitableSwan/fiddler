@@ -2,14 +2,12 @@
 // Note how we test the CLI:
 // - First we divide the crate into a library and a binary
 // - Then we can test the library! This is a little tricky because we need to
-//   abstract over types that implement the [`std::io::BufRead`] trait in order
-//   to test read behavior.
+//   abstract over types that implement [`std::io::BufRead`] in order to test
+//   read behavior and types that implement [`std::io::Write`] to test write
+//   behavior.
 //
 // This makes the code more complex and less understandable, so there is a
-// testing tradeoff here. If we also want to test stdout behavior, we would have
-// to remove any println! functionality in the code base and abstract over a
-// generic that implements the [`std::io::Write`] method TODO: Test stdout
-// behavior
+// tradeoff here between readability and testability. 
 
 use anyhow::Result;
 use classical_crypto::errors::EncodingError;
