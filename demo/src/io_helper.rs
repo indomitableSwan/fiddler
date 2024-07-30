@@ -8,6 +8,9 @@
 //
 // This makes the code more complex and less understandable, so there is a
 // tradeoff here between readability and testability.
+//
+// Notes: we don't exhaustively test writes here, we tested printing the main
+// menu with user selecting to generate a key in
 
 use anyhow::Result;
 use classical_crypto::errors::EncodingError;
@@ -263,7 +266,6 @@ mod tests {
     fn main_gen_key() {
         let mut mock_reader = MockIoReader::new("1");
         let mut mock_writer = MockIoWriter::new();
-        dbg!(&mock_writer);
 
         let command: MainMenu =
             process_input(|| MainMenu::print_menu(&mut mock_writer), &mut mock_reader).unwrap();
