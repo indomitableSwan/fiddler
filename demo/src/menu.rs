@@ -1,16 +1,17 @@
 //! Menus.
 use crate::io_helper::ProcessInputError;
-use std::str::FromStr;
+use std::{io::Write, str::FromStr};
 
 /// Represents menu functionality.
 pub trait Menu<const N: usize>: FromStr {
     fn menu_array() -> MenuArray<N>;
 
-    fn print_menu() {
-        println!("\nPlease enter one of the following options:");
+    fn print_menu(mut writer: impl Write) -> std::io::Result<()> {
+        writeln!(writer, "\nPlease enter one of the following options:")?;
         for item in Self::menu_array().0 {
-            println!("{}: {}", item.key, item.menu_msg)
+            writeln!(writer, "{}: {}", item.key, item.menu_msg)?
         }
+        Ok(())
     }
 }
 

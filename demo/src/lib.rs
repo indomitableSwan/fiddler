@@ -3,7 +3,7 @@
 // completed, but many suboptions from main menu will still panic if user inputs
 // something invalid)
 use anyhow::Result;
-use std::io::{BufRead, BufReader};
+use std::io::{BufRead, Write};
 
 pub mod crypto_functionality;
 mod io_helper;
@@ -20,27 +20,25 @@ use crate::menu::{DecryptMenu, MainMenu, Menu};
 /// - Encrypt a message;
 /// - Decrypt a message;
 /// - Quit the CLI application.
-pub fn menu() -> Result<()> {
+pub fn menu(mut reader: impl BufRead, mut writer: impl Write) -> Result<()> {
     loop {
         {
-            let mut reader = BufReader::new(std::io::stdin());
-
             // Get menu selection from user
-            let command = process_input(MainMenu::print_menu, &mut reader);
+            let command = process_input(|| MainMenu::print_menu(writer.by_ref()), &mut reader);
 
             match command {
                 // Process menu selection from user
 
                 // Generate a key
-                Ok(MainMenu::GenKE) => make_key(&mut reader)?,
+                Ok(MainMenu::GenKE) => make_key(&mut reader, writer.by_ref())?,
                 // Encrypt a message
-                Ok(MainMenu::EncryptKE) => encrypt(&mut reader)?,
+                Ok(MainMenu::EncryptKE) => encrypt(&mut reader, writer.by_ref())?,
                 // Attempt to decrypt a ciphertext
                 Ok(MainMenu::DecryptKE) => {
                     // Print decryption menu and get user selection
-                    let command = decryption_menu(&mut reader)?;
+                    let command = decryption_menu(&mut reader, writer.by_ref())?;
                     // Proceed with decryption as specified by user
-                    decrypt(command, &mut reader)?;
+                    decrypt(command, &mut reader, writer.by_ref())?;
                 }
                 // Quit the CLI application
                 Ok(MainMenu::QuitKE) => break Ok(()),
@@ -57,7 +55,7 @@ pub fn menu() -> Result<()> {
 /// - Decrypt using a known key;
 /// - Computer-aided brute force attack;
 /// - Quit decryption menu.
-pub fn decryption_menu(mut reader: impl BufRead) -> Result<DecryptMenu> {
+pub fn decryption_menu(mut reader: impl BufRead, mut writer: impl Write) -> Result<DecryptMenu> {
     println!("\nGreat, let's work on decrypting your ciphertext.");
     println!(
         "If you know what key was used to encrypt this message, this should only take one try."
@@ -66,6 +64,7 @@ pub fn decryption_menu(mut reader: impl BufRead) -> Result<DecryptMenu> {
     "If not, don't despair. Just guess! On average, you can expect success using this \nsimple brute force attack method after trying 13 keys chosen uniformly at random."
     );
 
-    let command: DecryptMenu = process_input(DecryptMenu::print_menu, &mut reader)?;
+    let command: DecryptMenu =
+        process_input(|| DecryptMenu::print_menu(writer.by_ref()), &mut reader)?;
     Ok(command)
 }

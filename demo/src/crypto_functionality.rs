@@ -9,10 +9,10 @@ use classical_crypto::{
     CipherTrait, KeyTrait,
 };
 use rand::thread_rng;
-use std::io::BufRead;
+use std::io::{BufRead, Write};
 
 /// Creates keys and prints the key to standard output.
-pub fn make_key(mut reader: impl BufRead) -> Result<()> {
+pub fn make_key(mut reader: impl BufRead, mut writer: impl Write) -> Result<()> {
     // Set up an rng.
     let mut rng = thread_rng();
 
@@ -26,9 +26,9 @@ pub fn make_key(mut reader: impl BufRead) -> Result<()> {
 
         'inner: loop {
             match process_input(
-                || {
-                    println!("\nAre you happy with your key?");
-                    ConsentMenu::print_menu();
+                || -> Result<(), std::io::Error> {
+                    writeln!(writer, "\nAre you happy with your key?")?;
+                    ConsentMenu::print_menu(writer.by_ref())
                 },
                 &mut reader,
             ) {
@@ -45,31 +45,45 @@ pub fn make_key(mut reader: impl BufRead) -> Result<()> {
 
 /// Takes in a key and a message and encrypts, then prints
 /// the result.
-pub fn encrypt(mut reader: impl BufRead) -> Result<()> {
+pub fn encrypt(mut reader: impl BufRead, mut writer: impl Write) -> Result<()> {
     let msg: Message = process_input(
-        || println!("\nPlease enter the message you want to encrypt:"),
+        || writeln!(writer, "\nPlease enter the message you want to encrypt:"),
         &mut reader,
     )?;
 
     println!("\nNow, do you have a key that was generated uniformly at random that you remember and \nwould like to use? If yes, please enter your key. Otherwise, please pick a fresh key \nuniformly at random from the ring of integers modulo 26 yourself. \n\nYou won't be as good at this as a computer, but if you understand the cryptosystem \nyou are using (something we cryptographers routinely assume about other people, while \npretending that we aren't assuming this), you will probably not pick a key of 0, \nwhich is equivalent to sending your messages \"in the clear\", i.e., unencrypted. Good \nluck! \n");
 
     let key: Key = process_input(
-        || println!("\nPlease enter a key now. Keys are numbers between 0 and 25 inclusive."),
+        || {
+            writeln!(
+                writer,
+                "\nPlease enter a key now. Keys are numbers between 0 and 25 inclusive."
+            )
+        },
         &mut reader,
     )?;
 
-    println!("\nYour ciphertext is {}", ShiftCipher::encrypt(&msg, &key));
-    println!("\nLook for patterns in your ciphertext. Could you definitively figure out the key and \noriginal plaintext message if you didn't already know it?");
+    writeln!(
+        writer,
+        "\nYour ciphertext is {}",
+        ShiftCipher::encrypt(&msg, &key)
+    )?;
+    writeln!(writer, "\nLook for patterns in your ciphertext. Could you definitively figure out the key and \noriginal plaintext message if you didn't already know it?")?;
 
     Ok(())
 }
 
 /// Takes in a ciphertext and attempts to decrypt and
 /// print result.
-pub fn decrypt(command: DecryptMenu, mut reader: impl BufRead) -> Result<()> {
+pub fn decrypt(
+    command: DecryptMenu,
+    mut reader: impl BufRead,
+    mut writer: impl Write,
+) -> Result<()> {
     let ciphertxt: Ciphertext = process_input(
         || {
-            println!(
+            writeln!(
+                writer,
                 "\nEnter your ciphertext. Ciphertexts use characters only from the Latin Alphabet:"
             )
         },
@@ -79,11 +93,11 @@ pub fn decrypt(command: DecryptMenu, mut reader: impl BufRead) -> Result<()> {
     // Attempt decryption or stop trying
     match command {
         DecryptMenu::Bruteforce => {
-            computer_chosen_key(&ciphertxt, &mut reader)?;
+            computer_chosen_key(&ciphertxt, &mut reader, writer)?;
             Ok(())
         }
         DecryptMenu::KnownKey => {
-            chosen_key(&ciphertxt, &mut reader)?;
+            chosen_key(&ciphertxt, &mut reader, writer)?;
             Ok(())
         }
         DecryptMenu::Quit => Ok(()),
@@ -91,13 +105,22 @@ pub fn decrypt(command: DecryptMenu, mut reader: impl BufRead) -> Result<()> {
 }
 
 /// Gets key from stdin and attempts to decrypt.
-pub fn chosen_key(ciphertxt: &Ciphertext, mut reader: impl BufRead) -> Result<()> {
+pub fn chosen_key(
+    ciphertxt: &Ciphertext,
+    mut reader: impl BufRead,
+    mut writer: impl Write,
+) -> Result<()> {
     loop {
         let key: Key = process_input(
-            || println!("\nPlease enter a key now. Keys are numbers between 0 and 25 inclusive."),
+            || {
+                writeln!(
+                    writer,
+                    "\nPlease enter a key now. Keys are numbers between 0 and 25 inclusive."
+                )
+            },
             &mut reader,
         )?;
-        match try_decrypt(ciphertxt, key, &mut reader) {
+        match try_decrypt(ciphertxt, key, &mut reader, writer.by_ref()) {
             Ok(_) => break,
             Err(_) => continue,
         }
@@ -106,12 +129,16 @@ pub fn chosen_key(ciphertxt: &Ciphertext, mut reader: impl BufRead) -> Result<()
 }
 
 /// Has computer choose key uniformly at random and attempts to decrypt.
-pub fn computer_chosen_key(ciphertxt: &Ciphertext, mut reader: impl BufRead) -> Result<()> {
+pub fn computer_chosen_key(
+    ciphertxt: &Ciphertext,
+    mut reader: impl BufRead,
+    mut writer: impl Write,
+) -> Result<()> {
     let mut rng = thread_rng();
 
     loop {
         let key = Key::new(&mut rng);
-        match try_decrypt(ciphertxt, key, &mut reader) {
+        match try_decrypt(ciphertxt, key, &mut reader, writer.by_ref()) {
             Ok(_) => break,
             Err(_) => continue,
         }
@@ -120,7 +147,12 @@ pub fn computer_chosen_key(ciphertxt: &Ciphertext, mut reader: impl BufRead) -> 
 }
 
 /// Decrypt with given key and ask whether to try again or not.
-pub fn try_decrypt(ciphertxt: &Ciphertext, key: Key, mut reader: impl BufRead) -> Result<()> {
+pub fn try_decrypt(
+    ciphertxt: &Ciphertext,
+    key: Key,
+    mut reader: impl BufRead,
+    mut writer: impl Write,
+) -> Result<()> {
     println!(
         "\nYour computed plaintext is {}\n",
         ShiftCipher::decrypt(ciphertxt, &key)
@@ -128,8 +160,8 @@ pub fn try_decrypt(ciphertxt: &Ciphertext, key: Key, mut reader: impl BufRead) -
 
     let command: ConsentMenu = process_input(
         || {
-            println!("\nAre you happy with this decryption?");
-            ConsentMenu::print_menu()
+            writeln!(writer, "\nAre you happy with this decryption?")?;
+            ConsentMenu::print_menu(writer.by_ref())
         },
         &mut reader,
     )?;
