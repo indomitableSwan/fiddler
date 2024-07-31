@@ -76,6 +76,7 @@ mod tests {
     // Create a mock object to test writing to `stdout`
     #[derive(Debug)]
     struct MockIoWriter {
+        buffer: Vec<u8>,
         mock_output: String,
     }
 
@@ -90,6 +91,7 @@ mod tests {
     impl MockIoWriter {
         fn new() -> Self {
             Self {
+                buffer: Vec::new(),
                 mock_output: "".to_string(),
             }
         }
@@ -115,12 +117,13 @@ mod tests {
 
     impl Write for MockIoWriter {
         fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-            self.mock_output.push_str(str::from_utf8(buf).unwrap());
-            Ok(buf.len())
+            self.buffer = buf.to_vec();
+            Ok(self.buffer.len())
         }
 
         // Not using this
         fn flush(&mut self) -> io::Result<()> {
+            self.mock_output = String::from_utf8_lossy(&self.buffer).to_string();
             Ok(())
         }
     }
