@@ -1,6 +1,6 @@
 //! Cryptography-related I/O functionality.
 use crate::{
-    io_helper::process_input,
+    io_helper::{process_input, ProcessInputError},
     menu::{ConsentMenu, DecryptMenu, Menu},
 };
 use anyhow::{anyhow, Result};
@@ -99,15 +99,23 @@ pub fn decrypt(
     mut reader: impl BufRead,
     mut writer: impl Write,
 ) -> Result<()> {
-    let ciphertxt: Ciphertext = process_input(
-        || {
-            writeln!(
+    let ciphertxt = loop {
+        let ciphertxt = process_input::<Ciphertext, EncodingError, _, _>(
+            || {
+                writeln!(
                 writer,
                 "\nEnter your ciphertext. Ciphertexts use characters only from the Latin Alphabet:"
             )
-        },
-        &mut reader,
-    )?;
+            },
+            &mut reader,
+        );
+
+        if let Ok(ciphertxt) = ciphertxt {
+            break ciphertxt;
+        } else {
+            continue;
+        }
+    };
 
     // Attempt decryption or stop trying
     match command {
@@ -116,7 +124,7 @@ pub fn decrypt(
             Ok(())
         }
         DecryptMenu::KnownKey => {
-            chosen_key(&ciphertxt, &mut reader, writer)?;
+            chosen_key(&ciphertxt, &mut reader, writer);
             Ok(())
         }
         DecryptMenu::Quit => Ok(()),
@@ -124,27 +132,31 @@ pub fn decrypt(
 }
 
 /// Gets key from stdin and attempts to decrypt.
-pub fn chosen_key(
-    ciphertxt: &Ciphertext,
-    mut reader: impl BufRead,
-    mut writer: impl Write,
-) -> Result<()> {
+pub fn chosen_key(ciphertxt: &Ciphertext, mut reader: impl BufRead, mut writer: impl Write) {
     loop {
-        let key: Key = process_input(
-            || {
-                writeln!(
-                    writer,
-                    "\nPlease enter a key now. Keys are numbers between 0 and 25 inclusive."
-                )
-            },
-            &mut reader,
-        )?;
+        let key = loop {
+            let key = process_input::<Key, EncodingError, _, _>(
+                || {
+                    writeln!(
+                        writer,
+                        "\nPlease enter a key now. Keys are numbers between 0 and 25 inclusive."
+                    )
+                },
+                &mut reader,
+            );
+
+            if let Ok(key) = key {
+                break key;
+            } else {
+                continue;
+            }
+        };
+
         match try_decrypt(ciphertxt, key, &mut reader, writer.by_ref()) {
             Ok(_) => break,
             Err(_) => continue,
         }
     }
-    Ok(())
 }
 
 /// Has computer choose key uniformly at random and attempts to decrypt.
@@ -177,13 +189,21 @@ pub fn try_decrypt(
         ShiftCipher::decrypt(ciphertxt, &key)
     );
 
-    let command: ConsentMenu = process_input(
-        || {
-            writeln!(writer, "\nAre you happy with this decryption?")?;
-            ConsentMenu::print_menu(writer.by_ref())
-        },
-        &mut reader,
-    )?;
+    let command = loop {
+        let command = process_input::<ConsentMenu, ProcessInputError, _, _>(
+            || {
+                writeln!(writer, "\nAre you happy with this decryption?")?;
+                ConsentMenu::print_menu(writer.by_ref())
+            },
+            &mut reader,
+        );
+
+        if let Ok(command) = command {
+            break command;
+        } else {
+            continue;
+        }
+    };
 
     match command {
         ConsentMenu::NoKE => Err(anyhow!("try again")),
