@@ -11,6 +11,7 @@ pub trait Menu<const N: usize>: FromStr {
         for item in Self::menu_array().0 {
             writeln!(writer, "{}: {}", item.key, item.menu_msg)?
         }
+        writer.flush()?;
         Ok(())
     }
 }

@@ -34,7 +34,8 @@ pub fn make_key(mut reader: impl BufRead, mut writer: impl Write) -> Result<()> 
             ) {
                 Ok(ConsentMenu::NoKE) => continue 'outer,
                 Ok(ConsentMenu::YesKE) => {
-                    println!("\nGreat! We don't have a file system implemented (much less a secure one), so please \nremember your key in perpetuity!");
+                    writeln!(writer, "\nGreat! We don't have a file system implemented (much less a secure one), so please \nremember your key in perpetuity!")?;
+
                     break 'outer Ok(());
                 }
                 Err(_) => continue 'inner,
@@ -51,7 +52,7 @@ pub fn encrypt(mut reader: impl BufRead, mut writer: impl Write) -> Result<()> {
         &mut reader,
     )?;
 
-    println!("\nNow, do you have a key that was generated uniformly at random that you remember and \nwould like to use? If yes, please enter your key. Otherwise, please pick a fresh key \nuniformly at random from the ring of integers modulo 26 yourself. \n\nYou won't be as good at this as a computer, but if you understand the cryptosystem \nyou are using (something we cryptographers routinely assume about other people, while \npretending that we aren't assuming this), you will probably not pick a key of 0, \nwhich is equivalent to sending your messages \"in the clear\", i.e., unencrypted. Good \nluck! \n");
+    writeln!(writer, "\nNow, do you have a key that was generated uniformly at random that you remember and \nwould like to use? If yes, please enter your key. Otherwise, please pick a fresh key \nuniformly at random from the ring of integers modulo 26 yourself. \n\nYou won't be as good at this as a computer, but if you understand the cryptosystem \nyou are using (something we cryptographers routinely assume about other people, while \npretending that we aren't assuming this), you will probably not pick a key of 0, \nwhich is equivalent to sending your messages \"in the clear\", i.e., unencrypted. Good \nluck! \n")?;
 
     let key: Key = process_input(
         || {
@@ -68,6 +69,7 @@ pub fn encrypt(mut reader: impl BufRead, mut writer: impl Write) -> Result<()> {
         "\nYour ciphertext is {}",
         ShiftCipher::encrypt(&msg, &key)
     )?;
+
     writeln!(writer, "\nLook for patterns in your ciphertext. Could you definitively figure out the key and \noriginal plaintext message if you didn't already know it?")?;
 
     Ok(())

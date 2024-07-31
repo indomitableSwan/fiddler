@@ -2,7 +2,7 @@
 //! allows key generation, message encryption, and ciphertext decryption
 //! (including a computer-aided brute force attack) using the Latin Shift
 //! Cipher.
-use std::io::{BufReader, BufWriter};
+use std::io::BufReader;
 
 use anyhow::Result;
 use demo::menu;
@@ -12,9 +12,9 @@ fn main() -> Result<()> {
 
     // The demo library crate is decoupled from stdin and stdout through the use of
     // dependency injection
-    let reader = BufReader::new(std::io::stdin());
-    let writer = BufWriter::new(std::io::stdout());
+    let mut reader = BufReader::new(std::io::stdin());
+    let mut writer = std::io::stdout();
 
-    menu(reader, writer)?;
+    menu(&mut reader, &mut writer)?;
     Ok(())
 }
