@@ -5,6 +5,7 @@ use crate::{
 };
 use anyhow::{anyhow, Result};
 use classical_crypto::{
+    errors::EncodingError,
     shift::{Ciphertext, Key, Message, ShiftCipher},
     CipherTrait, KeyTrait,
 };
@@ -47,22 +48,38 @@ pub fn make_key(mut reader: impl BufRead, mut writer: impl Write) -> Result<()> 
 /// Takes in a key and a message and encrypts, then prints
 /// the result.
 pub fn encrypt(mut reader: impl BufRead, mut writer: impl Write) -> Result<()> {
-    let msg: Message = process_input(
-        || writeln!(writer, "\nPlease enter the message you want to encrypt:"),
-        &mut reader,
-    )?;
+    let msg = loop {
+        let msg = process_input::<Message, EncodingError, _, _>(
+            || writeln!(writer, "\nPlease enter the message you want to encrypt:"),
+            &mut reader,
+        );
+
+        if let Ok(msg) = msg {
+            break msg;
+        } else {
+            continue;
+        }
+    };
 
     writeln!(writer, "\nNow, do you have a key that was generated uniformly at random that you remember and \nwould like to use? If yes, please enter your key. Otherwise, please pick a fresh key \nuniformly at random from the ring of integers modulo 26 yourself. \n\nYou won't be as good at this as a computer, but if you understand the cryptosystem \nyou are using (something we cryptographers routinely assume about other people, while \npretending that we aren't assuming this), you will probably not pick a key of 0, \nwhich is equivalent to sending your messages \"in the clear\", i.e., unencrypted. Good \nluck! \n")?;
 
-    let key: Key = process_input(
-        || {
-            writeln!(
-                writer,
-                "\nPlease enter a key now. Keys are numbers between 0 and 25 inclusive."
-            )
-        },
-        &mut reader,
-    )?;
+    let key = loop {
+        let key = process_input::<Key, EncodingError, _, _>(
+            || {
+                writeln!(
+                    writer,
+                    "\nPlease enter a key now. Keys are numbers between 0 and 25 inclusive."
+                )
+            },
+            &mut reader,
+        );
+
+        if let Ok(key) = key {
+            break key;
+        } else {
+            continue;
+        }
+    };
 
     writeln!(
         writer,

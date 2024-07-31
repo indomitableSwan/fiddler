@@ -361,6 +361,7 @@ fn from_str(s: &str) -> Result<Vec<RingElement>, ErrorRepr> {
         .into_iter()
         .map(|i| i.unwrap_err())
         .map(|ErrorRepr::RingElementEncodingError(i)| i)
+        // Filters out errors caused by spaces in input string
         .filter(|i| i != " ")
         .collect();
 
@@ -498,12 +499,27 @@ mod tests {
             MSG0.with(|msg| msg.clone()).to_string(),
             "wewillmeetatmidnight"
         ); // Message maps to string correctly
+
+        // Allow spaces
+        assert_eq!(
+            Message::new("i love cats"),
+            Ok(Message(vec![
+                RingElement(8),
+                RingElement(11),
+                RingElement(14),
+                RingElement(21),
+                RingElement(4),
+                RingElement(2),
+                RingElement(0),
+                RingElement(19),
+                RingElement(18)
+            ]))
+        );
     }
 
     #[test]
     // Malformed message errors.
     fn msg_encoding_error() {
-        println!("{}", Message::new("what; on earh#A").unwrap_err());
         assert_eq!(
             Message::new("we~ will Meet at midnight;"),
             Err(EncodingError::InvalidMessage(
