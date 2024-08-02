@@ -30,10 +30,22 @@ pub enum ProcessInputError {
     CommandParseError(String),
 }
 
+macro_rules! process_input {
+    ($reader:expr) => {{
+        let mut input = String::new();
+        $reader.read_line(&mut input)?;
+        input.trim().parse()
+    }};
+    ($instr:expr, $reader: expr) => {{
+        $instr();
+        process_input!($reader)?
+    }};
+}
+
 /// Prints instructions and then processes command line input and converts to
 /// type `T` as specified by caller. If successful, returns conversion.
 /// Otherwise, returns an error.
-// TODO Notes: 
+// TODO Notes:
 // - So generic that it's difficult to make sense of
 // - Might be a good use case for a macro
 pub fn process_input<T, E, F, R>(mut instr: F, reader: &mut R) -> Result<T, ProcessInputError>
@@ -64,11 +76,15 @@ where
 #[cfg(test)]
 mod tests {
     use classical_crypto::shift::{Ciphertext, Key, Message};
+    use io::{Error, ErrorKind};
 
     use super::*;
     use crate::menu::{ConsentMenu, DecryptMenu, MainMenu, Menu};
     use core::str;
-    use std::io::{BufRead, Read, Write};
+    use std::{
+        io::{BufRead, Read, Write},
+        str::from_utf8,
+    };
 
     // Create a mock object to test reading from `stdin`
     #[derive(Debug)]
@@ -120,25 +136,72 @@ mod tests {
 
     impl Write for MockIoWriter {
         fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-            self.buffer = buf.to_vec();
-            Ok(self.buffer.len())
+            for item in buf.iter() {
+                self.buffer.push(*item)
+            }
+            Ok(buf.len())
         }
 
-        // Not using this
         fn flush(&mut self) -> io::Result<()> {
-            self.mock_output = String::from_utf8_lossy(&self.buffer).to_string();
+            let output = match from_utf8(&self.buffer) {
+                Ok(r) => Ok(r),
+                Err(_) => Err(Error::new(ErrorKind::Other, "oh no!")),
+            };
+            self.mock_output.push_str(output.unwrap());
+            self.buffer = Vec::new();
             Ok(())
         }
     }
 
+    // Mock Writer test
+    // Going full meta here
+    #[test]
+    fn test_the_writer_mock() -> anyhow::Result<()> {
+        let mut writer = MockIoWriter::new();
+        write!(writer, "Whatever this means\n\n not that")?;
+        assert_eq!(writer.buffer, "Whatever this means\n\n not that".as_bytes());
+        writer.flush()?;
+        write!(writer, "another")?;
+        assert_eq!(writer.buffer, "another".as_bytes());
+        writer.flush()?;
+        assert_eq!(
+            writer.mock_output,
+            "Whatever this means\n\n not thatanother"
+        );
+        Ok(())
+    }
+    //
+    #[test]
+    fn test_the_writer_writeln() -> anyhow::Result<()> {
+        let mut writer = MockIoWriter::new();
+        writeln!(writer, "hi")?;
+        assert_eq!(writer.buffer, "hi\n".as_bytes());
+        writer.flush()?;
+        assert_eq!(writer.mock_output, "hi\n");
+        Ok(())
+    }
+
     // EncodingError tests
     #[test]
-    fn ciphertext() {
+    fn ciphertext() -> anyhow::Result<()> {
         let mut mock_reader = MockIoReader::new("AFDSDFE");
-        //let mut mock_stdout = Vec::new();
+        let mut mock_writer = MockIoWriter::new();
 
-        let command: Ciphertext = process_input(|| Ok(()), &mut mock_reader).unwrap();
-        assert_eq!(command, Ciphertext::from_str("AFDSDFE").unwrap())
+        // let command: Ciphertext = process_input(|| Ok(()), &mut
+        // mock_reader).unwrap();
+        let command: Result<Ciphertext, ProcessInputError> = process_input(
+            || {
+                write!(&mut mock_writer, "test")?;
+                mock_writer.flush()
+            },
+            &mut mock_reader,
+        );
+
+        assert!(command.is_ok());
+        let command = command.unwrap();
+        assert_eq!(command, Ciphertext::from_str("AFDSDFE")?);
+        assert_eq!(mock_writer.mock_output, "test");
+        Ok(())
     }
     //
     #[test]
@@ -269,16 +332,28 @@ mod tests {
     //
     // Here we have an example read and write test
     #[test]
-    fn main_gen_key() {
+    fn main_gen_key() -> anyhow::Result<()> {
         let mut mock_reader = MockIoReader::new("1");
         let mut mock_writer = MockIoWriter::new();
 
-        let command: MainMenu =
-            process_input(|| MainMenu::print_menu(&mut mock_writer), &mut mock_reader).unwrap();
+        // let command: MainMenu =
+        //     process_input(|| MainMenu::print_menu(&mut mock_writer), &mut
+        // mock_reader).unwrap();
+        let command: Result<MainMenu, ProcessInputError> = process_input(
+            || {
+                MainMenu::print_menu(&mut mock_writer)?;
+                Ok(())
+            },
+            &mut mock_reader,
+        );
+        mock_writer.flush()?;
+        assert!(command.is_ok());
+        let command = command.unwrap();
         // Test reads
         assert_eq!(command, MainMenu::GenKE);
         // Test writes
-        assert_eq!(mock_writer.mock_output, "\nPlease enter one of the following options:\n1: Generate a key.\n2: Encrypt a message.\n3: Decrypt a ciphertext.\n4: Quit\n")
+        assert_eq!(mock_writer.mock_output, "\nPlease enter one of the following options:\n1: Generate a key.\n2: Encrypt a message.\n3: Decrypt a ciphertext.\n4: Quit\n");
+        Ok(())
     }
     //
     #[test]

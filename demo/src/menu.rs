@@ -8,8 +8,9 @@ pub trait Menu<const N: usize>: FromStr {
 
     fn print_menu(mut writer: impl Write) -> std::io::Result<()> {
         writeln!(writer, "\nPlease enter one of the following options:")?;
+
         for item in Self::menu_array().0 {
-            writeln!(writer, "{}: {}", item.key, item.menu_msg)?
+            writeln!(writer, "{}: {}", item.key, item.menu_msg)?;
         }
 
         Ok(())
