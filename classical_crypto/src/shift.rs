@@ -147,13 +147,8 @@ impl FromStr for Key {
     type Err = EncodingError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let key = match i8::from_str(s) {
-            Ok(num) => num,
-            Err(_) => return Err(EncodingError::InvalidKey(s.to_string())),
-        };
-
-        match key {
-            x if (0..=25).contains(&x) => Ok(Key::from(RingElement::from_i8(key))),
+       match i8::from_str(s) {
+            Ok(x) if (0..=25).contains(&x) => Ok(Key::from(RingElement::from_i8(x))),
             _ => Err(EncodingError::InvalidKey(s.to_string())),
         }
     }
@@ -417,6 +412,18 @@ mod tests {
         assert_ne!(
             ShiftCipher::decrypt(&ShiftCipher::encrypt(&msg1, &key1), &key2),
             msg1
+        )
+    }
+
+    #[test]
+    fn new_key(){
+        assert_eq!(
+            Key::from_str("0").unwrap(),
+            Key(RingElement(0))
+        );
+        assert_eq!(
+            Key::from_str("5").unwrap(),
+            Key(RingElement(5))
         )
     }
 
