@@ -30,6 +30,7 @@ pub enum ProcessInputError {
     CommandParseError(String),
 }
 
+#[macro_export]
 macro_rules! process_input {
     ($reader:expr) => {{
         let mut input = String::new();
