@@ -182,6 +182,25 @@ mod tests {
         Ok(())
     }
 
+    #[test]
+    fn generic_process_input() -> anyhow::Result<()> {
+        let mut mock_reader = MockIoReader::new("read");
+        let mut mock_writer = MockIoWriter::new();
+
+        let test_str: String = process_input!(|| { 
+            writeln!(mock_writer, "write")?;
+            assert_eq!(mock_writer.buffer, "write\n".as_bytes());
+            assert_eq!(mock_writer.mock_output, "".to_string());
+            mock_writer.flush()?;
+            assert_eq!(mock_writer.buffer, "".as_bytes());
+            assert_eq!(mock_writer.mock_output, "write\n".to_string());
+        }, mock_reader);
+        dbg!(mock_reader);
+        dbg!(mock_writer);
+        dbg!(test_str);
+        Ok(())
+    }
+
     // EncodingError tests
     #[test]
     fn ciphertext() -> anyhow::Result<()> {

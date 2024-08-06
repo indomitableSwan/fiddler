@@ -62,7 +62,7 @@ pub fn decryption_menu(mut reader: impl BufRead, mut writer: impl Write) -> Resu
     writeln!(writer,
     "If not, don't despair. Just guess! On average, you can expect success using this \nsimple brute force attack method after trying 13 keys chosen uniformly at random."
     )?;
-
+    
     let command: DecryptMenu =
         process_input(|| DecryptMenu::print_menu(writer.by_ref()), &mut reader)?;
     Ok(command)
