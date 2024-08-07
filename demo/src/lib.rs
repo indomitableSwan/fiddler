@@ -22,8 +22,11 @@ use crate::menu::{DecryptMenu, MainMenu, Menu};
 /// - Quit the CLI application.
 pub fn menu(mut reader: impl BufRead, mut writer: impl Write) -> Result<()> {
     loop {
+        // Print main menu
+        MainMenu::print_menu(writer.by_ref())?;
+
         // Get menu selection from user
-        let command = process_input(|| MainMenu::print_menu(writer.by_ref()), &mut reader);
+        let command = process_input(&mut reader);
 
         match command {
             // Process menu selection from user
@@ -62,8 +65,11 @@ pub fn decryption_menu(mut reader: impl BufRead, mut writer: impl Write) -> Resu
     writeln!(writer,
     "If not, don't despair. Just guess! On average, you can expect success using this \nsimple brute force attack method after trying 13 keys chosen uniformly at random."
     )?;
-    
-    let command: DecryptMenu =
-        process_input(|| DecryptMenu::print_menu(writer.by_ref()), &mut reader)?;
+
+    // Print decryption menu options
+    DecryptMenu::print_menu(writer.by_ref())?;
+
+    // Get response from user
+    let command: DecryptMenu = process_input(&mut reader)?;
     Ok(command)
 }

@@ -30,38 +30,19 @@ pub enum ProcessInputError {
     CommandParseError(String),
 }
 
-#[macro_export]
-macro_rules! process_input {
-    ($reader:expr) => {{
-        let mut input = String::new();
-        $reader.read_line(&mut input)?;
-        input.trim().parse()
-    }};
-    ($instr:expr, $reader: expr) => {{
-        $instr();
-        process_input!($reader)?
-    }};
-}
-
 /// Prints instructions and then processes command line input and converts to
 /// type `T` as specified by caller. If successful, returns conversion.
 /// Otherwise, returns an error.
 // TODO Notes:
 // - So generic that it's difficult to make sense of
 // - Might be a good use case for a macro
-pub fn process_input<T, E, F, R>(mut instr: F, reader: &mut R) -> Result<T, ProcessInputError>
+pub fn process_input<T, E, R>(reader: &mut R) -> Result<T, ProcessInputError>
 where
     T: FromStr<Err = E>,
     E: std::error::Error,
-    // TODO: understand the `Fn` trait better
-    F: FnMut() -> Result<(), std::io::Error>,
     R: io::BufRead,
     ProcessInputError: std::convert::From<E>,
 {
-    // Print the instructions
-    // TODO Note: this is uhmm, obviously more general than that
-    instr()?;
-
     let mut input = String::new();
 
     reader.read_line(&mut input)?;
@@ -182,40 +163,16 @@ mod tests {
         Ok(())
     }
 
-    #[test]
-    fn generic_process_input() -> anyhow::Result<()> {
-        let mut mock_reader = MockIoReader::new("read");
-        let mut mock_writer = MockIoWriter::new();
-
-        let test_str: String = process_input!(|| { 
-            writeln!(mock_writer, "write")?;
-            assert_eq!(mock_writer.buffer, "write\n".as_bytes());
-            assert_eq!(mock_writer.mock_output, "".to_string());
-            mock_writer.flush()?;
-            assert_eq!(mock_writer.buffer, "".as_bytes());
-            assert_eq!(mock_writer.mock_output, "write\n".to_string());
-        }, mock_reader);
-        dbg!(mock_reader);
-        dbg!(mock_writer);
-        dbg!(test_str);
-        Ok(())
-    }
-
     // EncodingError tests
     #[test]
     fn ciphertext() -> anyhow::Result<()> {
         let mut mock_reader = MockIoReader::new("AFDSDFE");
         let mut mock_writer = MockIoWriter::new();
 
-        // let command: Ciphertext = process_input(|| Ok(()), &mut
-        // mock_reader).unwrap();
-        let command: Result<Ciphertext, ProcessInputError> = process_input(
-            || {
-                write!(&mut mock_writer, "test")?;
-                mock_writer.flush()
-            },
-            &mut mock_reader,
-        );
+        write!(&mut mock_writer, "test")?;
+        mock_writer.flush()?;
+
+        let command: Result<Ciphertext, ProcessInputError> = process_input(&mut mock_reader);
 
         assert!(command.is_ok());
         let command = command.unwrap();
@@ -227,21 +184,21 @@ mod tests {
     #[test]
     fn message() {
         let mut mock_reader = MockIoReader::new("thecatishungry");
-        let command: Message = process_input(|| Ok(()), &mut mock_reader).unwrap();
+        let command: Message = process_input(&mut mock_reader).unwrap();
         assert_eq!(command, Message::new("thecatishungry").unwrap())
     }
     //
     #[test]
     fn key() {
         let mut mock_reader = MockIoReader::new("3");
-        let command: Key = process_input(|| Ok(()), &mut mock_reader).unwrap();
+        let command: Key = process_input(&mut mock_reader).unwrap();
         assert_eq!(command, Key::from_str("3").unwrap())
     }
     //
     #[test]
     fn message_error() {
         let mut mock_reader = MockIoReader::new("N");
-        let error: Result<Message, ProcessInputError> = process_input(|| Ok(()), &mut mock_reader);
+        let error: Result<Message, ProcessInputError> = process_input(&mut mock_reader);
 
         assert!(error.is_err());
 
@@ -255,8 +212,7 @@ mod tests {
     #[test]
     fn ciphertext_error() {
         let mut mock_reader = MockIoReader::new("ASD;");
-        let error: Result<Ciphertext, ProcessInputError> =
-            process_input(|| Ok(()), &mut mock_reader);
+        let error: Result<Ciphertext, ProcessInputError> = process_input(&mut mock_reader);
 
         assert!(error.is_err());
 
@@ -270,7 +226,7 @@ mod tests {
     #[test]
     fn key_error() {
         let mut mock_reader = MockIoReader::new("65");
-        let error: Result<Key, ProcessInputError> = process_input(|| Ok(()), &mut mock_reader);
+        let error: Result<Key, ProcessInputError> = process_input(&mut mock_reader);
 
         assert!(error.is_err());
         let error = error.as_ref().unwrap_err();
@@ -287,22 +243,21 @@ mod tests {
     #[test]
     fn assent() {
         let mut mock_reader = MockIoReader::new("y");
-        let command: ConsentMenu = process_input(|| Ok(()), &mut mock_reader).unwrap();
+        let command: ConsentMenu = process_input(&mut mock_reader).unwrap();
         assert_eq!(command, ConsentMenu::YesKE)
     }
     //
     #[test]
     fn dissent() {
         let mut mock_reader = MockIoReader::new("n");
-        let command: ConsentMenu = process_input(|| Ok(()), &mut mock_reader).unwrap();
+        let command: ConsentMenu = process_input(&mut mock_reader).unwrap();
         assert_eq!(command, ConsentMenu::NoKE)
     }
     //
     #[test]
     fn consent_error() {
         let mut mock_reader = MockIoReader::new("N");
-        let error: Result<ConsentMenu, ProcessInputError> =
-            process_input(|| Ok(()), &mut mock_reader);
+        let error: Result<ConsentMenu, ProcessInputError> = process_input(&mut mock_reader);
 
         assert!(error.is_err());
 
@@ -316,29 +271,28 @@ mod tests {
     #[test]
     fn known_key() {
         let mut mock_reader = MockIoReader::new("1");
-        let command: DecryptMenu = process_input(|| Ok(()), &mut mock_reader).unwrap();
+        let command: DecryptMenu = process_input(&mut mock_reader).unwrap();
         assert_eq!(command, DecryptMenu::KnownKey)
     }
     //
     #[test]
     fn brute_force() {
         let mut mock_reader = MockIoReader::new("2");
-        let command: DecryptMenu = process_input(|| Ok(()), &mut mock_reader).unwrap();
+        let command: DecryptMenu = process_input(&mut mock_reader).unwrap();
         assert_eq!(command, DecryptMenu::Bruteforce)
     }
     //
     #[test]
     fn quit_decrypt_menu() {
         let mut mock_reader = MockIoReader::new("3");
-        let command: DecryptMenu = process_input(|| Ok(()), &mut mock_reader).unwrap();
+        let command: DecryptMenu = process_input(&mut mock_reader).unwrap();
         assert_eq!(command, DecryptMenu::Quit)
     }
     //
     #[test]
     fn decrypt_menu_error() {
         let mut mock_reader = MockIoReader::new("N");
-        let error: Result<ConsentMenu, ProcessInputError> =
-            process_input(|| Ok(()), &mut mock_reader);
+        let error: Result<ConsentMenu, ProcessInputError> = process_input(&mut mock_reader);
 
         assert!(error.is_err());
 
@@ -356,16 +310,9 @@ mod tests {
         let mut mock_reader = MockIoReader::new("1");
         let mut mock_writer = MockIoWriter::new();
 
-        // let command: MainMenu =
-        //     process_input(|| MainMenu::print_menu(&mut mock_writer), &mut
-        // mock_reader).unwrap();
-        let command: Result<MainMenu, ProcessInputError> = process_input(
-            || {
-                MainMenu::print_menu(&mut mock_writer)?;
-                Ok(())
-            },
-            &mut mock_reader,
-        );
+        MainMenu::print_menu(&mut mock_writer)?;
+
+        let command: Result<MainMenu, ProcessInputError> = process_input(&mut mock_reader);
         mock_writer.flush()?;
         assert!(command.is_ok());
         let command = command.unwrap();
@@ -379,28 +326,28 @@ mod tests {
     #[test]
     fn main_encrypt() {
         let mut mock_reader = MockIoReader::new("2");
-        let command: MainMenu = process_input(|| Ok(()), &mut mock_reader).unwrap();
+        let command: MainMenu = process_input(&mut mock_reader).unwrap();
         assert_eq!(command, MainMenu::EncryptKE)
     }
     //
     #[test]
     fn main_decrypt() {
         let mut mock_reader = MockIoReader::new("3");
-        let command: MainMenu = process_input(|| Ok(()), &mut mock_reader).unwrap();
+        let command: MainMenu = process_input(&mut mock_reader).unwrap();
         assert_eq!(command, MainMenu::DecryptKE)
     }
     //
     #[test]
     fn main_quit() {
         let mut mock_reader = MockIoReader::new("4");
-        let command: MainMenu = process_input(|| Ok(()), &mut mock_reader).unwrap();
+        let command: MainMenu = process_input(&mut mock_reader).unwrap();
         assert_eq!(command, MainMenu::QuitKE)
     }
     //
     #[test]
     fn main_error() {
         let mut mock_reader = MockIoReader::new("N");
-        let error: Result<MainMenu, ProcessInputError> = process_input(|| Ok(()), &mut mock_reader);
+        let error: Result<MainMenu, ProcessInputError> = process_input(&mut mock_reader);
 
         assert!(error.is_err());
 

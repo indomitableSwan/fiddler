@@ -147,7 +147,7 @@ impl FromStr for Key {
     type Err = EncodingError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-       match i8::from_str(s) {
+        match i8::from_str(s) {
             Ok(x) if (0..=25).contains(&x) => Ok(Key::from(RingElement::from_i8(x))),
             _ => Err(EncodingError::InvalidKey(s.to_string())),
         }
@@ -416,15 +416,9 @@ mod tests {
     }
 
     #[test]
-    fn new_key(){
-        assert_eq!(
-            Key::from_str("0").unwrap(),
-            Key(RingElement(0))
-        );
-        assert_eq!(
-            Key::from_str("5").unwrap(),
-            Key(RingElement(5))
-        )
+    fn new_key() {
+        assert_eq!(Key::from_str("0").unwrap(), Key(RingElement(0)));
+        assert_eq!(Key::from_str("5").unwrap(), Key(RingElement(5)))
     }
 
     #[test]
