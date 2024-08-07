@@ -1,7 +1,4 @@
 //! The demo libary crate, containing functionality supporting the demo CLI.
-// TODO: handle errors properly instead of allowing panicking (partially
-// completed, but many suboptions from main menu will still panic if user inputs
-// something invalid)
 use anyhow::Result;
 use std::io::{BufRead, Write};
 
