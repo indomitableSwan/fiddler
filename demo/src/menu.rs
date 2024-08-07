@@ -1,16 +1,19 @@
 //! Menus.
-use std::str::FromStr;
-use thiserror::Error;
+use crate::io_helper::ProcessInputError;
+use std::{io::Write, str::FromStr};
 
 /// Represents menu functionality.
-pub trait Menu<const N: usize> {
+pub trait Menu<const N: usize>: FromStr {
     fn menu_array() -> MenuArray<N>;
 
-    fn print_menu() {
-        println!("\nPlease enter one of the following options:");
+    fn print_menu(mut writer: impl Write) -> std::io::Result<()> {
+        writeln!(writer, "\nPlease enter one of the following options:")?;
+
         for item in Self::menu_array().0 {
-            println!("{}: {}", item.key, item.menu_msg)
+            writeln!(writer, "{}: {}", item.key, item.menu_msg)?;
         }
+
+        Ok(())
     }
 }
 
@@ -18,6 +21,7 @@ pub trait Menu<const N: usize> {
 pub struct MenuArray<const N: usize>([Command<'static>; N]);
 
 /// Represents the program's main menu options.
+#[derive(Debug, PartialEq)]
 pub enum MainMenu {
     /// User wants to generate a key.
     GenKE,
@@ -69,7 +73,7 @@ impl MainMenu {
 }
 
 impl FromStr for MainMenu {
-    type Err = CommandError;
+    type Err = ProcessInputError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
@@ -77,11 +81,12 @@ impl FromStr for MainMenu {
             MainMenu::ENCRYPT_KE => Ok(MainMenu::EncryptKE),
             MainMenu::DECRYPT_KE => Ok(MainMenu::DecryptKE),
             MainMenu::QUIT_KE => Ok(MainMenu::QuitKE),
-            _ => Err(CommandError(s.to_string())),
+            _ => Err(ProcessInputError::CommandParseError(s.to_string())),
         }
     }
 }
 
+#[derive(Debug, PartialEq)]
 /// Represents user assent or dissent.
 pub enum ConsentMenu {
     /// User assents.
@@ -111,18 +116,19 @@ impl ConsentMenu {
 }
 
 impl FromStr for ConsentMenu {
-    type Err = CommandError;
+    type Err = ProcessInputError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
             ConsentMenu::YES_KE => Ok(ConsentMenu::YesKE),
             ConsentMenu::NO_KE => Ok(ConsentMenu::NoKE),
-            _ => Err(CommandError(s.to_string())),
+            _ => Err(ProcessInputError::CommandParseError(s.to_string())),
         }
     }
 }
 
 /// Represents the decryption menu.
+#[derive(Debug, PartialEq)]
 pub enum DecryptMenu {
     /// User knows the key.
     KnownKey,
@@ -163,14 +169,14 @@ impl DecryptMenu {
 }
 
 impl FromStr for DecryptMenu {
-    type Err = CommandError;
+    type Err = ProcessInputError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
             DecryptMenu::KNOWN_KEY_KE => Ok(DecryptMenu::KnownKey),
             DecryptMenu::BRUTE_FORCE_KE => Ok(DecryptMenu::Bruteforce),
             DecryptMenu::QUIT_KE => Ok(DecryptMenu::Quit),
-            _ => Err(CommandError(s.to_string())),
+            _ => Err(ProcessInputError::CommandParseError(s.to_string())),
         }
     }
 }
@@ -181,8 +187,3 @@ pub struct Command<'a> {
     key: &'a str,
     menu_msg: &'a str,
 }
-
-/// The error returned upon failure to parse a [`Command`] from a string.
-#[derive(Error, Debug)]
-#[error("Invalid command: {0}")]
-pub struct CommandError(String);

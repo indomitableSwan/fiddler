@@ -15,6 +15,8 @@ use std::{fmt::Display, str::FromStr};
 // ring of integers mod 26. We do this because we want to force library users to use types specific
 // to the Latin Shift cipher when using the Latin Shift Cipher, even though other ciphers may also
 // (mathematically and under the hood in the implementation) operate on the same underlying types
+// It also lets us to keep more complicated logic about the internal types in one place that is
+// easily reusable and modifiable, while ensuring these simple wrappers stay the same
 #[derive(Clone, Debug, Default, Eq, Hash, PartialEq)]
 pub struct Ciphertext(Ciphtxt);
 
@@ -43,7 +45,9 @@ impl FromIterator<RingElement> for Ciphertext {
 //    ring of integers mod 26. We do this because we want to force library users to use types
 //    specific to the Latin Shift cipher when using the Latin Shift Cipher, even though other
 //    ciphers may also (mathematically and under the hood in the implementation) operate on the same
-//    underlying types
+//    underlying types It also lets us to keep more complicated logic about the internal types in
+//    one place that is easily reusable and modifiable, while
+// ensuring these simple wrappers stay the same
 // 2. The Rust Book (19.3) offers guidance on using the `Deref` trait in the newtype pattern to automatically implement all methods defined on the inner type for the wrapper type. We do not do this because doing so makes for surprises in the API. Also note that this trick does not give you trait implementations defined on the inner type for the wrapper. See also discussion [`here`](https://rust-unofficial.github.io/patterns/anti_patterns/deref.html)
 #[derive(Clone, Debug, Default, Eq, Hash, PartialEq)]
 pub struct Message(Msg);
@@ -143,13 +147,8 @@ impl FromStr for Key {
     type Err = EncodingError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let key = match i8::from_str(s) {
-            Ok(num) => num,
-            Err(_) => return Err(EncodingError::InvalidKey(s.to_string())),
-        };
-
-        match key {
-            x if (0..=25).contains(&x) => Ok(Key::from(RingElement::from_i8(key))),
+        match i8::from_str(s) {
+            Ok(x) if (0..=25).contains(&x) => Ok(Key::from(RingElement::from_i8(x))),
             _ => Err(EncodingError::InvalidKey(s.to_string())),
         }
     }
@@ -273,16 +272,6 @@ impl ShiftCipher {
     }
 }
 
-// TODO: Not implemented yet
-/// A custom error type that is returned from [`ShiftCipher::encrypt`].
-#[derive(Copy, Clone, Debug, Default, Eq, Hash, PartialEq)]
-pub struct EncryptionError;
-
-// TODO: not implemented yet
-/// A custom error type that is returned from [`ShiftCipher::decrypt`].
-#[derive(Copy, Clone, Debug, Default, Eq, Hash, PartialEq)]
-pub struct DecryptionError;
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -348,7 +337,7 @@ mod tests {
     fn unchecked_dec_panic() {
         // Sometimes you google to find out how to prevent things like backtraces
         // appearing in your output for tests that should panic
-        let f = |_: &std::panic::PanicInfo| {};
+        let f = |_: &std::panic::PanicHookInfo| {};
         std::panic::set_hook(Box::new(f));
         let ciph = Ciphertext(Ciphtxt(vec![RingElement(65)]));
 
@@ -424,6 +413,12 @@ mod tests {
             ShiftCipher::decrypt(&ShiftCipher::encrypt(&msg1, &key1), &key2),
             msg1
         )
+    }
+
+    #[test]
+    fn new_key() {
+        assert_eq!(Key::from_str("0").unwrap(), Key(RingElement(0)));
+        assert_eq!(Key::from_str("5").unwrap(), Key(RingElement(5)))
     }
 
     #[test]

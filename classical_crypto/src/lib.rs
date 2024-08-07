@@ -267,10 +267,6 @@ impl fmt::Display for RingElement {
 #[derive(Clone, Debug, Default, Eq, Hash, PartialEq)]
 struct Message(Vec<RingElement>);
 
-/// A ciphertext of arbitrary length.
-#[derive(Clone, Debug, Default, Eq, Hash, PartialEq)]
-struct Ciphertext(Vec<RingElement>);
-
 impl Message {
     /// Create a new message from a string.
     fn new(str: &str) -> Result<Message, EncodingError> {
@@ -309,6 +305,9 @@ impl FromIterator<RingElement> for Message {
     }
 }
 
+/// A ciphertext of arbitrary length.
+#[derive(Clone, Debug, Default, Eq, Hash, PartialEq)]
+struct Ciphertext(Vec<RingElement>);
 /// Parse a ciphertext from a string.
 ///
 /// # Errors
@@ -362,6 +361,7 @@ fn from_str(s: &str) -> Result<Vec<RingElement>, ErrorRepr> {
         .into_iter()
         .map(|i| i.unwrap_err())
         .map(|ErrorRepr::RingElementEncodingError(i)| i)
+        // Filters out errors caused by spaces in input string
         .filter(|i| i != " ")
         .collect();
 
@@ -473,7 +473,7 @@ mod tests {
     fn ring_elmt_encoding_panic() {
         // Sometimes you google to find out how to prevent things like backtraces
         // appearing in your output for tests that should panic
-        let f = |_: &std::panic::PanicInfo| {};
+        let f = |_: &std::panic::PanicHookInfo| {};
         std::panic::set_hook(Box::new(f));
         let _fail = RingElement(26).to_char();
     }
@@ -499,12 +499,27 @@ mod tests {
             MSG0.with(|msg| msg.clone()).to_string(),
             "wewillmeetatmidnight"
         ); // Message maps to string correctly
+
+        // Allow spaces
+        assert_eq!(
+            Message::new("i love cats"),
+            Ok(Message(vec![
+                RingElement(8),
+                RingElement(11),
+                RingElement(14),
+                RingElement(21),
+                RingElement(4),
+                RingElement(2),
+                RingElement(0),
+                RingElement(19),
+                RingElement(18)
+            ]))
+        );
     }
 
     #[test]
     // Malformed message errors.
     fn msg_encoding_error() {
-        println!("{}", Message::new("what; on earh#A").unwrap_err());
         assert_eq!(
             Message::new("we~ will Meet at midnight;"),
             Err(EncodingError::InvalidMessage(
