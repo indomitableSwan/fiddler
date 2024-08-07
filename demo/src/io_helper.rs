@@ -30,12 +30,11 @@ pub enum ProcessInputError {
     CommandParseError(String),
 }
 
-/// Prints instructions and then processes command line input and converts to
+/// Processes user input and converts to
 /// type `T` as specified by caller. If successful, returns conversion.
-/// Otherwise, returns an error.
-// TODO Notes:
-// - So generic that it's difficult to make sense of
-// - Might be a good use case for a macro
+/// Otherwise, returns a custom error that contains information about the
+/// underlying error cause.
+// Notes: This is generic over the reader in order to decouple the program from stdin and allow for easier testing.
 pub fn process_input<T, E, R>(reader: &mut R) -> Result<T, ProcessInputError>
 where
     T: FromStr<Err = E>,

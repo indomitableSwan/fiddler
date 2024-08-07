@@ -36,7 +36,10 @@ pub fn make_key(mut reader: impl BufRead, mut writer: impl Write) -> Result<()> 
 
                     break 'outer Ok(());
                 }
-                Err(_) => continue 'inner,
+                Err(e) => {
+                    writeln!(writer, "Error: {}", e)?;
+                    continue 'inner;
+                }
             };
         }
     }
@@ -50,10 +53,12 @@ pub fn encrypt(mut reader: impl BufRead, mut writer: impl Write) -> Result<()> {
 
         let msg = process_input::<Message, EncodingError, _>(&mut reader);
 
-        if let Ok(msg) = msg {
-            break msg;
-        } else {
-            continue;
+        match msg {
+            Ok(msg) => break msg,
+            Err(e) => {
+                writeln!(writer, "Error: {}", e)?;
+                continue;
+            }
         }
     };
 
@@ -67,10 +72,12 @@ pub fn encrypt(mut reader: impl BufRead, mut writer: impl Write) -> Result<()> {
 
         let key = process_input::<Key, EncodingError, _>(&mut reader);
 
-        if let Ok(key) = key {
-            break key;
-        } else {
-            continue;
+        match key {
+            Ok(key) => break key,
+            Err(e) => {
+                writeln! {writer, "Error: {}", e}?;
+                continue;
+            }
         }
     };
 
@@ -100,10 +107,12 @@ pub fn decrypt(
 
         let ciphertxt = process_input::<Ciphertext, EncodingError, _>(&mut reader);
 
-        if let Ok(ciphertxt) = ciphertxt {
-            break ciphertxt;
-        } else {
-            continue;
+        match ciphertxt {
+            Ok(ciphertxt) => break ciphertxt,
+            Err(e) => {
+                writeln!(writer, "Error: {}", e)?;
+                continue;
+            }
         }
     };
 
@@ -136,10 +145,12 @@ pub fn chosen_key(
         let key = loop {
             let key = process_input::<Key, EncodingError, _>(&mut reader);
 
-            if let Ok(key) = key {
-                break key;
-            } else {
-                continue;
+            match key {
+                Ok(key) => break key,
+                Err(e) => {
+                    writeln!(writer, "Error: {}", e)?;
+                    continue;
+                }
             }
         };
 
@@ -186,10 +197,12 @@ pub fn try_decrypt(
 
         let command = process_input::<ConsentMenu, ProcessInputError, _>(&mut reader);
 
-        if let Ok(command) = command {
-            break command;
-        } else {
-            continue;
+        match command {
+            Ok(command) => break command,
+            Err(e) => {
+                writeln!(writer, "Error: {}", e)?;
+                continue;
+            }
         }
     };
 
