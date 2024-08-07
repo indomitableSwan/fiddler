@@ -162,7 +162,7 @@ mod tests {
         Ok(())
     }
 
-    // EncodingError tests
+    // Processing Ciphertexts, Messages, Keys
     #[test]
     fn ciphertext() -> anyhow::Result<()> {
         let mut mock_reader = MockIoReader::new("AFDSDFE");
@@ -183,15 +183,15 @@ mod tests {
     #[test]
     fn message() {
         let mut mock_reader = MockIoReader::new("thecatishungry");
-        let command: Message = process_input(&mut mock_reader).unwrap();
-        assert_eq!(command, Message::new("thecatishungry").unwrap())
+        let msg: Message = process_input(&mut mock_reader).unwrap();
+        assert_eq!(msg, Message::new("thecatishungry").unwrap())
     }
     //
     #[test]
     fn key() {
         let mut mock_reader = MockIoReader::new("3");
-        let command: Key = process_input(&mut mock_reader).unwrap();
-        assert_eq!(command, Key::from_str("3").unwrap())
+        let key: Key = process_input(&mut mock_reader).unwrap();
+        assert_eq!(key, Key::from_str("3").unwrap())
     }
     //
     #[test]

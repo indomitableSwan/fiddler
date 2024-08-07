@@ -51,7 +51,7 @@ pub fn encrypt(mut reader: impl BufRead, mut writer: impl Write) -> Result<()> {
     let msg = loop {
         writeln!(writer, "\nPlease enter the message you want to encrypt:")?;
 
-        let msg = process_input::<Message, EncodingError, _>(&mut reader);
+        let msg = process_input(&mut reader);
 
         match msg {
             Ok(msg) => break msg,
@@ -70,7 +70,7 @@ pub fn encrypt(mut reader: impl BufRead, mut writer: impl Write) -> Result<()> {
             "\nPlease enter a key now. Keys are numbers between 0 and 25 inclusive."
         )?;
 
-        let key = process_input::<Key, EncodingError, _>(&mut reader);
+        let key = process_input(&mut reader);
 
         match key {
             Ok(key) => break key,
@@ -105,7 +105,7 @@ pub fn decrypt(
             "\nEnter your ciphertext. Ciphertexts use characters only from the Latin Alphabet:"
         )?;
 
-        let ciphertxt = process_input::<Ciphertext, EncodingError, _>(&mut reader);
+        let ciphertxt = process_input(&mut reader);
 
         match ciphertxt {
             Ok(ciphertxt) => break ciphertxt,
@@ -143,7 +143,7 @@ pub fn chosen_key(
         )?;
 
         let key = loop {
-            let key = process_input::<Key, EncodingError, _>(&mut reader);
+            let key = process_input(&mut reader);
 
             match key {
                 Ok(key) => break key,
@@ -195,7 +195,7 @@ pub fn try_decrypt(
         writeln!(writer, "\nAre you happy with this decryption?")?;
         ConsentMenu::print_menu(writer.by_ref())?;
 
-        let command = process_input::<ConsentMenu, ProcessInputError, _>(&mut reader);
+        let command = process_input(&mut reader);
 
         match command {
             Ok(command) => break command,
