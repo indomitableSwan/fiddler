@@ -67,6 +67,18 @@ pub fn decryption_menu(mut reader: impl BufRead, mut writer: impl Write) -> Resu
     DecryptMenu::print_menu(writer.by_ref())?;
 
     // Get response from user
-    let command: DecryptMenu = process_input(&mut reader)?;
-    Ok(command)
+    let command = loop {
+        let command = process_input(&mut reader);
+
+        match command {
+            Ok(DecryptMenu::Bruteforce) | Ok(DecryptMenu::KnownKey) | Ok(DecryptMenu::Quit) => {
+                break command
+            }
+            Err(e) => {
+                writeln!(writer, "Error! {}", e)?;
+                continue;
+            }
+        };
+    };
+    Ok(command?)
 }

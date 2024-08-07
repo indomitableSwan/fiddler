@@ -1,12 +1,11 @@
 //! Cryptography-related I/O functionality.
 use crate::{
-    io_helper::{process_input, ProcessInputError},
+    io_helper::process_input,
     menu::{ConsentMenu, DecryptMenu, Menu},
 };
 use anyhow::{anyhow, Result};
 use classical_crypto::{
-    errors::EncodingError,
-    shift::{Ciphertext, Key, Message, ShiftCipher},
+    shift::{Ciphertext, Key, ShiftCipher},
     CipherTrait, KeyTrait,
 };
 use rand::thread_rng;
@@ -75,7 +74,7 @@ pub fn encrypt(mut reader: impl BufRead, mut writer: impl Write) -> Result<()> {
         match key {
             Ok(key) => break key,
             Err(e) => {
-                writeln! {writer, "Error: {}", e}?;
+                writeln!(writer, "Error: {}", e)?;
                 continue;
             }
         }
