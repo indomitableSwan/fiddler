@@ -20,9 +20,9 @@ pub fn make_key(mut reader: impl BufRead, mut writer: impl Write) -> Result<()> 
         // Generate a key
         let key = Key::new(&mut rng);
 
-        println!("\nWe generated your key successfully!.");
-        println!("\nWe shouldn't export your key (or say, save it in logs), but we can!");
-        println!("Here it is: {}\n", ShiftCipher::insecure_key_export(&key));
+        writeln!(writer, "\nWe generated your key successfully!.")?;
+        writeln!(writer, "\nWe shouldn't export your key (or say, save it in logs), but we can!")?;
+        writeln!(writer, "Here it is: {}\n", ShiftCipher::insecure_key_export(&key))?;
 
         'inner: loop {
             writeln!(writer, "\nAre you happy with your key?")?;
@@ -185,7 +185,7 @@ pub fn try_decrypt(
     mut reader: impl BufRead,
     mut writer: impl Write,
 ) -> Result<()> {
-    println!(
+    writeln!(writer, 
         "\nYour computed plaintext is {}\n",
         ShiftCipher::decrypt(ciphertxt, &key)
     );
